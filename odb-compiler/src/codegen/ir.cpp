@@ -590,953 +590,6 @@ create_db_func_table(
     return 0;
 }
 
-static llvm::Value*
-gen_expr(
-    struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            builder,
-    const struct ast*                             ast,
-    ast_id                                        expr,
-    enum sdk_type                                 sdk_type,
-    const struct cmd_list*                        cmds,
-    const char*                                   source_filename,
-    const char*                                   source_text,
-    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    const llvm::StringMap<llvm::Function*>*       db_func_table,
-    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
-    const struct typemap*                         udt_table,
-    struct allocamap**                            allocamap);
-
-int
-gen_block(
-    struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            builder,
-    const struct ast*                             ast,
-    ast_id                                        block,
-    enum sdk_type                                 sdk_type,
-    const struct cmd_list*                        cmds,
-    const char*                                   source_filename,
-    const char*                                   source_text,
-    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    const llvm::StringMap<llvm::Function*>*       db_func_table,
-    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
-    const struct typemap*                         udt_table,
-    struct allocamap**                            allocamap);
-
-static llvm::Value*
-gen_expr(
-    struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            builder,
-    const struct ast*                             ast,
-    ast_id                                        expr,
-    enum sdk_type                                 sdk_type,
-    const struct cmd_list*                        cmds,
-    const char*                                   filename,
-    const char*                                   source,
-    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    const llvm::StringMap<llvm::Function*>*       db_func_table,
-    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
-    const struct typemap*                         udt_table,
-    struct allocamap**                            allocamap)
-{
-    switch (ast_node_type(ast, expr))
-    {
-        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_BLOCK: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_END: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_COMMAND:
-        case AST_VAR_DECL1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_VAR_READ:
-
-        case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_UDT_INIT:
-        case AST_UDT_READ: {
-            // struct utf8_span ast_type_name =
-            // ast->nodes[expr].udt_read.type_name;
-            // ast->nodes[expr].udt_read.member;
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-
-            break;
-        }
-        case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_ASSIGNMENT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-
-        case AST_BINOP: {
-            ast_id       lhs_node = ast->nodes[expr].binop.left;
-            ast_id       rhs_node = ast->nodes[expr].binop.right;
-            enum type    lhs_type = ast_type_info(ast, lhs_node);
-            enum type    rhs_type = ast_type_info(ast, rhs_node);
-            enum type    result_type = ast_type_info(ast, expr);
-            llvm::Value* lhs = gen_expr(
-                ir,
-                builder,
-                ast,
-                lhs_node,
-                sdk_type,
-                cmds,
-                filename,
-                source,
-                string_table,
-                cmd_func_table,
-                db_func_table,
-                loop_stack,
-                udt_table,
-                allocamap);
-            llvm::Value* rhs = gen_expr(
-                ir,
-                builder,
-                ast,
-                rhs_node,
-                sdk_type,
-                cmds,
-                filename,
-                source,
-                string_table,
-                cmd_func_table,
-                db_func_table,
-                loop_stack,
-                udt_table,
-                allocamap);
-
-            /* Handle string operations seperately from arithmetic, since there
-             * are only a handful of ops that are valid */
-            if (result_type == TYPE_STRING)
-            {
-                // TODO
-                return nullptr;
-            }
-
-            enum TypeFamily
-            {
-                INT,
-                UINT,
-                FLOAT
-            } type_family
-                = INT;
-            ODBUTIL_DEBUG_ASSERT(
-                lhs_type == rhs_type,
-                log_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
-            switch (lhs_type)
-            {
-                case TYPE_INVALID:
-                case TYPE_VOID:
-                case TYPE_STRING:
-                case TYPE_ARRAY:
-                case TYPE_LABEL:
-                case TYPE_DABEL:
-                case TYPE_ANY:
-                case TYPE_UDT_PTR:
-                    ODBUTIL_DEBUG_ASSERT(false, (void)0);
-                    return nullptr;
-
-                case TYPE_BOOL:
-                case TYPE_I32:
-                case TYPE_I64: type_family = INT; break;
-
-                case TYPE_U32:
-                case TYPE_U16:
-                case TYPE_U8: type_family = UINT; break;
-
-                case TYPE_F32:
-                case TYPE_F64: type_family = FLOAT; break;
-            }
-
-            switch (ast->nodes[expr].binop.op)
-            {
-                case BINOP_ADD:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateNSWAdd(lhs, rhs);
-                        case UINT: return builder.CreateAdd(lhs, rhs);
-                        case FLOAT: return builder.CreateFAdd(lhs, rhs);
-                    }
-                    break;
-                case BINOP_SUB:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateNSWSub(lhs, rhs);
-                        case UINT: return builder.CreateSub(lhs, rhs);
-                        case FLOAT: return builder.CreateFSub(lhs, rhs);
-                    }
-                    break;
-                case BINOP_MUL:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateNSWMul(lhs, rhs);
-                        case UINT: return builder.CreateMul(lhs, rhs);
-                        case FLOAT: return builder.CreateFMul(lhs, rhs);
-                    }
-                    break;
-                case BINOP_DIV:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateSDiv(lhs, rhs);
-                        case UINT: return builder.CreateUDiv(lhs, rhs);
-                        case FLOAT: return builder.CreateFDiv(lhs, rhs);
-                    }
-                    break;
-                case BINOP_MOD:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateSRem(lhs, rhs);
-                        case UINT: return builder.CreateURem(lhs, rhs);
-                        case FLOAT: return builder.CreateFRem(lhs, rhs);
-                    }
-                    break;
-                case BINOP_POW:
-                    if (lhs_type == TYPE_F32 && rhs_type == TYPE_I32)
-                    {
-                        llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
-                            &ir->mod,
-                            llvm::Intrinsic::powi,
-                            {llvm::Type::getFloatTy(ir->ctx),
-                             llvm::Type::getInt32Ty(ir->ctx)});
-                        return builder.CreateCall(FPowi, {lhs, rhs});
-                    }
-                    else if (lhs_type == TYPE_F64 && rhs_type == TYPE_I32)
-                    {
-                        llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
-                            &ir->mod,
-                            llvm::Intrinsic::powi,
-                            {llvm::Type::getDoubleTy(ir->ctx),
-                             llvm::Type::getInt32Ty(ir->ctx)});
-                        return builder.CreateCall(FPowi, {lhs, rhs});
-                    }
-                    else if (lhs_type == TYPE_F32 && rhs_type == TYPE_F32)
-                    {
-                        llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
-                            &ir->mod,
-                            llvm::Intrinsic::pow,
-                            {llvm::Type::getFloatTy(ir->ctx),
-                             llvm::Type::getFloatTy(ir->ctx)});
-                        return builder.CreateCall(FPow, {lhs, rhs});
-                    }
-                    else if (lhs_type == TYPE_F64 && rhs_type == TYPE_F64)
-                    {
-
-                        llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
-                            &ir->mod,
-                            llvm::Intrinsic::pow,
-                            {llvm::Type::getDoubleTy(ir->ctx),
-                             llvm::Type::getDoubleTy(ir->ctx)});
-                        return builder.CreateCall(FPow, {lhs, rhs});
-                    }
-                    break;
-
-                case BINOP_SHIFT_LEFT:
-                case BINOP_SHIFT_RIGHT:
-                case BINOP_BITWISE_OR:
-                case BINOP_BITWISE_AND:
-                case BINOP_BITWISE_XOR:
-                case BINOP_BITWISE_NOT: break;
-
-                case BINOP_LESS_THAN:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateICmpSLT(lhs, rhs);
-                        case UINT: return builder.CreateICmpULT(lhs, rhs);
-                        case FLOAT: return builder.CreateFCmpOLT(lhs, rhs);
-                    }
-                    break;
-                case BINOP_LESS_EQUAL:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateICmpSLE(lhs, rhs);
-                        case UINT: return builder.CreateICmpULE(lhs, rhs);
-                        case FLOAT: return builder.CreateFCmpOLE(lhs, rhs);
-                    }
-                    break;
-                case BINOP_GREATER_THAN:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateICmpSGT(lhs, rhs);
-                        case UINT: return builder.CreateICmpUGT(lhs, rhs);
-                        case FLOAT: return builder.CreateFCmpOGT(lhs, rhs);
-                    }
-                    break;
-                case BINOP_GREATER_EQUAL:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateICmpSGE(lhs, rhs);
-                        case UINT: return builder.CreateICmpUGE(lhs, rhs);
-                        case FLOAT: return builder.CreateFCmpOGE(lhs, rhs);
-                    }
-                    break;
-                case BINOP_EQUAL:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateICmpEQ(lhs, rhs);
-                        case UINT: return builder.CreateICmpEQ(lhs, rhs);
-                        case FLOAT: return builder.CreateFCmpOEQ(lhs, rhs);
-                    }
-                    break;
-                case BINOP_NOT_EQUAL:
-                    switch (type_family)
-                    {
-                        case INT: return builder.CreateICmpNE(lhs, rhs);
-                        case UINT: return builder.CreateICmpNE(lhs, rhs);
-                        case FLOAT: return builder.CreateFCmpONE(lhs, rhs);
-                    }
-                    break;
-
-                case BINOP_LOGICAL_OR: return builder.CreateOr(lhs, rhs);
-                case BINOP_LOGICAL_AND: return builder.CreateAnd(lhs, rhs);
-                case BINOP_LOGICAL_XOR: return builder.CreateXor(lhs, rhs);
-            }
-            break;
-        }
-        case AST_UNOP: break;
-
-        case AST_COND: break;
-        case AST_COND_BRANCHES: break;
-
-        case AST_LOOP1: break;
-        case AST_LOOP2: break;
-        case AST_LOOP_FOR1: break;
-        case AST_LOOP_FOR2: break;
-        case AST_LOOP_FOR3: break;
-        case AST_LOOP_CONT: break;
-        case AST_LOOP_EXIT: break;
-
-        case AST_FUNC_CALL: {
-            llvm::SmallVector<llvm::Value*, 8> llvm_args;
-            llvm::SmallString<128>             func_name;
-            for (ast_id arglist_ast = ast->nodes[expr].func_call.arglist;
-                 arglist_ast > -1;
-                 arglist_ast = ast->nodes[arglist_ast].arglist.next)
-            {
-                llvm::Value* llvm_arg = gen_expr(
-                    ir,
-                    builder,
-                    ast,
-                    ast->nodes[arglist_ast].arglist.expr,
-                    sdk_type,
-                    cmds,
-                    filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    db_func_table,
-                    loop_stack,
-                    udt_table,
-                    allocamap);
-                llvm_args.push_back(llvm_arg);
-            }
-
-            func_name_from_arglist(
-                func_name,
-                ast,
-                ast->nodes[expr].func_call.identifier,
-                ast->nodes[expr].func_call.arglist,
-                source);
-            const auto result = db_func_table->find(func_name);
-            ODBUTIL_DEBUG_ASSERT(
-                result != db_func_table->end(),
-                log_err(
-                    "Function {quote:%s} not found in function table\n",
-                    func_name.c_str()));
-
-            llvm::Function* F = result->getValue();
-            return builder.CreateCall(F, llvm_args);
-        }
-        case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC_EXIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC_CALL_OR_CONTAINER_READ:
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return NULL;
-        case AST_CONTAINER_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-
-        case AST_BOOLEAN_LITERAL:
-            return llvm::ConstantInt::get(
-                llvm::Type::getInt1Ty(ir->ctx),
-                ast->nodes[expr].boolean_literal.is_true,
-                /* isSigned */ true);
-
-        case AST_BYTE_LITERAL:
-            return llvm::ConstantInt::get(
-                llvm::Type::getInt8Ty(ir->ctx),
-                ast->nodes[expr].byte_literal.value,
-                /* isSigned */ false);
-        case AST_WORD_LITERAL:
-            return llvm::ConstantInt::get(
-                llvm::Type::getInt16Ty(ir->ctx),
-                ast->nodes[expr].word_literal.value,
-                /* isSigned */ false);
-        case AST_DWORD_LITERAL:
-            return llvm::ConstantInt::get(
-                llvm::Type::getInt32Ty(ir->ctx),
-                ast->nodes[expr].dword_literal.value,
-                /* isSigned */ false);
-        case AST_INTEGER_LITERAL:
-            return llvm::ConstantInt::get(
-                llvm::Type::getInt32Ty(ir->ctx),
-                ast->nodes[expr].integer_literal.value,
-                /* isSigned */ true);
-        case AST_DOUBLE_INTEGER_LITERAL:
-            return llvm::ConstantInt::get(
-                llvm::Type::getInt64Ty(ir->ctx),
-                ast->nodes[expr].double_integer_literal.value,
-                /* isSigned */ true);
-
-        case AST_FLOAT_LITERAL:
-            return llvm::ConstantFP::get(
-                llvm::Type::getFloatTy(ir->ctx),
-                llvm::APFloat(ast->nodes[expr].float_literal.value));
-        case AST_DOUBLE_LITERAL:
-            return llvm::ConstantFP::get(
-                llvm::Type::getDoubleTy(ir->ctx),
-                llvm::APFloat(ast->nodes[expr].double_literal.value));
-
-        case AST_STRING_LITERAL: {
-            struct utf8_span span = ast->nodes[expr].string_literal.str;
-            llvm::StringRef  str_ref(source + span.off, span.len);
-            return string_table->find(str_ref)->getValue();
-        }
-        case AST_CAST:
-        case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_AS_EXPR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-    }
-
-    log_err("Expression type %d not implemeneted\n", ast_node_type(ast, expr));
-    return nullptr;
-}
-
-int
-gen_block(
-    struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            builder,
-    const struct ast*                             ast,
-    ast_id                                        block,
-    enum sdk_type                                 sdk_type,
-    const struct cmd_list*                        cmds,
-    const char*                                   filename,
-    const char*                                   source,
-    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    const llvm::StringMap<llvm::Function*>*       db_func_table,
-    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
-    struct typemap*                               udt_table,
-    struct allocamap**                            allocamap)
-{
-    ODBUTIL_DEBUG_ASSERT(block > -1, log_err("block: %d\n", block));
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, block) == AST_BLOCK,
-        log_err("type: %d\n", ast_node_type(ast, block)));
-
-    for (; block != -1; block = ast->nodes[block].block.next)
-    {
-        ast_id stmt = ast->nodes[block].block.stmt;
-        ODBUTIL_DEBUG_ASSERT(stmt > -1, log_err("stmt: %d\n", stmt));
-        switch (ast_node_type(ast, stmt))
-        {
-            case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_BLOCK:
-            case AST_END:
-            case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_COMMAND:
-            case AST_VAR_DECL1:
-            case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_VAR_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_UDT_DECL:
-                continue; // Skip over declarations, they do nothing
-            case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_ASSIGNMENT:
-
-            case AST_IDENTIFIER:
-            case AST_BINOP:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("Binary operators should never occur "
-                            "directly in a block"));
-                return -1;
-            case AST_UNOP:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("Unary operators should never occur "
-                            "directly in a block"));
-                return -1;
-
-            case AST_COND: {
-                ast_id expr_node = ast->nodes[stmt].cond.expr;
-                ast_id branch_node = ast->nodes[stmt].cond.cond_branches;
-                ast_id yes_node = ast->nodes[branch_node].cond_branches.yes;
-                ast_id no_node = ast->nodes[branch_node].cond_branches.no;
-
-                llvm::Value* expr = gen_expr(
-                    ir,
-                    builder,
-                    ast,
-                    expr_node,
-                    sdk_type,
-                    cmds,
-                    filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    db_func_table,
-                    loop_stack,
-                    udt_table,
-                    allocamap);
-                llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
-                    ir->ctx, llvm::Twine("block") + llvm::Twine(yes_node));
-                llvm::BasicBlock* BBNo = llvm::BasicBlock::Create(
-                    ir->ctx, llvm::Twine("block") + llvm::Twine(no_node));
-                llvm::BasicBlock* BBMerge
-                    = llvm::BasicBlock::Create(ir->ctx, "merge");
-                builder.CreateCondBr(expr, BBYes, BBNo);
-
-                llvm::Function* F = builder.GetInsertBlock()->getParent();
-                F->insert(F->end(), BBYes);
-                builder.SetInsertPoint(BBYes);
-                if (yes_node > -1)
-                {
-                    gen_block(
-                        ir,
-                        builder,
-                        ast,
-                        yes_node,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap);
-                }
-                if (builder.GetInsertBlock()->getTerminator() == nullptr)
-                    builder.CreateBr(BBMerge);
-                // Codegen of "True" branch can change the current block. Update
-                // BBYes for the PHI.
-                BBYes = builder.GetInsertBlock();
-
-                F->insert(F->end(), BBNo);
-                builder.SetInsertPoint(BBNo);
-                if (no_node > -1)
-                {
-                    gen_block(
-                        ir,
-                        builder,
-                        ast,
-                        no_node,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap);
-                }
-                if (builder.GetInsertBlock()->getTerminator() == nullptr)
-                    builder.CreateBr(BBMerge);
-                // Codegen of "True" branch can change the current block. Update
-                // BBYes for the PHI.
-                BBNo = builder.GetInsertBlock();
-
-                F->insert(F->end(), BBMerge);
-                builder.SetInsertPoint(BBMerge);
-                continue;
-            }
-            case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-
-            case AST_LOOP1: {
-                ast_id ast_loop_body = ast->nodes[stmt].loop1.loop2;
-                ast_id ast_body = ast->nodes[ast_loop_body].loop2.body;
-                ast_id ast_post_body
-                    = ast->nodes[ast_loop_body].loop2.post_body;
-
-                llvm::BasicBlock* BBLoop = llvm::BasicBlock::Create(
-                    ir->ctx, llvm::Twine("loop") + llvm::Twine(stmt));
-                llvm::BasicBlock* BBExit = llvm::BasicBlock::Create(
-                    ir->ctx, llvm::Twine("exit") + llvm::Twine(stmt));
-
-                builder.CreateBr(BBLoop);
-
-                llvm::Function* F = builder.GetInsertBlock()->getParent();
-                F->insert(F->end(), BBLoop);
-                builder.SetInsertPoint(BBLoop);
-                loop_stack->push_back({BBLoop, BBExit, stmt});
-                gen_block(
-                    ir,
-                    builder,
-                    ast,
-                    ast_body,
-                    sdk_type,
-                    cmds,
-                    filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    db_func_table,
-                    loop_stack,
-                    udt_table,
-                    allocamap);
-                // For-loops keep the code for stepping separate from the rest
-                // of the body, because it can be overriden in "continue"
-                // statements
-                if (ast_post_body > -1)
-                    gen_block(
-                        ir,
-                        builder,
-                        ast,
-                        ast_post_body,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap);
-                // Codegen can change the current block. Update
-                // BBYes for the PHI.
-                builder.CreateBr(BBLoop);
-
-                F->insert(F->end(), BBExit);
-                builder.SetInsertPoint(BBExit);
-                loop_stack->pop_back();
-
-                continue;
-            }
-            case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-
-            case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-            case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-            case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-
-            case AST_LOOP_CONT: {
-                struct utf8_span target_name = ast->nodes[stmt].cont.name;
-                auto             it = loop_stack->rbegin();
-                if (target_name.len > 0)
-                    for (; it != loop_stack->rend(); ++it)
-                    {
-                        struct utf8_span loop_name
-                            = ast->nodes[it->loop].loop1.name;
-                        struct utf8_span loop_implicit_name
-                            = ast->nodes[it->loop].loop1.implicit_name;
-
-                        if (utf8_equal_span(source, target_name, loop_name)
-                            || utf8_equal_span(
-                                source, target_name, loop_implicit_name))
-                        {
-                            break;
-                        }
-                    }
-                ODBUTIL_DEBUG_ASSERT(it != loop_stack->rend(), (void)0);
-
-                // When using "continue" within a for-loop, this block contains
-                // the code to run to step to the next iteration. It defaults
-                // to the loop's "post_body" block, but can be overridden by
-                // "continue"
-                ast_id step = ast->nodes[stmt].cont.step;
-                if (step > -1)
-                {
-                    ODBUTIL_DEBUG_ASSERT(
-                        ast_node_type(ast, step) == AST_BLOCK,
-                        log_err("step: %d\n", step));
-                    gen_block(
-                        ir,
-                        builder,
-                        ast,
-                        step,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap);
-                    builder.CreateBr(it->BBLoop);
-                }
-                continue;
-            }
-
-            case AST_LOOP_EXIT: {
-                struct utf8_span target_name = ast->nodes[stmt].loop_exit.name;
-                if (target_name.len == 0)
-                {
-                    llvm::BasicBlock* BBExit = loop_stack->back().BBExit;
-                    builder.CreateBr(BBExit);
-                    break;
-                }
-
-                for (auto it = loop_stack->rbegin(); it != loop_stack->rend();
-                     ++it)
-                {
-                    struct utf8_span loop_name
-                        = ast->nodes[it->loop].loop1.name;
-                    struct utf8_span loop_implicit_name
-                        = ast->nodes[it->loop].loop1.implicit_name;
-
-                    if (utf8_equal_span(source, target_name, loop_name)
-                        || utf8_equal_span(
-                            source, target_name, loop_implicit_name))
-                    {
-                        builder.CreateBr(it->BBExit);
-                        goto loop_exit_success;
-                    }
-                }
-                ODBUTIL_DEBUG_ASSERT(0, (void)0);
-                return -1;
-            loop_exit_success:
-                continue;
-            }
-
-            case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_FUNC_CALL: {
-                llvm::SmallString<128>             func_name;
-                llvm::SmallVector<llvm::Value*, 8> llvm_args;
-                for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
-                     ast_arglist > -1;
-                     ast_arglist = ast->nodes[ast_arglist].arglist.next)
-                {
-                    llvm::Value* llvm_arg = gen_expr(
-                        ir,
-                        builder,
-                        ast,
-                        ast->nodes[ast_arglist].arglist.expr,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap);
-                    llvm_args.push_back(llvm_arg);
-                }
-
-                func_name_from_arglist(
-                    func_name,
-                    ast,
-                    ast->nodes[stmt].func_call.identifier,
-                    ast->nodes[stmt].func_call.arglist,
-                    source);
-                const auto result = db_func_table->find(func_name);
-                ODBUTIL_DEBUG_ASSERT(
-                    result != db_func_table->end(),
-                    log_err(
-                        "Function {quote:%s} not found in function table\n",
-                        func_name.data()));
-
-                llvm::Function* F = result->getValue();
-                builder.CreateCall(F, llvm_args);
-
-                continue;
-            }
-            case AST_FUNC1: {
-                llvm::SmallString<128> func_name;
-
-                ast_id f2 = ast->nodes[stmt].func1.func2;
-                ast_id f3 = ast->nodes[f2].func2.func3;
-                ast_id f4 = ast->nodes[f3].func3.func4;
-                ast_id ast_retval = ast->nodes[f4].func4.retval;
-                ast_id ast_body = ast->nodes[f4].func4.body;
-                ast_id ast_paramlist = ast->nodes[f3].func3.paramlist;
-                ast_id ast_identifier = ast->nodes[stmt].func1.identifier;
-
-                func_name_from_paramlist(
-                    func_name, ast, ast_identifier, ast_paramlist, source);
-                const auto result = db_func_table->find(func_name);
-                ODBUTIL_DEBUG_ASSERT(
-                    result != db_func_table->end(),
-                    log_err(
-                        "Function {quote:%s} not found in function table\n",
-                        func_name.data()));
-
-                llvm::Function*   F = result->getValue();
-                llvm::BasicBlock* BB = llvm::BasicBlock::Create(
-                    ir->ctx, llvm::Twine("entry"), F);
-                llvm::IRBuilder<> func_builder(BB);
-
-                int param_idx = 0;
-                for (ast_id pl_node = ast_paramlist; pl_node > -1;
-                     pl_node = ast->nodes[pl_node].paramlist.next, ++param_idx)
-                {
-                    ast_id ast_param = ast->nodes[pl_node].paramlist.param;
-                    ast_id ast_identifier
-                        = ast->nodes[ast_param].param.identifier;
-                    enum type        param_type = ast_type_info(ast, ast_param);
-                    struct utf8_view name = utf8_span_view(
-                        source, ast->nodes[ast_identifier].identifier.name);
-                    struct view_scope name_scope
-                        = {name, ast->nodes[ast_identifier].info.scope_id};
-                    llvm::AllocaInst** A;
-                    switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
-                    {
-                        case HM_OOM: return -1;
-                        case HM_EXISTS:
-                            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-                            return -1;
-                        case HM_NEW:
-                            *A = func_builder.CreateAlloca(
-                                type_to_llvm(param_type, &ir->ctx),
-                                NULL,
-                                llvm::StringRef(
-                                    name.data + name.off, name.len));
-                            func_builder.CreateStore(F->getArg(param_idx), *A);
-                            break;
-                    }
-                }
-
-                if (ast_body > -1)
-                    gen_block(
-                        ir,
-                        func_builder,
-                        ast,
-                        ast_body,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap);
-
-                if (ast_retval > -1)
-                    func_builder.CreateRet(gen_expr(
-                        ir,
-                        func_builder,
-                        ast,
-                        ast_retval,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap));
-                else
-                    func_builder.CreateRetVoid();
-#if defined(ODBCOMPILER_IR_SANITY_CHECK)
-                llvm::verifyFunction(*F);
-#endif
-                continue;
-            }
-            case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_FUNC_EXIT: {
-                ast_id ast_ret = ast->nodes[stmt].func_exit.retval;
-
-                if (ast_ret > -1)
-                {
-                    builder.CreateRet(gen_expr(
-                        ir,
-                        builder,
-                        ast,
-                        ast_ret,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        udt_table,
-                        allocamap));
-                }
-                else
-                    builder.CreateRetVoid();
-
-                continue;
-            }
-            case AST_FUNC_CALL_OR_CONTAINER_READ:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err(
-                        "This node should never exist when translating to LLVM "
-                        "IR! Semantic analysis should have resolved everything "
-                        "at this point.\n"));
-                return -1;
-
-            case AST_CONTAINER_WRITE:
-                ODBUTIL_DEBUG_ASSERT(0, (void)0);
-                return -1;
-
-            case AST_BOOLEAN_LITERAL:
-            case AST_BYTE_LITERAL:
-            case AST_WORD_LITERAL:
-            case AST_DWORD_LITERAL:
-            case AST_INTEGER_LITERAL:
-            case AST_DOUBLE_INTEGER_LITERAL:
-            case AST_FLOAT_LITERAL:
-            case AST_DOUBLE_LITERAL:
-            case AST_STRING_LITERAL:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err(
-                        "Literals should never occur directly in a block.\n"));
-                return -1;
-
-            case AST_CAST:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("Casts should never occur directly in a block.\n"));
-                return -1;
-            case AST_AS_TYPE:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("TYPE should never occur directly in a block.\n"));
-                return -1;
-            case AST_AS_EXPR:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("TYPE should never occur directly in a block.\n"));
-                return -1;
-            case AST_AS_UDT:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("TYPE should never occur directly in a block.\n"));
-                return -1;
-            case AST_AS_AUTO:
-                ODBUTIL_DEBUG_ASSERT(
-                    0, log_err("AS should never occur directly in a block.\n"));
-                return -1;
-        }
-    }
-
-    return 0;
-}
-
 static int
 process_block(struct stack** stack, const struct ast* ast)
 {
@@ -1632,7 +685,7 @@ process_command(
     struct stack**                                stack,
     struct results**                              results,
     struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            builder,
+    llvm::IRBuilder<>&                            b,
     const struct ast*                             ast,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
@@ -1664,6 +717,7 @@ process_command(
         return 0;
     }
 
+    stack_pop(*stack);
     llvm::ArrayRef<llvm::Value*> Args(
         results_pop_by(*results, num_results), num_results);
 
@@ -1679,16 +733,14 @@ process_command(
     llvm::FunctionType* FT
         = get_cmd_func_signature(ir, ast, cmd, sdk_type, cmds);
     llvm::Value* CmdFuncAddr
-        = builder.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), CmdFuncPtr);
-    llvm::Value* RetVal = builder.CreateCall(FT, CmdFuncAddr, Args);
+        = b.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), CmdFuncPtr);
+    llvm::Value* RetVal = b.CreateCall(FT, CmdFuncAddr, Args);
 
     /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
     if (sdk_type == SDK_DBPRO)
         if (ast_type_info(ast, cmd) == TYPE_F32)
-            RetVal = builder.CreateBitCast(
-                RetVal, llvm::Type::getFloatTy(ir->ctx));
+            RetVal = b.CreateBitCast(RetVal, llvm::Type::getFloatTy(ir->ctx));
 
-    stack_pop(*stack);
     return 0;
 }
 
@@ -1989,6 +1041,686 @@ process_udt_read(
 }
 
 static int
+process_binop(
+    struct stack**     stack,
+    struct results**   results,
+    struct ir_module*  ir,
+    llvm::IRBuilder<>& b,
+    const struct ast*  ast)
+{
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              binop = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, binop) == AST_BINOP,
+        log_err("type: %d\n", ast_node_type(ast, binop)));
+
+    ast_id lhs = ast->nodes[binop].binop.left;
+    ast_id rhs = ast->nodes[binop].binop.right;
+
+    if (num_results == 0)
+    {
+        if (stack_push_node(stack, lhs) != 0)
+            return -1;
+        if (stack_push_node(stack, rhs) != 0)
+            return -1;
+
+        entry->num_results = 2;
+        return 0;
+    }
+
+    stack_pop(*stack);
+    llvm::Value* LHS = *results_pop(*results);
+    llvm::Value* RHS = *results_pop(*results);
+
+    enum type lhs_type = ast_type_info(ast, lhs);
+    enum type rhs_type = ast_type_info(ast, rhs);
+    enum type result_type = ast_type_info(ast, binop);
+
+    /* Handle string operations seperately from arithmetic, since there
+     * are only a handful of ops that are valid */
+    if (result_type == TYPE_STRING)
+    {
+        // TODO
+        return -1;
+    }
+
+    enum TypeFamily
+    {
+        INT,
+        UINT,
+        FLOAT
+    } type_family
+        = INT;
+    ODBUTIL_DEBUG_ASSERT(
+        lhs_type == rhs_type,
+        log_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
+    switch (lhs_type)
+    {
+        case TYPE_INVALID:
+        case TYPE_VOID:
+        case TYPE_STRING:
+        case TYPE_ARRAY:
+        case TYPE_LABEL:
+        case TYPE_DABEL:
+        case TYPE_ANY:
+        case TYPE_UDT_PTR: ODBUTIL_DEBUG_ASSERT(false, (void)0); return -1;
+
+        case TYPE_BOOL:
+        case TYPE_I32:
+        case TYPE_I64: type_family = INT; break;
+
+        case TYPE_U32:
+        case TYPE_U16:
+        case TYPE_U8: type_family = UINT; break;
+
+        case TYPE_F32:
+        case TYPE_F64: type_family = FLOAT; break;
+    }
+
+    switch (ast->nodes[binop].binop.op)
+    {
+        case BINOP_ADD:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateNSWAdd(LHS, RHS));
+                case UINT: return results_push(results, b.CreateAdd(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFAdd(LHS, RHS));
+            }
+            break;
+        case BINOP_SUB:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateNSWSub(LHS, RHS));
+                case UINT: return results_push(results, b.CreateSub(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFSub(LHS, RHS));
+            }
+            break;
+        case BINOP_MUL:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateNSWMul(LHS, RHS));
+                case UINT: return results_push(results, b.CreateMul(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFMul(LHS, RHS));
+            }
+            break;
+        case BINOP_DIV:
+            switch (type_family)
+            {
+                case INT: return results_push(results, b.CreateSDiv(LHS, RHS));
+                case UINT: return results_push(results, b.CreateUDiv(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFDiv(LHS, RHS));
+            }
+            break;
+        case BINOP_MOD:
+            switch (type_family)
+            {
+                case INT: return results_push(results, b.CreateSRem(LHS, RHS));
+                case UINT: return results_push(results, b.CreateURem(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFRem(LHS, RHS));
+            }
+            break;
+        case BINOP_POW:
+            if (lhs_type == TYPE_F32 && rhs_type == TYPE_I32)
+            {
+                llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
+                    &ir->mod,
+                    llvm::Intrinsic::powi,
+                    {llvm::Type::getFloatTy(ir->ctx),
+                     llvm::Type::getInt32Ty(ir->ctx)});
+                return results_push(results, b.CreateCall(FPowi, {LHS, RHS}));
+            }
+            else if (lhs_type == TYPE_F64 && rhs_type == TYPE_I32)
+            {
+                llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
+                    &ir->mod,
+                    llvm::Intrinsic::powi,
+                    {llvm::Type::getDoubleTy(ir->ctx),
+                     llvm::Type::getInt32Ty(ir->ctx)});
+                return results_push(results, b.CreateCall(FPowi, {LHS, RHS}));
+            }
+            else if (lhs_type == TYPE_F32 && rhs_type == TYPE_F32)
+            {
+                llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
+                    &ir->mod,
+                    llvm::Intrinsic::pow,
+                    {llvm::Type::getFloatTy(ir->ctx),
+                     llvm::Type::getFloatTy(ir->ctx)});
+                return results_push(results, b.CreateCall(FPow, {LHS, RHS}));
+            }
+            else if (lhs_type == TYPE_F64 && rhs_type == TYPE_F64)
+            {
+
+                llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
+                    &ir->mod,
+                    llvm::Intrinsic::pow,
+                    {llvm::Type::getDoubleTy(ir->ctx),
+                     llvm::Type::getDoubleTy(ir->ctx)});
+                return results_push(results, b.CreateCall(FPow, {LHS, RHS}));
+            }
+            break;
+
+        case BINOP_SHIFT_LEFT:
+        case BINOP_SHIFT_RIGHT:
+        case BINOP_BITWISE_OR:
+        case BINOP_BITWISE_AND:
+        case BINOP_BITWISE_XOR:
+        case BINOP_BITWISE_NOT: break;
+
+        case BINOP_LESS_THAN:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateICmpSLT(LHS, RHS));
+                case UINT:
+                    return results_push(results, b.CreateICmpULT(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFCmpOLT(LHS, RHS));
+            }
+            break;
+        case BINOP_LESS_EQUAL:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateICmpSLE(LHS, RHS));
+                case UINT:
+                    return results_push(results, b.CreateICmpULE(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFCmpOLE(LHS, RHS));
+            }
+            break;
+        case BINOP_GREATER_THAN:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateICmpSGT(LHS, RHS));
+                case UINT:
+                    return results_push(results, b.CreateICmpUGT(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFCmpOGT(LHS, RHS));
+            }
+            break;
+        case BINOP_GREATER_EQUAL:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateICmpSGE(LHS, RHS));
+                case UINT:
+                    return results_push(results, b.CreateICmpUGE(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFCmpOGE(LHS, RHS));
+            }
+            break;
+        case BINOP_EQUAL:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateICmpEQ(LHS, RHS));
+                case UINT:
+                    return results_push(results, b.CreateICmpEQ(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFCmpOEQ(LHS, RHS));
+            }
+            break;
+        case BINOP_NOT_EQUAL:
+            switch (type_family)
+            {
+                case INT:
+                    return results_push(results, b.CreateICmpNE(LHS, RHS));
+                case UINT:
+                    return results_push(results, b.CreateICmpNE(LHS, RHS));
+                case FLOAT:
+                    return results_push(results, b.CreateFCmpONE(LHS, RHS));
+            }
+            break;
+
+        case BINOP_LOGICAL_OR:
+            return results_push(results, b.CreateOr(LHS, RHS));
+        case BINOP_LOGICAL_AND:
+            return results_push(results, b.CreateAnd(LHS, RHS));
+        case BINOP_LOGICAL_XOR:
+            return results_push(results, b.CreateXor(LHS, RHS));
+    }
+
+    return -1;
+}
+
+static int
+process_unop()
+{
+    return log_err("TODO\n");
+}
+
+static int
+process_cond(
+    struct stack**     stack,
+    struct results**   results,
+    struct ir_module*  ir,
+    llvm::IRBuilder<>& b,
+    const struct ast*  ast)
+{
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              cond = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, cond) == AST_COND,
+        log_err("type: %d\n", ast_node_type(ast, cond)));
+
+    ast_id expr = ast->nodes[cond].cond.expr;
+    ast_id branches = ast->nodes[cond].cond.cond_branches;
+    ast_id yes = ast->nodes[branches].cond_branches.yes;
+    ast_id no = ast->nodes[branches].cond_branches.no;
+
+    if (num_results == 0)
+    {
+        if (stack_push_node(stack, expr) != 0)
+            return -1;
+        entry->num_results = 1;
+        return 0;
+    }
+
+    llvm::Value* expr = gen_expr(
+        ir,
+        builder,
+        ast,
+        expr_node,
+        sdk_type,
+        cmds,
+        filename,
+        source,
+        string_table,
+        cmd_func_table,
+        db_func_table,
+        loop_stack,
+        udt_table,
+        allocamap);
+    llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
+        ir->ctx, llvm::Twine("block") + llvm::Twine(yes));
+    llvm::BasicBlock* BBNo = llvm::BasicBlock::Create(
+        ir->ctx, llvm::Twine("block") + llvm::Twine(no));
+    llvm::BasicBlock* BBMerge = llvm::BasicBlock::Create(ir->ctx, "merge");
+    builder.CreateCondBr(expr, BBYes, BBNo);
+
+    llvm::Function* F = builder.GetInsertBlock()->getParent();
+    F->insert(F->end(), BBYes);
+    builder.SetInsertPoint(BBYes);
+    if (yes > -1)
+    {
+        gen_block(
+            ir,
+            builder,
+            ast,
+            yes_node,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap);
+    }
+    if (builder.GetInsertBlock()->getTerminator() == nullptr)
+        builder.CreateBr(BBMerge);
+    // Codegen of "True" branch can change the current block. Update
+    // BBYes for the PHI.
+    BBYes = builder.GetInsertBlock();
+
+    F->insert(F->end(), BBNo);
+    builder.SetInsertPoint(BBNo);
+    if (no > -1)
+    {
+        gen_block(
+            ir,
+            builder,
+            ast,
+            no_node,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap);
+    }
+    if (builder.GetInsertBlock()->getTerminator() == nullptr)
+        builder.CreateBr(BBMerge);
+    // Codegen of "True" branch can change the current block. Update
+    // BBYes for the PHI.
+    BBNo = builder.GetInsertBlock();
+
+    F->insert(F->end(), BBMerge);
+    builder.SetInsertPoint(BBMerge);
+    continue;
+}
+
+static int
+process_loop()
+{
+    ast_id ast_loop_body = ast->nodes[stmt].loop1.loop2;
+    ast_id ast_body = ast->nodes[ast_loop_body].loop2.body;
+    ast_id ast_post_body = ast->nodes[ast_loop_body].loop2.post_body;
+
+    llvm::BasicBlock* BBLoop = llvm::BasicBlock::Create(
+        ir->ctx, llvm::Twine("loop") + llvm::Twine(stmt));
+    llvm::BasicBlock* BBExit = llvm::BasicBlock::Create(
+        ir->ctx, llvm::Twine("exit") + llvm::Twine(stmt));
+
+    builder.CreateBr(BBLoop);
+
+    llvm::Function* F = builder.GetInsertBlock()->getParent();
+    F->insert(F->end(), BBLoop);
+    builder.SetInsertPoint(BBLoop);
+    loop_stack->push_back({BBLoop, BBExit, stmt});
+    gen_block(
+        ir,
+        builder,
+        ast,
+        ast_body,
+        sdk_type,
+        cmds,
+        filename,
+        source,
+        string_table,
+        cmd_func_table,
+        db_func_table,
+        loop_stack,
+        udt_table,
+        allocamap);
+    // For-loops keep the code for stepping separate from the rest
+    // of the body, because it can be overriden in "continue"
+    // statements
+    if (ast_post_body > -1)
+        gen_block(
+            ir,
+            builder,
+            ast,
+            ast_post_body,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap);
+    // Codegen can change the current block. Update
+    // BBYes for the PHI.
+    builder.CreateBr(BBLoop);
+
+    F->insert(F->end(), BBExit);
+    builder.SetInsertPoint(BBExit);
+    loop_stack->pop_back();
+
+    continue;
+}
+
+static int
+process_loop_cont()
+{
+    struct utf8_span target_name = ast->nodes[stmt].cont.name;
+    auto             it = loop_stack->rbegin();
+    if (target_name.len > 0)
+        for (; it != loop_stack->rend(); ++it)
+        {
+            struct utf8_span loop_name = ast->nodes[it->loop].loop1.name;
+            struct utf8_span loop_implicit_name
+                = ast->nodes[it->loop].loop1.implicit_name;
+
+            if (utf8_equal_span(source, target_name, loop_name)
+                || utf8_equal_span(source, target_name, loop_implicit_name))
+            {
+                break;
+            }
+        }
+    ODBUTIL_DEBUG_ASSERT(it != loop_stack->rend(), (void)0);
+
+    // When using "continue" within a for-loop, this block contains
+    // the code to run to step to the next iteration. It defaults
+    // to the loop's "post_body" block, but can be overridden by
+    // "continue"
+    ast_id step = ast->nodes[stmt].cont.step;
+    if (step > -1)
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, step) == AST_BLOCK, log_err("step: %d\n", step));
+        gen_block(
+            ir,
+            builder,
+            ast,
+            step,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap);
+        builder.CreateBr(it->BBLoop);
+    }
+    continue;
+}
+
+static int
+process_loop_exit()
+{
+    struct utf8_span target_name = ast->nodes[stmt].loop_exit.name;
+    if (target_name.len == 0)
+    {
+        llvm::BasicBlock* BBExit = loop_stack->back().BBExit;
+        builder.CreateBr(BBExit);
+        break;
+    }
+
+    for (auto it = loop_stack->rbegin(); it != loop_stack->rend(); ++it)
+    {
+        struct utf8_span loop_name = ast->nodes[it->loop].loop1.name;
+        struct utf8_span loop_implicit_name
+            = ast->nodes[it->loop].loop1.implicit_name;
+
+        if (utf8_equal_span(source, target_name, loop_name)
+            || utf8_equal_span(source, target_name, loop_implicit_name))
+        {
+            builder.CreateBr(it->BBExit);
+            goto loop_exit_success;
+        }
+    }
+    ODBUTIL_DEBUG_ASSERT(0, (void)0);
+    return -1;
+loop_exit_success:
+    continue;
+}
+
+static int
+process_func()
+{
+    llvm::SmallString<128> func_name;
+
+    ast_id f2 = ast->nodes[stmt].func1.func2;
+    ast_id f3 = ast->nodes[f2].func2.func3;
+    ast_id f4 = ast->nodes[f3].func3.func4;
+    ast_id ast_retval = ast->nodes[f4].func4.retval;
+    ast_id ast_body = ast->nodes[f4].func4.body;
+    ast_id ast_paramlist = ast->nodes[f3].func3.paramlist;
+    ast_id ast_identifier = ast->nodes[stmt].func1.identifier;
+
+    func_name_from_paramlist(
+        func_name, ast, ast_identifier, ast_paramlist, source);
+    const auto result = db_func_table->find(func_name);
+    ODBUTIL_DEBUG_ASSERT(
+        result != db_func_table->end(),
+        log_err(
+            "Function {quote:%s} not found in function table\n",
+            func_name.data()));
+
+    llvm::Function*   F = result->getValue();
+    llvm::BasicBlock* BB
+        = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("entry"), F);
+    llvm::IRBuilder<> func_builder(BB);
+
+    int param_idx = 0;
+    for (ast_id pl_node = ast_paramlist; pl_node > -1;
+         pl_node = ast->nodes[pl_node].paramlist.next, ++param_idx)
+    {
+        ast_id    ast_param = ast->nodes[pl_node].paramlist.param;
+        ast_id    ast_identifier = ast->nodes[ast_param].param.identifier;
+        enum type param_type = ast_type_info(ast, ast_param);
+        struct utf8_view name = utf8_span_view(
+            source, ast->nodes[ast_identifier].identifier.name);
+        struct view_scope name_scope
+            = {name, ast->nodes[ast_identifier].info.scope_id};
+        llvm::AllocaInst** A;
+        switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
+        {
+            case HM_OOM: return -1;
+            case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case HM_NEW:
+                *A = func_builder.CreateAlloca(
+                    type_to_llvm(param_type, &ir->ctx),
+                    NULL,
+                    llvm::StringRef(name.data + name.off, name.len));
+                func_builder.CreateStore(F->getArg(param_idx), *A);
+                break;
+        }
+    }
+
+    if (ast_body > -1)
+        gen_block(
+            ir,
+            func_builder,
+            ast,
+            ast_body,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap);
+
+    if (ast_retval > -1)
+        func_builder.CreateRet(gen_expr(
+            ir,
+            func_builder,
+            ast,
+            ast_retval,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap));
+    else
+        func_builder.CreateRetVoid();
+#if defined(ODBCOMPILER_IR_SANITY_CHECK)
+    llvm::verifyFunction(*F);
+#endif
+    continue;
+}
+
+static int
+process_func_exit()
+{
+    ast_id ast_ret = ast->nodes[stmt].func_exit.retval;
+
+    if (ast_ret > -1)
+    {
+        builder.CreateRet(gen_expr(
+            ir,
+            builder,
+            ast,
+            ast_ret,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap));
+    }
+    else
+        builder.CreateRetVoid();
+
+    continue;
+}
+
+static int
+process_func_call()
+{
+    llvm::SmallString<128>             func_name;
+    llvm::SmallVector<llvm::Value*, 8> llvm_args;
+    for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
+         ast_arglist > -1;
+         ast_arglist = ast->nodes[ast_arglist].arglist.next)
+    {
+        llvm::Value* llvm_arg = gen_expr(
+            ir,
+            builder,
+            ast,
+            ast->nodes[ast_arglist].arglist.expr,
+            sdk_type,
+            cmds,
+            filename,
+            source,
+            string_table,
+            cmd_func_table,
+            db_func_table,
+            loop_stack,
+            udt_table,
+            allocamap);
+        llvm_args.push_back(llvm_arg);
+    }
+
+    func_name_from_arglist(
+        func_name,
+        ast,
+        ast->nodes[stmt].func_call.identifier,
+        ast->nodes[stmt].func_call.arglist,
+        source);
+    const auto result = db_func_table->find(func_name);
+    ODBUTIL_DEBUG_ASSERT(
+        result != db_func_table->end(),
+        log_err(
+            "Function {quote:%s} not found in function table\n",
+            func_name.data()));
+
+    llvm::Function* F = result->getValue();
+    builder.CreateCall(F, llvm_args);
+
+    continue;
+}
+
+static int
 process_cast(
     struct stack**     stack,
     struct results**   results,
@@ -2164,26 +1896,33 @@ process_node(
             ODBUTIL_DEBUG_ASSERT(
                 0, log_err("Identifiers should never be pushed\n"));
             return -1;
-        case AST_BINOP:
-        case AST_UNOP:
-        case AST_COND:
-        case AST_COND_BRANCHES:
-        case AST_LOOP1:
-        case AST_LOOP2:
-        case AST_LOOP_FOR1:
-        case AST_LOOP_FOR2:
-        case AST_LOOP_FOR3:
+        case AST_BINOP: return process_binop(stack, results, ir, b, ast);
+        case AST_UNOP: return process_unop();
+        case AST_COND: return process_cond();
+        case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_LOOP1: return process_loop();
+        case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_CONT:
-        case AST_LOOP_EXIT:
+            return process_loop_cont() ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return -1;
+        case AST_LOOP_EXIT: return process_loop_exit();
         case AST_FUNC_POLY:
-        case AST_FUNC1:
-        case AST_FUNC2:
-        case AST_FUNC3:
-        case AST_FUNC4:
-        case AST_FUNC_EXIT:
-        case AST_FUNC_CALL:
+            /* Skip over polymorphic function templates, they do nothing */
+            stack_pop(*stack);
+            return 0;
+        case AST_FUNC1: return process_func();
+        case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_FUNC_EXIT: return process_func_exit();
+        case AST_FUNC_CALL: return process_func_call();
         case AST_FUNC_CALL_OR_CONTAINER_READ:
-        case AST_CONTAINER_WRITE: break;
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return -1;
+        case AST_CONTAINER_WRITE: /* TODO */ break;
         case AST_BOOLEAN_LITERAL: {
             ast_id lit = stack_pop(*stack)->node;
             return results_push(
@@ -2261,10 +2000,10 @@ process_node(
             return results_push(results, string_table->find(Str)->getValue());
         }
         case AST_CAST: return process_cast(stack, results, ir, b, ast);
-        case AST_AS_TYPE:
-        case AST_AS_EXPR:
-        case AST_AS_UDT:
-        case AST_AS_AUTO: break;
+        case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_AS_EXPR: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
     }
 
     log_flc(filename, source, ast_loc(ast, n));
