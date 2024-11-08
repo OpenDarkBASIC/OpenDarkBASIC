@@ -833,7 +833,7 @@ process_var_decl(
     switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
     {
         case HM_OOM: return -1;
-        case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap, (void)0); return -1;
+        case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case HM_NEW:
             if (type == TYPE_UDT_PTR)
             {
