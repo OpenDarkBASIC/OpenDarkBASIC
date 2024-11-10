@@ -160,39 +160,97 @@ A non-exhaustive list of build options:
 | ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS  | OFF     | Link with a shared library build of LLVM                                    |
 | ODBUTIL_LIB_TYPE                     | SHARED  | Build the SDK library either as SHARED or STATIC
 
-Running
-=======
+## Running
 
 You can run the unit tests by executing:
 ```sh
-(cd build/bin && ./odb-tests)
+(cd build-Debug/bin/x86_64/linux/bin && ./odb-tests)
 ```
 
-There is some sample DarkBASIC code in the folder ```dba-sources``` in the root directory which you can try and compile.
-
-In this example we'll parse the file ```iced.dba```, which is an old DarkBASIC Classic sample clocking in at around 1.3k lines of code. Here's the full command required to generate an executable:
+There is some sample DarkBASIC code in the folder ```dba-sources``` in the root
+directory  which   you   can   try  and  compile.  I  recommend  starting  with
+```hello.dba```, which simply prints "hello world":
 
 ```sh
-(cd build/bin &&
-./odbc \
-    --parse-dba ../../dba-sources/iced.dba \
-    -o iced.exe)
+build-Debug/bin/x86_64/linux/bin/odb-cli \
+    --dba dba-sources/hello.dba \
+    --output dba-sources/hello.exe \
+    --exec
 ```
 
-Most likely, though, this will fail because the project is still under heavy development. You can, however, try to output one of the intermediate stages. For example, you could generate a graph of the AST using Graphviz:
+The ```--exec``` flag  tells  the  CLI  to execute the resulting executable. If
+everything worked, you should see the text "Hello World".
+
+You can view the generated LLVM IR by using the ```--ir``` flag:
 
 ```sh
-(cd build/bin &&
-./odbc \
-    --parse-dba ../../dba-sources/iced.dba \
-    --dump-ast-dot \
-    | dot -Tpdf > out.pdf)
+build-Debug/bin/x86_64/linux/bin/odb-cli \
+    --dba dba-sources/hello.dba \
+    --output dba-sources/hello.exe \
+    --ir
 ```
 
-Now you can open ```out.pdf``` with your favorite PDF viewer and see a visual representation of the program's structure.
+You can enable optimization passes by using the ```-O2``` flag:
 
-Fuzzing
-=======
+```sh
+build-Debug/bin/x86_64/linux/bin/odb-cli \
+    --dba dba-sources/hello.dba \
+    --output dba-sources/hello.exe \
+    --ir -O2
+```
+
+You can view the AST produced by the parser with the ```--ast1``` flag. To view
+the AST produced by semantic analysis, also known as the "correct AST", use the
+```ast2``` flag:
+
+```sh
+build-Debug/bin/x86_64/linux/bin/odb-cli \
+    --dba dba-sources/hello.dba \
+    --ast2 \
+| build-Debug/bin/x86_64/linux/bin/odb-asttool \
+| dot -Tx11
+```
+
+The compiler writes the AST in a  raw,  binary  format.  ```odb-asttool```  was
+created to visualize the AST in different  ways. For exapmle, you could add the
+additional option ```--types```  to  see  the  type information of each node in
+Graphviz.
+
+In  this  next example we'll parse the file ```iced.dba```,  which  is  an  old
+DarkBASIC Classic sample clocking in  at  around 1.3k lines of code. Here's the
+full command required to generate an executable:
+
+```sh
+build-Debug/bin/x86_64/linux/bin/odb-cli \
+    --dba dba-sources/iced.dba \
+    --output dba-sources/iced.exe
+```
+
+Most likely, though, this will fail because the  project  is  still under heavy
+development. You can, however, try  to  output  one of the intermediate stages.
+For   example,  you  could  generate  a  graph  of  the  AST  using   Graphviz:
+
+## Self-modifying unit tests
+
+```odb-asttool```  is  also  used to generate  unit  test  code  to  check  the
+structure of the AST. Typically the data is taken directly from a specific unit
+test  case.  ```odb-tests --ast``` will instruct the unit test runner to  write
+out the resulting AST of the selected unit test to stdout:
+
+```sh
+build-Debug/bin/x86_64/linux/bin/odb-tests \
+    --gtest_filter="odbcompiler_semantic_type_check_binop_mul.byte_and_word" \
+    --ast \
+| build-Debug/bin/x86_64/linux/bin/odb-asttool \
+    --format gtest \
+    --node-types \
+    --types
+```
+
+The output should be carefully inspected, and  possibly  also  viewed  visually
+with Graphviz, before updating the unit test with the new code.
+
+## Fuzzing
 
 ```sh
 mkdir build-afl
