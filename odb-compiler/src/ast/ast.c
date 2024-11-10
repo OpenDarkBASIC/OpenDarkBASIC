@@ -881,6 +881,7 @@ ast_func_is_polymorphic(const struct ast* ast, ast_id paramlist)
 ast_id
 ast_func(
     struct ast**     astp,
+    enum scope       scope,
     ast_id           identifier,
     ast_id           as,
     ast_id           paramlist,
@@ -922,6 +923,7 @@ ast_func(
     ast->nodes[f1].func1.identifier = identifier;
     ast->nodes[f1].func1.func2 = f2;
     ast->nodes[f1].func1.endfunction_location = endfunction_location;
+    ast->nodes[f1].func1.scope = scope;
 
     ast->nodes[f2].func2.as = as;
     ast->nodes[f2].func2.func3 = f3;

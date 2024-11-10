@@ -79,7 +79,7 @@ dap.configurations.cpp = {
       if suite and test then
         arg = "--gtest_filter=" .. suite .. "." .. test
         print("Running with " .. arg)
-        dap.set_breakpoint()
+        --dap.set_breakpoint()
         return { arg }
       end
 

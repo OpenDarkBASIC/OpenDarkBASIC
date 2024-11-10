@@ -608,7 +608,7 @@ write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=<%d <font color=\"%s\">AS %s</font>>, xlabel=\"%s\"];\n",
+                "label=<%u <font color=\"%s\">AS %s</font>>, xlabel=\"%s\"];\n",
                 n,
                 style->numeric.color,
                 style->numeric.fontcolor,

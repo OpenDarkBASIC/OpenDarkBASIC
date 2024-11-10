@@ -7,6 +7,14 @@
 struct ast;
 struct cmd_list;
 
+/* Writes to <cwd>/(basename of <filename>).ast */
+ODBCOMPILER_PUBLIC_API int
+ast_export_filename(
+    const struct ast*      ast,
+    const char*            filename,
+    struct db_source       source,
+    const struct cmd_list* cmds);
+
 ODBCOMPILER_PUBLIC_API int
 ast_export(
     const struct ast*      ast,

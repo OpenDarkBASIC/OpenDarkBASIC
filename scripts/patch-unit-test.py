@@ -32,6 +32,8 @@ def find_start_marker(line_num):
     while line_num < len(lines):
         if "/* odb-asttool --format" in lines[line_num]:
             return line_num
+        if "TEST(" in lines[line_num] or "TEST_F(" in lines[line_num]:
+            break
         line_num += 1
     raise RuntimeError("Failed to find start marker")
 
@@ -49,8 +51,8 @@ def find_asttool_args(line_num):
     return line.split(" ")[1:]
 
 
-suite = find_suite_name()
 test_start = find_test_start(line_num)
+suite = find_suite_name()
 test = get_test_name(test_start)
 
 # in "visual mode" the text we write to stdout becomes the text vim replaces
@@ -64,7 +66,7 @@ if visual_mode:
 
 # In "non-visual mode" we generate the entire file, so the insertion has to
 # be done manually
-start_marker = find_start_marker(test_start)
+start_marker = find_start_marker(test_start + 1)
 end_marker = find_end_marker(start_marker + 1)
 asttool_args = find_asttool_args(start_marker)
 
@@ -79,10 +81,10 @@ asttool = subprocess.Popen([
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 asttool_stdout, asttool_stderr = asttool.communicate(input=odbtests_stdout)
 if asttool.returncode != 0:
-    sys.exit(result.returncode)
+    sys.exit(asttool.returncode)
 
 asttool_lines = asttool_stdout.decode("utf8").split("\n")
 lines[start_marker:end_marker+1] = asttool_lines
 
-print("\n".join(lines))
+print("\n".join(lines).strip("\n"))
 

@@ -1,7 +1,6 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
 #include <filesystem>
 
-#include "gmock/gmock.h"
 #include <gtest/gtest.h>
 
 extern "C" {
@@ -25,6 +24,10 @@ DBParserHelper::DBParserHelper()
     cmd_list_init(&cmds);
     globals_init(&globals);
     db_parser_init(&p);
+
+    filename = empty_utf8();
+    utf8_set_cstr(&filename, "test");
+
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
     ast_mutex = mutex_create();
@@ -54,6 +57,7 @@ DBParserHelper::~DBParserHelper()
     db_parser_deinit(&p);
     if (src.text.data)
         db_source_close(&src);
+    utf8_deinit(filename);
     globals_deinit(globals);
     cmd_list_deinit(&cmds);
     plugin_list_deinit(plugins);
@@ -73,25 +77,27 @@ DBParserHelper::parse(const char* code)
         ast_init(&ast);
     }
 
-    int result = db_parse(&p, &ast, "test", src, &cmds);
+    int result = db_parse(&p, &ast, utf8_cstr(filename), src, &cmds);
     if (result != 0)
         return result;
 
-    struct utf8 fname = empty_utf8();
-    utf8_set_cstr(&fname, "test");
-    result = globals_add_declarations_from_ast(&globals, &ast, 0, &fname, &src);
-    utf8_deinit(fname);
-    return result;
+#if defined(ODBCOMPILER_AST_DUMP)
+    const testing::TestInfo* info
+        = testing::UnitTest::GetInstance()->current_test_info();
+    std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
+                          + info->name() + ".ast";
+    std::filesystem::create_directory("ast");
+    ast_export(ast, cstr_ospathc(astfile.c_str()), src, &cmds);
+#endif
+
+    return globals_add_declarations_from_ast(
+        &globals, &ast, 0, &filename, &src);
 }
 
 int
 DBParserHelper::semantic(const struct semantic_check* check)
 {
-    int         result;
-    struct utf8 filename = empty_utf8();
-
-    utf8_set_cstr(&filename, "test");
-    result = semantic_check_run(
+    int result = semantic_check_run(
         check,
         &ast,
         1,
@@ -102,7 +108,14 @@ DBParserHelper::semantic(const struct semantic_check* check)
         plugins,
         &cmds,
         globals);
-    utf8_deinit(filename);
+#if defined(ODBCOMPILER_AST_DUMP)
+    const testing::TestInfo* info
+        = testing::UnitTest::GetInstance()->current_test_info();
+    std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
+                          + info->name() + ".ast";
+    std::filesystem::create_directory("ast");
+    ast_export(ast, cstr_ospathc(astfile.c_str()), src, &cmds);
+#endif
     return result;
 }
 

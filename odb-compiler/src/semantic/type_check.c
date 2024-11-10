@@ -311,8 +311,7 @@ local_init_udt(
 }
 
 static ast_id
-cast_to_type_copy_type_info(
-    struct ast** astp, ast_id expr, enum type target_type)
+cast_to_type(struct ast** astp, ast_id expr, enum type target_type)
 {
     ast_id cast, as_type;
     as_type = ast_as_type(astp, target_type, ast_loc(*astp, expr));
@@ -325,6 +324,9 @@ cast_to_type_copy_type_info(
 
     (*astp)->nodes[as_type].info.type_info = target_type;
     (*astp)->nodes[cast].info.type_info = target_type;
+
+    (*astp)->nodes[as_type].info.scope_id = ast_scope(*astp, expr);
+    (*astp)->nodes[cast].info.scope_id = ast_scope(*astp, expr);
 
     return cast;
 }
@@ -346,7 +348,7 @@ cast_expr_to_boolean(
             warn_boolean_implicit_evaluation(*astp, n, filename, source);
             /* fallthrough */
         case TC_ALLOW: {
-            ast_id cast = cast_to_type_copy_type_info(astp, n, TYPE_BOOL);
+            ast_id cast = cast_to_type(astp, n, TYPE_BOOL);
             if (cast < 0)
                 return -1;
 
@@ -747,7 +749,7 @@ convert_to_var_decl_with_cast(
                 break;
         }
 
-        cast = cast_to_type_copy_type_info(astp, expr, ident_type);
+        cast = cast_to_type(astp, expr, ident_type);
         if (cast < -1)
             return -1;
         (*astp)->nodes[ass].assignment.expr = cast;
@@ -852,7 +854,7 @@ process_assignment(
                 break;
         }
 
-        cast = cast_to_type_copy_type_info(astp, expr, lvalue_type);
+        cast = cast_to_type(astp, expr, lvalue_type);
         if (cast < -1)
             return DEP_ERROR;
         (*astp)->nodes[ass].assignment.expr = cast;
@@ -1151,7 +1153,7 @@ process_var_decl(
                 break;
         }
 
-        cast = cast_to_type_copy_type_info(astp, init_expr, local->type);
+        cast = cast_to_type(astp, init_expr, local->type);
         if (cast < -1)
             return DEP_ERROR;
         (*astp)->nodes[var_decl].var_decl1.init_expr = cast;
@@ -1250,11 +1252,15 @@ process_udt_decl(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
+    type_identifier = ast->nodes[udt_decl].udt_decl.type_identifier;
     members = ast->nodes[udt_decl].udt_decl.members;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, members) == AST_BLOCK,
         log_err("type: %d\n", ast_node_type(ast, members)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, type_identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, type_identifier)));
 
     if (ast_type_info(ast, members) == TYPE_INVALID)
     {
@@ -1263,7 +1269,6 @@ process_udt_decl(
     }
 
     /* Check if another module has already declared the type globally */
-    type_identifier = ast->nodes[udt_decl].udt_decl.type_identifier;
     type_name = ast->nodes[type_identifier].identifier.name;
     key = utf8_span_view(source, type_name);
     global = globals_find(globals, key);
@@ -1314,6 +1319,7 @@ process_udt_decl(
     }
 
     ast->nodes[udt_decl].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[type_identifier].info.type_info = TYPE_UDT_PTR;
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -1849,8 +1855,7 @@ process_binop(
 
             if (ast_type_info(*astp, conv.src) != conv.type)
             {
-                ast_id cast
-                    = cast_to_type_copy_type_info(astp, conv.src, conv.type);
+                ast_id cast = cast_to_type(astp, conv.src, conv.type);
                 if (cast < 0)
                     return DEP_ERROR;
 
@@ -1897,8 +1902,7 @@ process_binop(
             if (base_type != base_target_type)
             {
                 /* Cast is required, insert one in the AST */
-                ast_id cast_lhs
-                    = cast_to_type_copy_type_info(astp, lhs, base_target_type);
+                ast_id cast_lhs = cast_to_type(astp, lhs, base_target_type);
                 if (cast_lhs < 0)
                     return DEP_ERROR;
                 (*astp)->nodes[binop].binop.left = cast_lhs;
@@ -1943,8 +1947,7 @@ process_binop(
             if (exp_type != exp_target_type)
             {
                 /* Cast is required, insert one in the AST */
-                ast_id cast_rhs
-                    = cast_to_type_copy_type_info(astp, rhs, exp_target_type);
+                ast_id cast_rhs = cast_to_type(astp, rhs, exp_target_type);
                 if (cast_rhs < 0)
                     return DEP_ERROR;
                 (*astp)->nodes[binop].binop.right = cast_rhs;
@@ -2043,8 +2046,7 @@ process_binop(
 
             if (ast_type_info(*astp, conv.src) != conv.type)
             {
-                ast_id cast
-                    = cast_to_type_copy_type_info(astp, conv.src, conv.type);
+                ast_id cast = cast_to_type(astp, conv.src, conv.type);
                 if (cast < 0)
                     return DEP_ERROR;
 
@@ -2301,7 +2303,7 @@ process_func_return(
                 break;
         }
 
-        cast = cast_to_type_copy_type_info(astp, retval, current_ret_type);
+        cast = cast_to_type(astp, retval, current_ret_type);
         if (cast < -1)
             return DEP_ERROR;
 
@@ -2469,8 +2471,7 @@ instantiate_func(
     const char*      call_source)
 {
     int32_t scope;
-    ast_id  f1, f2, f3, f4, poly_block, func_block, paramlist, body, retval,
-        pl_node, al_node;
+    ast_id  f1, f2, f3, poly_block, func_block, paramlist, pl_node, al_node;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type((*func_astp), func_poly) == AST_FUNC_POLY,
@@ -2491,10 +2492,7 @@ instantiate_func(
         return -1;
     f2 = (*func_astp)->nodes[f1].func1.func2;
     f3 = (*func_astp)->nodes[f2].func2.func3;
-    f4 = (*func_astp)->nodes[f3].func3.func4;
     paramlist = (*func_astp)->nodes[f3].func3.paramlist;
-    body = (*func_astp)->nodes[f4].func4.body;
-    retval = (*func_astp)->nodes[f4].func4.retval;
 
     /* Insert new function into AST after the polymorphic block */
     func_block = ast_block(func_astp, f1, ast_loc(*func_astp, f1));
@@ -2503,6 +2501,7 @@ instantiate_func(
     (*func_astp)->nodes[func_block].block.next
         = (*func_astp)->nodes[poly_block].block.next;
     (*func_astp)->nodes[poly_block].block.next = func_block;
+    (*func_astp)->nodes[func_block].info.scope_id = ast_scope(*func_astp, f1);
 
     /* The arguments passed to the function determine the parameter types.
      * We copy them over here. Some polymorphic functions are "partial",
@@ -2550,14 +2549,10 @@ instantiate_func(
      * polymorphic function */
     (*func_astp)->nodes[f1].info.node_type = AST_FUNC1;
 
-    /* The parameter list, body and return value exist in a new scope */
+    /* The parameter list, body and return value exist in a new scope. These are
+     * all children of func3 */
     scope = find_new_scope(*func_astp);
-    if (paramlist > -1)
-        set_scope_recurse(*func_astp, paramlist, scope);
-    if (body > -1)
-        set_scope_recurse(*func_astp, body, scope);
-    if (retval > -1)
-        set_scope_recurse(*func_astp, retval, scope);
+    set_scope_recurse(*func_astp, f3, scope);
 
     return f1;
 }
@@ -2803,7 +2798,7 @@ process_func_or_container_ref(
                         break;
                 }
 
-                cast = cast_to_type_copy_type_info(astp, al_node, param_type);
+                cast = cast_to_type(astp, al_node, param_type);
                 if (cast < -1)
                     return DEP_ERROR;
                 (*astp)->nodes[al_node].arglist.expr = cast;
@@ -3174,7 +3169,7 @@ process_node(
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
 #include <stdio.h>
-static void
+static int
 sanity_check(
     struct ast*            ast,
     const struct cmd_list* cmds,
@@ -3218,17 +3213,13 @@ sanity_check(
         }
     }
 
-    if (error)
-    {
-        ast_export(ast, cstr_ospathc("type_check.ast"), source, cmds);
-        fflush(stderr);
-    }
-
     ODBUTIL_DEBUG_ASSERT(
         !error,
         log_note("This should not happen, and means there is a bug in the "
                  "semantic "
                  "analysis of the compiler.\n"));
+
+    return error;
 }
 #endif
 
@@ -3300,7 +3291,7 @@ type_check(
                     const char* source = sources[tu_id].text.data;
                     log_flc(filename, source, ast_loc(*astp, n));
                     log_err(
-                        "Expression depends on itself. Cannot resolve type "
+                        "Type depends on itself. Cannot resolve type "
                         "information.\n");
                     log_excerpt_1(source, ast_loc(*astp, n), "", 0);
                     return_code = -1;
@@ -3316,7 +3307,8 @@ type_check(
         }
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-        ast_export(*astp, cstr_ospathc("type_check.ast"), sources[tu_id], cmds);
+        ast_export_filename(
+            *astp, utf8_cstr(filenames[tu_id]), sources[tu_id], cmds);
 #endif
     }
 
@@ -3327,8 +3319,10 @@ type_check(
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (return_code == 0)
-        sanity_check(*astp, cmds, utf8_cstr(filenames[tu_id]), sources[tu_id]);
-    ast_export(*astp, cstr_ospathc("type_check.ast"), sources[tu_id], cmds);
+        return_code = sanity_check(
+            *astp, cmds, utf8_cstr(filenames[tu_id]), sources[tu_id]);
+    ast_export_filename(
+        *astp, utf8_cstr(filenames[tu_id]), sources[tu_id], cmds);
 #endif
 
     return return_code;

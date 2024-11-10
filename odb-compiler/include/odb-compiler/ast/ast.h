@@ -576,6 +576,7 @@ ast_id ast_loop_cont(struct ast** astp, struct utf8_span name, ast_id step, stru
 ast_id ast_loop_exit(struct ast** astp, struct utf8_span name, struct utf8_span location);
 ast_id ast_func(
     struct ast** astp,
+    enum scope scope,
     ast_id identifier,
     ast_id as,
     ast_id paramlist,

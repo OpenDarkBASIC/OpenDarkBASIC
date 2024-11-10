@@ -291,14 +291,7 @@ parse_failed:
     if (*astp != NULL)
         ast_gc(*astp);
 #if defined(ODBCOMPILER_AST_DUMP)
-    if (*astp != NULL)
-    {
-        struct utf8 fname = empty_utf8();
-        utf8_set_cstr(&fname, filename);
-        utf8_append_cstr(&fname, ".ast");
-        ast_export(*astp, utf8_ospathc(fname), source, cmds);
-        utf8_deinit(fname);
-    }
+    ast_export_filename(*astp, filename, source, cmds);
 #endif
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (*astp != NULL)

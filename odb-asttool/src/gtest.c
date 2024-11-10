@@ -30,9 +30,9 @@
     X(AST_LOOP_FOR1, "for1_", "loop_for1", "loop_for2", "init")                \
     X(AST_LOOP_FOR2, "for2_", "loop_for2", "loop_for3", "end")                 \
     X(AST_LOOP_FOR3, "for3_", "loop_for3", "step", "next")                     \
-    X(AST_LOOP_CONT, "cont", "loop_cont", "step", "")                          \
+    X(AST_LOOP_CONT, "cont", "cont", "step", "")                               \
     X(AST_LOOP_EXIT, "exit", "loop_exit", "", "")                              \
-    X(AST_FUNC_POLY, "func_poly", "func_poly", "decl", "")                     \
+    X(AST_FUNC_POLY, "func_poly", "func_poly", "func", "")                     \
     X(AST_FUNC1, "f1_", "func1", "func2", "identifier")                        \
     X(AST_FUNC2, "f2_", "func2", "func3", "as")                                \
     X(AST_FUNC3, "f3_", "func3", "func4", "paramlist")                         \
@@ -65,9 +65,9 @@
     X(AST_AS_AUTO, "as_auto", "as_auto", "", "")
 
 static void
-write_enum_name(FILE* fp, const struct ast* ast, ast_id n)
+write_node_enum_name(FILE* fp, enum ast_type node_type)
 {
-    switch (ast_node_type(ast, n))
+    switch (node_type)
     {
 #define X(enum, var, node, left, right)                                        \
     case enum: fprintf(fp, #enum); break;
@@ -90,15 +90,52 @@ write_binop_enum_name(FILE* fp, enum binop_type op)
 }
 
 static void
-write_type_enum_name(FILE* fp, const struct ast* ast, ast_id n)
+write_unop_enum_name(FILE* fp, enum unop_type op)
 {
-    switch (ast_type_info(ast, n))
+    switch (op)
+    {
+#define X(enum, tok)                                                           \
+    case UNOP_##enum: fprintf(fp, "UNNOP_" #enum); break;
+        UNOP_LIST
+#undef X
+    }
+}
+
+static void
+write_type_enum_name(FILE* fp, enum type type)
+{
+    switch (type)
     {
         case TYPE_INVALID: fprintf(fp, "TYPE_INVALID"); break;
 #define X(name, c)                                                             \
     case TYPE_##name: fprintf(fp, "TYPE_" #name); break;
             TYPE_LIST
 #undef X
+    }
+}
+
+static void
+write_scope_enum_name(FILE* fp, enum scope scope)
+{
+    switch (scope)
+    {
+        case SCOPE_GLOBAL: fprintf(fp, "SCOPE_GLOBAL"); break;
+        case SCOPE_LOCAL: fprintf(fp, "SCOPE_LOCAL"); break;
+    }
+}
+
+static void
+write_type_annotation_enum_name(FILE* fp, enum type_annotation annotation)
+{
+    switch (annotation)
+    {
+        case TA_NONE: fprintf(fp, "TA_NONE"); break;
+        case TA_BOOL: fprintf(fp, "TA_BOOL"); break;
+        case TA_U16: fprintf(fp, "TA_U16"); break;
+        case TA_I64: fprintf(fp, "TA_I64"); break;
+        case TA_F32: fprintf(fp, "TA_F32"); break;
+        case TA_F64: fprintf(fp, "TA_F64"); break;
+        case TA_STRING: fprintf(fp, "TA_STRING"); break;
     }
 }
 
@@ -173,12 +210,12 @@ write_unpack_ast(
     write_getter(fp, ast, p, n);
     fprintf(fp, ";\n");
 
-    if (cfg->with_node_asserts)
+    if (cfg->with_node_types)
     {
         fprintf(fp, "    ASSERT_THAT(ast_node_type(ast, ");
         write_var_name(fp, ast, n);
         fprintf(fp, "), Eq(");
-        write_enum_name(fp, ast, n);
+        write_node_enum_name(fp, ast_node_type(ast, n));
         fprintf(fp, "));\n");
 
         if (ast_node_type(ast, n) == AST_BLOCK)
@@ -206,18 +243,106 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
         case AST_GC: break;
         case AST_BLOCK: break;
         case AST_END: break;
-        case AST_ARGLIST: break;
-        case AST_PARAMLIST: break;
-        case AST_COMMAND: break;
-        case AST_ASSIGNMENT: break;
-        case AST_VAR_DECL1: break;
-        case AST_VAR_DECL2: break;
+        case AST_ARGLIST:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].arglist.combined_location, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].arglist.combined_location.off,
+                ast->nodes[n].arglist.combined_location.len);
+            break;
+        case AST_PARAMLIST:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].paramlist.combined_location, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].paramlist.combined_location.off,
+                ast->nodes[n].paramlist.combined_location.len);
+            break;
+        case AST_COMMAND:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(fp, "].cmd.id, Eq(%d));\n", ast->nodes[n].cmd.id);
+            break;
+        case AST_ASSIGNMENT:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].assignment.op_location, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].assignment.op_location.off,
+                ast->nodes[n].assignment.op_location.len);
+            break;
+        case AST_VAR_DECL1:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].var_decl1.scope_location, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].var_decl1.scope_location.off,
+                ast->nodes[n].var_decl1.scope_location.len);
+
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(fp, "].var_decl1.scope, Eq(");
+            write_scope_enum_name(fp, ast->nodes[n].var_decl1.scope);
+            fprintf(fp, "));\n");
+            break;
+        case AST_VAR_DECL2:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].var_decl2.op_location, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].var_decl2.op_location.off,
+                ast->nodes[n].var_decl2.op_location.len);
+            break;
         case AST_VAR_READ: break;
         case AST_VAR_WRITE: break;
         case AST_UDT_DECL: break;
-        case AST_UDT_INIT: break;
-        case AST_UDT_READ: break;
-        case AST_UDT_WRITE: break;
+        case AST_UDT_INIT:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].udt_init.type_name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].udt_init.type_name.off,
+                ast->nodes[n].udt_init.type_name.len);
+            break;
+        case AST_UDT_READ:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].udt_read.type_name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].udt_read.type_name.off,
+                ast->nodes[n].udt_read.type_name.len);
+
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].udt_read.index, Eq(%d));\n",
+                ast->nodes[n].udt_read.index);
+            break;
+        case AST_UDT_WRITE:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].udt_write.type_name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].udt_write.type_name.off,
+                ast->nodes[n].udt_write.type_name.len);
+
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].udt_write.index, Eq(%d));\n",
+                ast->nodes[n].udt_write.index);
+            break;
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
@@ -227,6 +352,13 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
                 "].identifier.name, Utf8SpanEq(%d, %d));\n",
                 ast->nodes[n].identifier.name.off,
                 ast->nodes[n].identifier.name.len);
+
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(fp, "].identifier.annotation, Eq(");
+            write_type_annotation_enum_name(
+                fp, ast->nodes[n].identifier.annotation);
+            fprintf(fp, "));\n");
             break;
         case AST_BINOP:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
@@ -234,19 +366,79 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
             fprintf(fp, "].binop.op, Eq(");
             write_binop_enum_name(fp, ast->nodes[n].binop.op);
             fprintf(fp, "));\n");
+
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].binop.op_location, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].binop.op_location.off,
+                ast->nodes[n].binop.op_location.len);
             break;
-        case AST_UNOP: break;
+        case AST_UNOP:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(fp, "].unop.op, Eq(");
+            write_unop_enum_name(fp, ast->nodes[n].unop.op);
+            fprintf(fp, "));\n");
+            break;
         case AST_COND: break;
         case AST_COND_BRANCHES: break;
-        case AST_LOOP1: break;
+        case AST_LOOP1:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].loop1.name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].loop1.name.off,
+                ast->nodes[n].loop1.name.len);
+
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].loop1.implicit_name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].loop1.implicit_name.off,
+                ast->nodes[n].loop1.implicit_name.len);
+            break;
         case AST_LOOP2: break;
         case AST_LOOP_FOR1: break;
         case AST_LOOP_FOR2: break;
         case AST_LOOP_FOR3: break;
-        case AST_LOOP_CONT: break;
-        case AST_LOOP_EXIT: break;
+        case AST_LOOP_CONT:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].cont.name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].cont.name.off,
+                ast->nodes[n].cont.name.len);
+            break;
+        case AST_LOOP_EXIT:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].loop_exit.name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].loop_exit.name.off,
+                ast->nodes[n].loop_exit.name.len);
+            break;
         case AST_FUNC_POLY: break;
-        case AST_FUNC1: break;
+        case AST_FUNC1:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].func1.endfunction_location, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].func1.endfunction_location.off,
+                ast->nodes[n].func1.endfunction_location.len);
+
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(fp, "].func1.scope, Eq(");
+            write_scope_enum_name(fp, ast->nodes[n].func1.scope);
+            fprintf(fp, "));\n");
+            break;
         case AST_FUNC2: break;
         case AST_FUNC3: break;
         case AST_FUNC4: break;
@@ -300,7 +492,7 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
             write_var_name(fp, ast, n);
             fprintf(
                 fp,
-                "].float_literal.value, Eq(%f));\n",
+                "].float_literal.value, Eq(%ff));\n",
                 ast->nodes[n].float_literal.value);
             break;
         case AST_DOUBLE_LITERAL:
@@ -311,11 +503,33 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
                 "].double_literal.value, Eq(%f));\n",
                 ast->nodes[n].double_literal.value);
             break;
-        case AST_STRING_LITERAL: break;
+        case AST_STRING_LITERAL:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].string_literal.value, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].string_literal.str.off,
+                ast->nodes[n].string_literal.str.len);
+            break;
         case AST_CAST: break;
-        case AST_AS_TYPE: break;
+        case AST_AS_TYPE:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(fp, "].as_type.type, Eq(");
+            write_type_enum_name(fp, ast->nodes[n].as_type.type);
+            fprintf(fp, "));\n");
+            break;
         case AST_AS_EXPR: break;
-        case AST_AS_UDT: break;
+        case AST_AS_UDT:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].as_udt.type_name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].as_udt.type_name.off,
+                ast->nodes[n].as_udt.type_name.len);
+            break;
         case AST_AS_AUTO: break;
     }
 }
@@ -334,7 +548,7 @@ write_type_check(FILE* fp, const struct ast* ast, ast_id n)
     fprintf(fp, "    ASSERT_THAT(ast_type_info(ast, ");
     write_var_name(fp, ast, n);
     fprintf(fp, "), Eq(");
-    write_type_enum_name(fp, ast, n);
+    write_type_enum_name(fp, ast_type_info(ast, n));
     fprintf(fp, "));\n");
 }
 
@@ -344,6 +558,22 @@ write_type_checks(FILE* fp, const struct ast* ast)
     ast_id n;
     for (n = 0; n != ast_count(ast); ++n)
         write_type_check(fp, ast, n);
+}
+
+static void
+write_scope_check(FILE* fp, const struct ast* ast, ast_id n)
+{
+    fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+    write_var_name(fp, ast, n);
+    fprintf(fp, "].info.scope_id, Eq(%d));\n", ast->nodes[n].info.scope_id);
+}
+
+static void
+write_scope_checks(FILE* fp, const struct ast* ast)
+{
+    ast_id n;
+    for (n = 0; n != ast_count(ast); ++n)
+        write_scope_check(fp, ast, n);
 }
 
 int
@@ -359,8 +589,10 @@ export_gtest(
         fprintf(fp, " --types");
     if (cfg->with_scopes)
         fprintf(fp, " --scopes");
-    if (cfg->with_node_asserts)
-        fprintf(fp, " --node-asserts");
+    if (cfg->with_node_types)
+        fprintf(fp, " --node-types");
+    if (cfg->with_node_properties)
+        fprintf(fp, " --node-properties");
     fprintf(fp, " */");
 
     fprintf(fp, "\n");
@@ -369,13 +601,22 @@ export_gtest(
     fprintf(fp, "\n");
     write_unpack_ast(fp, ast, -1, ast->root, source, cmds, cfg);
 
-    fprintf(fp, "\n");
-    write_property_checks(fp, ast);
+    if (cfg->with_node_properties)
+    {
+        fprintf(fp, "\n");
+        write_property_checks(fp, ast);
+    }
 
     if (cfg->with_types)
     {
         fprintf(fp, "\n");
         write_type_checks(fp, ast);
+    }
+
+    if (cfg->with_scopes)
+    {
+        fprintf(fp, "\n");
+        write_scope_checks(fp, ast);
     }
 
     fprintf(fp, "    /* odb-asttool end */");

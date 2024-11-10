@@ -187,7 +187,12 @@ calculate_scope_ids(
     return 0;
 }
 
-static const struct semantic_check* depends[] = {NULL};
+static const struct semantic_check* depends[] = {
+    /* These are all passes that add new nodes to the AST, and don't want to
+       care about calculating scope IDs */
+    &semantic_loop_for,
+    &semantic_loop_cont,
+    NULL};
 
 const struct semantic_check semantic_calculate_scope_ids
     = {calculate_scope_ids, depends, "calculate_scope_ids"};

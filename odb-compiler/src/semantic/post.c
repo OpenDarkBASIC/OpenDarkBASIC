@@ -1,5 +1,4 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/semantic/post.h"
 

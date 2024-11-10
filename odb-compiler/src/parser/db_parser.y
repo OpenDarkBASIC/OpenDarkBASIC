@@ -504,7 +504,7 @@ loop_name
 func
   : maybe_scope FUNCTION identifier '(' maybe_paramlist ')' maybe_as_type
         maybe_block
-    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $7, $5, $8, $10, @9, @$); }
+    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $1, $3, $7, $5, $8, $10, @9, @$); }
   ;
 func_exit
   : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }

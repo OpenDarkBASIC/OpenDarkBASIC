@@ -487,6 +487,7 @@ typecheck_warnings(
         /* Insert cast to correct type if necessary */
         if (arg_type != param_type)
         {
+            ast_id as;
             ast_id cast
                 = ast_cast_to_type(astp, arg, param_type, ast_loc(ast, arg));
             if (cast < -1)
@@ -494,6 +495,10 @@ typecheck_warnings(
             ast = *astp;
             ast->nodes[arglist].arglist.expr = cast;
             ast->nodes[cast].info.type_info = param_type;
+
+            as = ast->nodes[cast].cast.as;
+            ast->nodes[cast].info.scope_id = ast_scope(ast, arg);
+            ast->nodes[as].info.scope_id = ast_scope(ast, arg);
         }
     }
 

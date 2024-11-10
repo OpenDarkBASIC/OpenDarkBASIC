@@ -13,5 +13,6 @@ struct cfg
     enum export_type export_type : 2;
     unsigned         with_scopes : 1;
     unsigned         with_types : 1;
-    unsigned        with_node_asserts : 1;
+    unsigned         with_node_types : 1;
+    unsigned         with_node_properties : 1;
 };

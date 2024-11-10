@@ -90,6 +90,27 @@ error:
 }
 
 int
+ast_export_filename(
+    const struct ast*      ast,
+    const char*            filename,
+    struct db_source       source,
+    const struct cmd_list* cmds)
+{
+    int           result;
+    struct ospath fname = empty_ospath();
+
+    if (ast == NULL)
+        return 0;
+
+    ospath_set_cstr(&fname, filename);
+    ospath_filename(&fname);
+    utf8_append_cstr(&fname.str, ".ast");
+    result = ast_export(ast, ospathc(fname), source, cmds);
+    ospath_deinit(fname);
+    return result;
+}
+
+int
 ast_export(
     const struct ast*      ast,
     struct ospathc         filepath,

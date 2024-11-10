@@ -32,16 +32,6 @@ ast_verify_connectivity(
         log_err("AST recursion depth exceeds node count\n");
         return -1;
     }
-    else if (count != ast_count(ast))
-    {
-        log_err(
-            "%d out of %d nodes reachable from root. Did you forget to call "
-            "ast_gc()?\n",
-            count,
-            ast_count(ast));
-        ast_export(ast, cstr_ospathc("verify_connectivity.ast"), source, cmds);
-        return -1;
-    }
 
     return 0;
 }

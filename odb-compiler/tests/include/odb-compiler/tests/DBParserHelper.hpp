@@ -31,6 +31,7 @@ struct DBParserHelper
     struct cmd_list     cmds;
     struct globals*     globals;
     struct db_parser    p;
+    struct utf8         filename;
     struct db_source    src;
     struct ast*         ast;
     struct mutex*       ast_mutex;

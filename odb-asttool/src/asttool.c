@@ -28,9 +28,10 @@ print_help(void)
         "Available options:\n"
         "  {emph1:-i} <{emph2:file}>        Read AST from a file instead of stdin.\n"
         "  {emph1:-o} <{emph2:file}>        Write result to a file instead of stdout.\n"
-        "  {emph1:--scopes}         Include scope_id for each node.\n"
-        "  {emph1:--types}          Include node type information.\n"
-        "  {emph1:--node-asserts}   Include asserts for node types.\n"
+        "  {emph1:--scopes}           Include scope_id for each node.\n"
+        "  {emph1:--types}            Include node type information.\n"
+        "  {emph1:--node-types}       Include asserts for node types.\n"
+        "  {emph1:--node-properties}  Include asserts for node properties (names, values, etc.)\n"
         "  {emph1:--format} <{emph2:name}>  Output format. Defaults to {emph2:graphviz}. Available formats:\n"
         "           {emph2:graphviz}  Graphviz DOT format.\n"
         "           {emph2:gtest}     Generate Googletest code that will check the  structure of\n"
@@ -79,8 +80,10 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
             cfg->with_scopes = 1;
         else if (strcmp(argv[i], "--types") == 0)
             cfg->with_types = 1;
-        else if (strcmp(argv[i], "--node-asserts") == 0)
-            cfg->with_node_asserts = 1;
+        else if (strcmp(argv[i], "--node-types") == 0)
+            cfg->with_node_types = 1;
+        else if (strcmp(argv[i], "--node-properties") == 0)
+            cfg->with_node_properties = 1;
         else
         {
             log_err("Unknown option {quote:%s}\n", argv[i]);

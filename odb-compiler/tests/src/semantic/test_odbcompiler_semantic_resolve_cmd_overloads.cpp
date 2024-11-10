@@ -1,5 +1,6 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
 #include "odb-util/tests/LogHelper.hpp"
+#include "odb-util/tests/Utf8Helper.hpp"
 
 #include <gmock/gmock.h>
 
@@ -89,3 +90,4 @@ TEST_F(NAME, command_call_inside_func)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0)) << log().text;
 }
+

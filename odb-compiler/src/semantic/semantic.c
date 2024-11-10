@@ -132,11 +132,7 @@ run_check(
             const struct ast* ast = ctx->tus[ctx->tu_id];
             const char*       filename = utf8_cstr(ctx->filenames[ctx->tu_id]);
             struct db_source  source = ctx->sources[ctx->tu_id];
-            struct utf8       fname = empty_utf8();
-            utf8_set_cstr(&fname, filename);
-            utf8_append_cstr(&fname, ".ast");
-            ast_export(ast, utf8_ospathc(fname), source, ctx->cmds);
-            utf8_deinit(fname);
+            ast_export_filename(ast, filename, source, ctx->cmds);
         }
 #endif
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
