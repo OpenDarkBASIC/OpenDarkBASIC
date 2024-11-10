@@ -1,4 +1,6 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_export.h"
+#include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
@@ -114,20 +116,36 @@ run_check(
 
     if (ptr_set_emplace_new(visited, check) != NULL)
     {
-        if (check->execute(
-                ctx->tus,
-                ctx->tu_count,
-                ctx->tu_id,
-                ctx->tu_mutexes,
-                ctx->filenames,
-                ctx->sources,
-                ctx->plugins,
-                ctx->cmds,
-                ctx->globals)
-            < 0)
+        int result = check->execute(
+            ctx->tus,
+            ctx->tu_count,
+            ctx->tu_id,
+            ctx->tu_mutexes,
+            ctx->filenames,
+            ctx->sources,
+            ctx->plugins,
+            ctx->cmds,
+            ctx->globals);
+
+#if defined(ODBCOMPILER_AST_DUMP)
         {
-            return -1;
+            const struct ast* ast = ctx->tus[ctx->tu_id];
+            const char*       filename = utf8_cstr(ctx->filenames[ctx->tu_id]);
+            struct db_source  source = ctx->sources[ctx->tu_id];
+            struct utf8       fname = empty_utf8();
+            utf8_set_cstr(&fname, filename);
+            utf8_append_cstr(&fname, ".ast");
+            ast_export(ast, utf8_ospathc(fname), source, ctx->cmds);
+            utf8_deinit(fname);
         }
+#endif
+#if defined(ODBCOMPILER_AST_SANITY_CHECK)
+        if (result == 0)
+            result = ast_sanity_check(
+                ctx->tus[ctx->tu_id], ctx->sources[ctx->tu_id], ctx->cmds);
+#endif
+
+        return result;
     }
 
     return 0;
@@ -188,6 +206,7 @@ semantic_check_run(
     }
 
     ptr_set_deinit(check_visited);
+
     return 0;
 }
 

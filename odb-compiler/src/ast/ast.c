@@ -41,7 +41,7 @@ new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
     ast = *astp;
 
     ast->nodes[n].info.location = location;
-    ast->nodes[n].info.scope_id = 0;
+    ast->nodes[n].info.scope_id = -1;
     ast->nodes[n].info.node_type = type;
     ast->nodes[n].info.type_info = TYPE_INVALID;
     ast->nodes[n].base.left = -1;
@@ -410,7 +410,7 @@ ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location)
 ast_id
 ast_udt_decl(
     struct ast**     astp,
-    struct utf8_span type_name,
+    ast_id           type_identifier,
     ast_id           members_block,
     struct utf8_span location)
 {
@@ -419,10 +419,13 @@ ast_udt_decl(
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, type_identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, type_identifier)));
+    ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, members_block) == AST_BLOCK,
         log_err("type: %d\n", ast_node_type(*astp, members_block)));
 
-    (*astp)->nodes[n].udt_decl.type_name = type_name;
+    (*astp)->nodes[n].udt_decl.type_identifier = type_identifier;
     (*astp)->nodes[n].udt_decl.members = members_block;
 
     return n;

@@ -35,4 +35,7 @@ struct DBParserHelper
     struct ast*         ast;
     struct mutex*       ast_mutex;
     struct mutex*       cmd_list_mutex;
+
+private:
+    void writeAST();
 };

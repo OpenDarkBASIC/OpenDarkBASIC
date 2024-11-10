@@ -4,7 +4,7 @@ dap.set_log_level("TRACE")
 
 dap.adapters.lldb = {
   type = "executable",
-  command = "/usr/bin/lldb-dap-18",
+  command = "/usr/bin/lldb-dap",
   name = "lldb"
 }
 
@@ -13,16 +13,16 @@ dap.configurations.cpp = {
     name        = "Unit Tests",
     type        = "lldb",
     request     = "launch",
-    program     = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin/odb-tests",
-    cwd         = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin",
+    program     = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-tests",
+    cwd         = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin",
     stopOnEntry = false,
   },
   {
     name        = "Unit Tests current Suite",
     type        = "lldb",
     request     = "launch",
-    program     = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin/odb-tests",
-    cwd         = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin",
+    program     = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-tests",
+    cwd         = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin",
     stopOnEntry = false,
     args        = function()
       local buf = vim.api.nvim_get_current_buf()
@@ -45,8 +45,8 @@ dap.configurations.cpp = {
     name        = "Unit Test under Cursor",
     type        = "lldb",
     request     = "launch",
-    program     = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin/odb-tests",
-    cwd         = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin",
+    program     = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-tests",
+    cwd         = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin",
     stopOnEntry = false,
     args        = function()
       local buf = vim.api.nvim_get_current_buf()
@@ -90,12 +90,12 @@ dap.configurations.cpp = {
     name        = "Run DBA",
     type        = "lldb",
     request     = "launch",
-    program     = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin/odb-cli",
-    cwd         = "${workspaceFolder}/build-debug/bin",
+    program     = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-cli",
+    cwd         = "${workspaceFolder}/build-Debug/bin",
     stopOnEntry = false,
     args        = function()
       local dba_file = vim.fn.input('Path to DBA: ', vim.fn.getcwd() .. '/dba-sources/', 'file')
-      local output = "${workspaceFolder}/build-debug/bin/" .. vim.fs.basename(dba_file) .. ".exe"
+      local output = "${workspaceFolder}/build-Debug/bin/" .. vim.fs.basename(dba_file) .. ".exe"
       return { "-b", "-c", "--dba", dba_file, "--output", output, "--exec" }
     end,
   },
@@ -103,17 +103,17 @@ dap.configurations.cpp = {
     name        = "Run playground DBA",
     type        = "lldb",
     request     = "launch",
-    program     = "${workspaceFolder}/build-debug/bin/x86_64/linux/bin/odb-cli",
-    cwd         = "${workspaceFolder}/build-debug/bin/playground",
+    program     = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-cli",
+    cwd         = "${workspaceFolder}/build-Debug/bin/playground",
     stopOnEntry = false,
     args        = function()
       local extra_args = vim.fn.input('Extra args: ')
       local args = {
         "-b",
         "--dba",
-        "${workspaceFolder}/build-debug/bin/playground/playground.dba",
+        "${workspaceFolder}/build-Debug/bin/playground/playground.dba",
         "--output",
-        "${workspaceFolder}/build-debug/bin/playground/playground",
+        "${workspaceFolder}/build-Debug/bin/playground/playground",
         "--exec",
       }
       if #extra_args > 0 then
@@ -126,7 +126,7 @@ dap.configurations.cpp = {
     name = "CLI Gen",
     type = "lldb",
     request = "launch",
-    program = "${workspaceFolder}/build-debug/bin/hosttools/bin/odb-cligen",
+    program = "${workspaceFolder}/build-Debug/bin/hosttools/bin/odb-cligen",
     cwd = "${workspaceFolder}",
     stopOnEntry = false,
     args = { "-i", "${workspaceFolder}/odb-cli/src/args.cli" },

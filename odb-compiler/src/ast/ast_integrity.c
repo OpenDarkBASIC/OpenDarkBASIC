@@ -22,7 +22,7 @@ count_nodes_recurse(const struct ast* ast, ast_id n, int depth)
     return count;
 }
 
-int
+static int
 ast_verify_connectivity(
     const struct ast* ast, struct db_source source, const struct cmd_list* cmds)
 {
@@ -42,6 +42,41 @@ ast_verify_connectivity(
         ast_export(ast, cstr_ospathc("verify_connectivity.ast"), source, cmds);
         return -1;
     }
+
+    return 0;
+}
+
+static int
+check_scope_ids(
+    const struct ast* ast, struct db_source source, const struct cmd_list* cmds)
+{
+    ast_id n;
+
+    if (ast->nodes[ast->root].info.scope_id == -1)
+        return 0;
+
+    for (n = 0; n != ast_count(ast); ++n)
+        if (ast->nodes[n].info.scope_id == -1)
+        {
+            log_err(
+                "Node %d of type %d has no scope ID\n",
+                n,
+                ast_node_type(ast, n));
+            return -1;
+        }
+
+    return 0;
+}
+
+int
+ast_sanity_check(
+    const struct ast* ast, struct db_source source, const struct cmd_list* cmds)
+{
+    if (ast_verify_connectivity(ast, source, cmds) != 0)
+        return -1;
+
+    if (check_scope_ids(ast, source, cmds) != 0)
+        return -1;
 
     return 0;
 }

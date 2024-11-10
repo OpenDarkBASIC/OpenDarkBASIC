@@ -361,7 +361,8 @@ udt_to_llvm(
                 0, log_err("type: %d\n", ast_node_type(ast, ast_member)));
     }
 
-    struct utf8_span name_span = ast->nodes[udt_decl].udt_decl.type_name;
+    ast_id           type_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
+    struct utf8_span name_span = ast->nodes[type_ident].identifier.name;
     struct utf8_view name = utf8_span_view(source, name_span);
     return llvm::StructType::create(
         *ctx,
@@ -451,7 +452,8 @@ create_udt_table(
         if (ast_node_type(ast, n) != AST_UDT_DECL)
             continue;
 
-        struct utf8_span   name_span = ast->nodes[n].udt_decl.type_name;
+        ast_id             type_ident = ast->nodes[n].udt_decl.type_identifier;
+        struct utf8_span   name_span = ast->nodes[type_ident].identifier.name;
         struct utf8_view   name = utf8_span_view(source, name_span);
         struct view_scope  name_scope = {name, ast_scope(ast, n)};
         llvm::StructType** Typ;

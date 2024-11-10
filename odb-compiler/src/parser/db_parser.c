@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
@@ -289,9 +290,19 @@ parse_failed:
     }
     if (*astp != NULL)
         ast_gc(*astp);
+#if defined(ODBCOMPILER_AST_DUMP)
+    if (*astp != NULL)
+    {
+        struct utf8 fname = empty_utf8();
+        utf8_set_cstr(&fname, filename);
+        utf8_append_cstr(&fname, ".ast");
+        ast_export(*astp, utf8_ospathc(fname), source, cmds);
+        utf8_deinit(fname);
+    }
+#endif
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (*astp != NULL)
-        ast_verify_connectivity(*astp, source, cmds);
+        ast_sanity_check(*astp, source, cmds);
 #endif
     dbset_extra(NULL, parser->scanner);
     token_queue_deinit(tokens);

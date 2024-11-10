@@ -209,8 +209,7 @@ union ast_node
     struct {
         struct info info;
         ast_id members;
-        ast_id _pad;
-        struct utf8_span type_name;
+        ast_id type_identifier;
     } udt_decl;
 
     struct {
@@ -537,7 +536,7 @@ ast_id ast_var_decl(
     struct utf8_span location);
 ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
-ast_id ast_udt_decl(struct ast** astp, struct utf8_span type_name, ast_id members_block, struct utf8_span location);
+ast_id ast_udt_decl(struct ast** astp, ast_id type_identifier, ast_id members_block, struct utf8_span location);
 ast_id ast_udt_init(struct ast** astp, struct utf8_span type_name, ast_id arglist, struct utf8_span location);
 ast_id ast_udt_read(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
 ast_id ast_udt_write(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);

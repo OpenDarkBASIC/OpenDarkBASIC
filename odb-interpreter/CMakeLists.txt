@@ -18,9 +18,7 @@ add_executable (odbi
     "src/main.cpp")
 target_include_directories (odbi
     PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-    PRIVATE
-        $<BUILD_INTERFACE:$<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<BOOL:${HAVE_UNISTD_H}>>>:${PROJECT_SOURCE_DIR}/include/win32_unistd>>)
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
 target_compile_options (odbi
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -pedantic -Wno-unused-function -Wno-unused-parameter>)

@@ -23,7 +23,7 @@ int
 err_assignment_incompatible_types(
     const struct ast* ast,
     ast_id            ass,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source)
 {
@@ -33,6 +33,10 @@ err_assignment_incompatible_types(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, ass) == AST_ASSIGNMENT,
         log_err("type: %d\n", ast_node_type(ast, ass)));
+    ODBUTIL_DEBUG_ASSERT(
+        first_occurrence == -1
+            || ast_node_type(ast, first_occurrence) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, first_occurrence)));
 
     log_flc(filename, source, ast_loc(ast, rhs));
     log_err(
@@ -47,19 +51,18 @@ err_assignment_incompatible_types(
         type_to_db_name(ast_type_info(ast, lhs)),
         type_to_db_name(ast_type_info(ast, rhs)));
 
-    if (first_occurrence.len > -1)
+    if (first_occurrence > -1)
     {
-        log_flc(filename, source, first_occurrence);
+        struct utf8_span first_name
+            = ast->nodes[first_occurrence].identifier.name;
+        log_flc(filename, source, first_name);
         log_note(
             "{emph0:%.*s} was previously declared as {emph0:%s} here:\n",
-            first_occurrence.len,
-            source + first_occurrence.off,
+            first_name.len,
+            source + first_name.off,
             type_to_db_name(ast_type_info(ast, lhs)));
         log_excerpt_1(
-            source,
-            first_occurrence,
-            type_to_db_name(ast_type_info(ast, lhs)),
-            0);
+            source, first_name, type_to_db_name(ast_type_info(ast, lhs)), 0);
     }
 
     return -1;
@@ -525,10 +528,16 @@ int
 err_param_redeclaration(
     const struct ast* ast,
     struct utf8_span  name,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source)
 {
+    struct utf8_span first_name;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, first_occurrence) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, first_occurrence)));
+    first_name = ast->nodes[first_occurrence].identifier.name;
+
     log_flc(filename, source, name);
     log_err(
         "Parameter {quote:%.*s} already exists.\n",
@@ -536,9 +545,9 @@ err_param_redeclaration(
         source + name.off);
     log_excerpt_1(source, name, "", 0);
 
-    log_flc(filename, source, first_occurrence);
+    log_flc(filename, source, first_name);
     log_note("Previously defined here:\n");
-    log_excerpt_1(source, first_occurrence, "", 0);
+    log_excerpt_1(source, first_name, "", 0);
 
     return -1;
 }
@@ -595,18 +604,24 @@ err_var_decl_redeclaration(
     const char*       filename,
     const char*       source,
     const struct ast* first_ast,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       first_filename,
     const char*       first_source)
 {
+    struct utf8_span first_name;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(first_ast, first_occurrence) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(first_ast, first_occurrence)));
+    first_name = first_ast->nodes[first_occurrence].identifier.name;
+
     log_flc(filename, source, name);
     log_err(
         "Variable {quote:%.*s} already exists.\n", name.len, source + name.off);
     log_excerpt_1(source, name, "", 0);
 
-    log_flc(first_filename, first_source, first_occurrence);
+    log_flc(first_filename, first_source, first_name);
     log_note("Previously defined here:\n");
-    log_excerpt_1(first_source, first_occurrence, "", 0);
+    log_excerpt_1(first_source, first_name, "", 0);
 
     return -1;
 }
@@ -618,10 +633,40 @@ err_udt_decl_redeclaration(
     const char*       filename,
     const char*       source,
     const struct ast* first_ast,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       first_filename,
     const char*       first_source)
 {
+    ast_id           identifier;
+    struct utf8_span first_name;
+
+    switch (ast_node_type(first_ast, first_occurrence))
+    {
+        case AST_UDT_DECL:
+            identifier
+                = first_ast->nodes[first_occurrence].udt_decl.type_identifier;
+            break;
+        case AST_FUNC_POLY: {
+            ast_id func1 = first_ast->nodes[first_occurrence].func_poly.func;
+            identifier = first_ast->nodes[func1].func1.identifier;
+            break;
+        }
+        case AST_FUNC1:
+            identifier = first_ast->nodes[first_occurrence].func1.identifier;
+            break;
+
+        default:
+            ODBUTIL_DEBUG_ASSERT(
+                0,
+                log_err(
+                    "type: %d\n", ast_node_type(first_ast, first_occurrence)));
+            identifier = -1;
+            break;
+    }
+    /* Fallback to just using the location as the "name" */
+    first_name = identifier ? first_ast->nodes[identifier].identifier.name
+                            : ast_loc(first_ast, first_occurrence);
+
     log_flc(filename, source, name);
     log_err(
         "User-Defined Type {quote:%.*s} already exists.\n",
@@ -629,9 +674,9 @@ err_udt_decl_redeclaration(
         source + name.off);
     log_excerpt_1(source, name, "", 0);
 
-    log_flc(first_filename, first_source, first_occurrence);
+    log_flc(first_filename, first_source, first_name);
     log_note("Previously defined here:\n");
-    log_excerpt_1(first_source, first_occurrence, "", 0);
+    log_excerpt_1(first_source, first_name, "", 0);
 
     return -1;
 }
@@ -691,12 +736,17 @@ void
 warn_assignment_implicit_conversion(
     const struct ast* ast,
     ast_id            ass,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source)
 {
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id rhs = ast->nodes[ass].assignment.expr;
+
+    ODBUTIL_DEBUG_ASSERT(
+        first_occurrence == -1
+            || ast_node_type(ast, first_occurrence) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, first_occurrence)));
 
     log_flc(filename, source, ast_loc(ast, rhs));
     log_warn(
@@ -711,19 +761,18 @@ warn_assignment_implicit_conversion(
         type_to_db_name(ast_type_info(ast, lhs)),
         type_to_db_name(ast_type_info(ast, rhs)));
 
-    if (first_occurrence.len > -1)
+    if (first_occurrence > -1)
     {
-        log_flc(filename, source, first_occurrence);
+        struct utf8_span first_name
+            = ast->nodes[first_occurrence].identifier.name;
+        log_flc(filename, source, first_name);
         log_note(
             "{emph0:%.*s} was previously declared as {emph0:%s} here:\n",
-            first_occurrence.len,
-            source + first_occurrence.off,
+            first_name.len,
+            source + first_name.off,
             type_to_db_name(ast_type_info(ast, lhs)));
         log_excerpt_1(
-            source,
-            first_occurrence,
-            type_to_db_name(ast_type_info(ast, lhs)),
-            0);
+            source, first_name, type_to_db_name(ast_type_info(ast, lhs)), 0);
     }
 
     help_insert_explicit_cast(
@@ -734,12 +783,17 @@ void
 warn_assignment_truncation(
     const struct ast* ast,
     ast_id            ass,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source)
 {
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id rhs = ast->nodes[ass].assignment.expr;
+
+    ODBUTIL_DEBUG_ASSERT(
+        first_occurrence == -1
+            || ast_node_type(ast, first_occurrence) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, first_occurrence)));
 
     log_flc(filename, source, ast_loc(ast, rhs));
     log_warn(
@@ -755,19 +809,18 @@ warn_assignment_truncation(
         type_to_db_name(ast_type_info(ast, lhs)),
         type_to_db_name(ast_type_info(ast, rhs)));
 
-    if (first_occurrence.len > -1)
+    if (first_occurrence > -1)
     {
-        log_flc(filename, source, first_occurrence);
+        struct utf8_span first_name
+            = ast->nodes[first_occurrence].identifier.name;
+        log_flc(filename, source, first_name);
         log_note(
             "{emph0:%.*s} was previously declared as {emph0:%s} here:\n",
-            first_occurrence.len,
-            source + first_occurrence.off,
+            first_name.len,
+            source + first_name.off,
             type_to_db_name(ast_type_info(ast, lhs)));
         log_excerpt_1(
-            source,
-            first_occurrence,
-            type_to_db_name(ast_type_info(ast, lhs)),
-            0);
+            source, first_name, type_to_db_name(ast_type_info(ast, lhs)), 0);
     }
 
     help_insert_explicit_cast(

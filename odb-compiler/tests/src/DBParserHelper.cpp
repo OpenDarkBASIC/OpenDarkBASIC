@@ -7,11 +7,14 @@
 extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/globals.h"
+#include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/mutex.h"
 #include "odb-util/utf8.h"
+
+extern int         odbtests_ast;
+extern const char* odbtests_ast_filename;
 }
 
 using namespace testing;
@@ -35,6 +38,8 @@ DBParserHelper::DBParserHelper()
 
 DBParserHelper::~DBParserHelper()
 {
+    writeAST();
+
     mutex_destroy(cmd_list_mutex);
     mutex_destroy(ast_mutex);
     ast_deinit(ast);
@@ -57,7 +62,6 @@ DBParserHelper::~DBParserHelper()
 int
 DBParserHelper::parse(const char* code)
 {
-    int result;
     if (src.text.data)
         db_source_close(&src);
     if (db_source_open_string(&src, cstr_utf8_view(code)) != 0)
@@ -69,23 +73,13 @@ DBParserHelper::parse(const char* code)
         ast_init(&ast);
     }
 
-    result = db_parse(&p, &ast, "test", src, &cmds);
-#if defined(ODBCOMPILER_DOT_EXPORT)
-    const testing::TestInfo* info
-        = testing::UnitTest::GetInstance()->current_test_info();
-    std::string filename = std::string("ast/") + info->test_suite_name() + "__"
-                           + info->name() + "1.ast";
-    std::filesystem::create_directory("ast");
-    if (ast != nullptr)
-        ast_export(ast, cstr_ospathc(filename.c_str()), src, &cmds);
-#endif
+    int result = db_parse(&p, &ast, "test", src, &cmds);
     if (result != 0)
         return result;
 
     struct utf8 fname = empty_utf8();
     utf8_set_cstr(&fname, "test");
-    result = globals_add_declarations_from_ast(
-        &globals, &ast, 0, &fname, &src);
+    result = globals_add_declarations_from_ast(&globals, &ast, 0, &fname, &src);
     utf8_deinit(fname);
     return result;
 }
@@ -109,15 +103,6 @@ DBParserHelper::semantic(const struct semantic_check* check)
         &cmds,
         globals);
     utf8_deinit(filename);
-#if defined(ODBCOMPILER_DOT_EXPORT)
-    const testing::TestInfo* info
-        = testing::UnitTest::GetInstance()->current_test_info();
-    std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
-                          + info->name() + "2.ast";
-    std::filesystem::create_directory("ast");
-    if (ast != nullptr)
-        ast_export(ast, cstr_ospathc(astfile.c_str()), src, &cmds);
-#endif
     return result;
 }
 
@@ -154,4 +139,16 @@ int
 DBParserHelper::addCommand(type return_type, const char* name)
 {
     return addCommand(return_type, name, {});
+}
+
+void
+DBParserHelper::writeAST()
+{
+    if (ast == nullptr || !odbtests_ast)
+        return;
+
+    if (odbtests_ast_filename == NULL)
+        ast_export_fp(ast, stdout, src, &cmds);
+    else
+        ast_export(ast, cstr_ospathc(odbtests_ast_filename), src, &cmds);
 }

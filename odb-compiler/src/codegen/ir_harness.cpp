@@ -499,7 +499,9 @@ ir_create_harness(
 
     b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));
 
+#if defined(ODBCOMPILER_IR_SANITY_CHECK)
     llvm::verifyFunction(*F);
+#endif
 
     return 0;
 }

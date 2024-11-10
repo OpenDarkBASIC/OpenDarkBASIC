@@ -357,9 +357,6 @@ loop_for(
     }
 
     ast_gc(ast);
-#if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    ast_verify_connectivity(ast, sources[tu_id], cmds);
-#endif
     return 0;
 }
 

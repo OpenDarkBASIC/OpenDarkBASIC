@@ -410,7 +410,8 @@ var_write
 udt_decl
   : TYPE IDENTIFIER
         seps udt_members seps
-    ENDTYPE                                 { $$ = ast_udt_decl(ctx->astp, $2, $4, @$); }
+    ENDTYPE                                 { ast_id identifier = ast_identifier(ctx->astp, $2, TA_NONE, @$);
+                                              $$ = ast_udt_decl(ctx->astp, identifier, $4, @$); }
   ;
 udt_members
   : udt_members seps udt_member_decl        { $$ = $1; ast_block_append_stmt(ctx->astp, $$, $3, @$); }

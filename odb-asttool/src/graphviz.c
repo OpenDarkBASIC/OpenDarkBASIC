@@ -273,15 +273,11 @@ write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=<TYPE <font color=\"%s\">%.*s</font>>, "
-                "xlabel=\"%s\"];\n",
+                "label=\"TYPE\", xlabel=\"%s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
-                style->identifier.color,
-                ast->nodes[n].udt_decl.type_name.len,
-                source + ast->nodes[n].udt_decl.type_name.off,
                 xlabel);
             break;
         case AST_UDT_INIT:

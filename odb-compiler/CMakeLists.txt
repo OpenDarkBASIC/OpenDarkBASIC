@@ -13,17 +13,15 @@ include (CheckIncludeFile)
 set (ODBCOMPILER_LIB_TYPE "SHARED" CACHE STRING "Build as either SHARED or STATIC library")
 option (ODBCOMPILER_BISON_COUNTER_EXAMPLES "Tell bison to provide counter examples when grammar contains conflicts" OFF)
 option (ODBCOMPILER_UPDATE_BUILDINFO "If true the updated build number is written to a header, which causes the library to recompile build_info.c. This can get annoying for developers, so disable this if you are annoyed." ${RELEASE_FEATURE})
-option (ODBCOMPILER_AST_SANITY_CHECK "Enable checking AST integrity after semantic checks run" ${DEBUG_FEATURE})
-option (ODBCOMPILER_DOT_EXPORT "Enable functions for dumping AST to DOT format" ON)
+option (ODBCOMPILER_AST_DUMP "Write the AST out after every operation. Slows down performance somewhat but makes debugging much easier" ${DEBUG_FEATURE})
+option (ODBCOMPILER_AST_SANITY_CHECK "Enable checking AST integrity after every operation" ${DEBUG_FEATURE})
 option (ODBCOMPILER_IR_SANITY_CHECK "Enable running llvm::verifyFunction() on generated IR" ${DEBUG_FEATURE})
 option (ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS "Link with a shared library build of LLVM" OFF)
 option (ODBCOMPILER_PIC "Enable building with -fPIC (position independent code)" ON)
 option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
-option (ODBCOMPILER_TESTS "Build unit tests" ON)
+option (ODBCOMPILER_TESTS "Build unit tests" ${ODB_TESTS})
 option (ODBCOMPILER_WERROR "Treat compiler warnings as errors" ${ODB_WERROR})
-
-check_include_file ("unistd.h" HAVE_UNISTD_H)
 
 # For platform variable we use the parent scope ODB_PLATFORM, but it is lower case
 string (TOUPPER ${ODB_PLATFORM} ODBCOMPILER_PLATFORM)
@@ -234,8 +232,6 @@ target_include_directories (odb-compiler
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<INSTALL_INTERFACE:include>)
-    #PRIVATE
-    #    $<BUILD_INTERFACE:$<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<BOOL:${HAVE_UNISTD_H}>>>:${PROJECT_SOURCE_DIR}/include/win32_unistd>>)
 target_compile_definitions (odb-compiler
     PRIVATE
         ODBCOMPILER_BUILDING

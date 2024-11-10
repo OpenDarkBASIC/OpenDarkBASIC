@@ -230,6 +230,7 @@ add_udt_decl(
     const struct db_source* sources)
 {
     struct global*    entry;
+    ast_id            udt_ident;
     struct utf8_span  udt_span;
     struct utf8_view  udt_name;
     const struct ast* ast = tus[tu_id];
@@ -239,7 +240,8 @@ add_udt_decl(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
-    udt_span = ast->nodes[udt_decl].udt_decl.type_name;
+    udt_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
+    udt_span = ast->nodes[udt_ident].identifier.name;
     udt_name = utf8_span_view(source, udt_span);
     switch (hm_emplace_or_get((struct hm**)globals, udt_name, &entry))
     {
@@ -252,7 +254,6 @@ add_udt_decl(
 
         case HM_EXISTS: {
             const struct ast* prev_ast = tus[entry->tu_id];
-            ast_id            prev_udt_decl = entry->ast_node;
             const char* prev_filename = utf8_cstr(filenames[entry->tu_id]);
             const char* prev_source = sources[entry->tu_id].text.data;
             const char* filename = utf8_cstr(filenames[tu_id]);
@@ -262,7 +263,7 @@ add_udt_decl(
                 filename,
                 source,
                 prev_ast,
-                ast->nodes[prev_udt_decl].udt_decl.type_name,
+                entry->ast_node,
                 prev_filename,
                 prev_source);
         }

@@ -14,21 +14,28 @@ VEC_DECLARE_API(static, buffer, char, 32)
 VEC_DEFINE_API(buffer, char, 32)
 
 static int
-print_help(const char* prog_name)
+print_help(void)
 {
     log_raw(
-        "Usage: %s [{emph1:-i} <{emph2:ast file}>] [{emph1:-o} <{emph2:output "
-        "file}>] [{emph1:--type} <{emph2:graphviz}>]\n",
-        prog_name);
-    return 1;
-}
-
-ODBUTIL_PRINTF_FORMAT(1, 2) static int print_error(const char* fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
+        /* clang-format off */
+        "Usage: odb-asttool [{emph1:-i} <{emph2:ast file}>] [{emph1:-o} <{emph2:output file}>] [{emph1:options}...]\n\n"
+        "The  OpenDarkBASIC  compiler  exports  its ASTs to a binary format.  This  tool\n"
+        "transforms these ASTs into a format appropriate  for  viewing,  or  for further\n"
+        "processing (e.g. by  unit tests). Since {emph:odb-asttool} reads from stdin and\n"
+        "writes to stdout, you can chain  it together with other tools. For example, the\n"
+        "following command will display the AST using Graphviz:\n\n"
+        "  $ odb-cli {emph1:--dba} main.dba {emph1:--ast2} | odb-asttool | dot {emph1:-Tx11}\n\n"
+        "Available options:\n"
+        "  {emph1:-i} <{emph2:file}>        Read AST from a file instead of stdin.\n"
+        "  {emph1:-o} <{emph2:file}>        Write result to a file instead of stdout.\n"
+        "  {emph1:--scopes}         Include scope_id for each node.\n"
+        "  {emph1:--types}          Include node type information.\n"
+        "  {emph1:--node-asserts}   Include asserts for node types.\n"
+        "  {emph1:--format} <{emph2:name}>  Output format. Defaults to {emph2:graphviz}. Available formats:\n"
+        "           {emph2:graphviz}  Graphviz DOT format.\n"
+        "           {emph2:gtest}     Generate Googletest code that will check the  structure of\n"
+        "                     the input AST. This is used to 'patch' the unit tests.\n");
+    /* clang-format on */
     return 1;
 }
 
@@ -39,29 +46,45 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
     for (i = 1; i < argc; ++i)
     {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-            return print_help(argv[0]);
+            return print_help();
         else if (strcmp(argv[i], "-i") == 0)
         {
             if (i + 1 >= argc)
-                return print_error("Missing input filename to option -i\n");
+                return log_err("Missing input filename to option -i\n");
 
             cfg->input_fname = argv[++i];
         }
         else if (strcmp(argv[i], "-o") == 0)
         {
             if (i + 1 >= argc)
-                return print_error("Missing output filename to option -o\n");
+                return log_err("Missing output filename to option -o\n");
 
             cfg->output_fname = argv[++i];
+        }
+        else if (strcmp(argv[i], "--format") == 0)
+        {
+            if (i + 1 >= argc)
+                return log_err("Missing format name to option --format\n");
+
+            if (strcmp(argv[i + 1], "graphviz") == 0)
+                cfg->export_type = EXPORT_GRAPHVIZ;
+            else if (strcmp(argv[i + 1], "gtest") == 0)
+                cfg->export_type = EXPORT_GTEST;
+            else
+                return log_err("Unknown format {quote:%s}\n", argv[i + 1]);
+
+            ++i;
         }
         else if (strcmp(argv[i], "--scopes") == 0)
             cfg->with_scopes = 1;
         else if (strcmp(argv[i], "--types") == 0)
             cfg->with_types = 1;
+        else if (strcmp(argv[i], "--node-asserts") == 0)
+            cfg->with_node_asserts = 1;
         else
         {
-            print_error("Unknown option \"%s\"\n", argv[i]);
-            return print_help(argv[0]);
+            log_err("Unknown option {quote:%s}\n", argv[i]);
+            return print_help();
         }
     }
 
@@ -103,7 +126,14 @@ process_blob(const struct cfg* cfg, struct mstream ms, FILE* fp)
 
     mstream_read(&ms, 4);
 
-    return export_graphviz(fp, ast, source, cmd_names, cfg);
+    switch (cfg->export_type)
+    {
+        case EXPORT_GRAPHVIZ:
+            return export_graphviz(fp, ast, source, cmd_names, cfg);
+        case EXPORT_GTEST: return export_gtest(fp, ast, source, cmd_names, cfg);
+    }
+
+    return -1;
 }
 
 static int

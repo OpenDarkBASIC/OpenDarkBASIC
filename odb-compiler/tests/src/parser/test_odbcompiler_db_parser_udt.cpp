@@ -29,13 +29,8 @@ TEST_F(NAME, nested_decl_invalid_syntax)
     ASSERT_THAT(parse(source), Eq(-1)) << log().text;
     EXPECT_THAT(log(), LogEq(
         "test:3:5\n"
-        "error: Invalid syntax for nested UDTs.\n"
+        "error: Nested User-Defined Types are not supported.\n"
         " 3 | TYPE Bar\n"
-        "   | ^~~~\n"
-        "help: Did you mean:\n"
-        " 3 | member AS TYPE Bar\n"
-        " 4 |     a AS FLOAT\n"
-        " 5 |     b AS FLOAT\n"
-        " 6 | ENDTYPE\n"));
+        "   | ^~~~\n"));
 }
 

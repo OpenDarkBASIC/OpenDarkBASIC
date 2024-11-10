@@ -1,85 +1,73 @@
-OpenDarkBASIC
-=============
+# OpenDarkBASIC
 
-This project is a modern re-implementation of the DarkBASIC Professional language and SDK. It consists of a compiler and a runtime. The compiler is built using FLEX and BISON to parse the language into an AST and uses LLVM for code generation. The runtime provides common runtime functionality and a framework for plugins to register commands.
+This  project  is a modern  re-implementation  of  the  DarkBASIC  Professional
+language and SDK.  It  consists  of  a  compiler and a runtime. The compiler is
+built using FLEX and BISON to parse the language into an AST and  uses LLVM for
+code  generation. The runtime  provides  common  runtime  functionality  and  a
+framework for plugins to register commands.
 
-OpenDarkBASIC supports both the original DarkBASIC Pro SDK and the ODB SDK (reimplementation). Of course, the original SDK will only work on Windows.
+OpenDarkBASIC  supports  both  the  original DarkBASIC Pro SDK and the ODB  SDK
+(reimplementation). Of course,  the  original  SDK  will  only work on Windows.
 
-Building
-========
+## Dependencies
 
 You will need to install following dependencies:
-  + CMake 3.13 or later
+  + CMake 3.28 or later
   + FLEX 2.6 or later
-  + BISON 3.7 or later
-  + A C++17 compliant compiler
+  + BISON 3.8 or later
+  + A C compiler
   + LLVM 18.0 or later
+  + LLD 18.0 or later
 
-For the Windows peeps out there, you can get up to date FLEX and BISON binaries from [here](https://github.com/lexxmark/winflexbison). You can unzip the release anywhere you want (I put it under ```C:\Program Files (x86)```). To get CMake to find them, you have to add the path to the executables to your PATH.
+### Linux
 
-Mac OS users will want to get up to date versions of cmake, llvm, bison and flex using homebrew:
+LLVM can usually be installed directly from  your  distributions  repositories.
+For example, Ubuntu users can simply install  `llvm-dev`, and CMake will detect
+it.
+
+It can also be [built from source](#building-llvm).
+
+### Windows
+
+For the Windows peeps out there, you can get up to date FLEX and BISON binaries
+from  [here](https://github.com/lexxmark/winflexbison).  You  can   unzip   the
+release  anywhere  you want (I put it under ```C:\GnuWin32```). To get CMake to
+find  them, you have to  add  the  path  to  both  executables  to  your  PATH.
+
+Install the Microsoft C/C++ (MSVC). You can get it by installing Visual Studio.
+
+Unfortunately,  development  binaries of LLVM/LLD don't exist for  Windows,  so
+you'll need to [build from source](#building-llvm).
+
+### Mac
+
+Mac  OS  users will want to get up to date versions of cmake, llvm,  bison  and
+flex using homebrew:
+
 ```sh
 brew install cmake llvm bison flex
 ```
 
-And then add the paths to llvm, bison and flex to ```CMAKE_PREFIX_PATH``` when calling cmake:
-```sh
-cmake -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm/bin:/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/flex/bin" ../
-```
-
-By default the project is built in release mode. If you want to develop on it, you will want to set it to debug mode.
+And then add the paths to llvm, bison and  flex to ```CMAKE_PREFIX_PATH``` when
+calling cmake:
 
 ```sh
-cmake -B build-debug -S . -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-debug -- -j $(nproc)
+cmake -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm/bin:/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/flex/bin"
 ```
 
-On Windows you can specify the arch using the ```-A``` option to CMake if they're using VS2019 or later:
-```sh
-cmake -A x64 ...
-```
+## Building LLVM
 
-If you're using an earlier version of Visual Studio, then the architecture is an argument to the ```-G``` option. You can type ```cmake --help``` to list all available generators.
-```sh
-cmake -G "Visual Studio 14 2015 Win64" ...
-```
-
-Other interesting CMake options:
-
-| Option                               | Default | Description                                                                 |
-| ------------------------------------ |:-------:| ----------------------------------------------------------------------------|
-| ODBCOMPILER_LIB_TYPE                 | SHARED  | Build odbc as either SHARED or STATIC                                       |
-| ODBCOMPILER_BISON_COUNTER_EXAMPLES   | OFF     | Provide counter examples when sr/rr conflicts occur in the grammar          |
-| ODBCOMPILER_DOT_EXPORT               | ON      | Enable Graphviz DOT export capability. Unit tests will also export all ASTs |
-| ODBCOMPILER_VERBOSE_BISON            | OFF     | Makes the bison very noisy                                                  |
-| ODBCOMPILER_VERBOSE_FLEX             | OFF     | Output every token to stderr                                                |
-| ODBCOMPILER_TESTS                    | ON      | Build unit tests                                                            |
-| ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS  | OFF     | Link with a shared library build of LLVM                                    |
-| ODBUTIL_LIB_TYPE                     | SHARED  | Build the SDK library either as SHARED or STATIC
-
-#### LLVM
-
-#### Linux
-
-LLVM can usually be installed directly from your distributions repositories. For example, Ubuntu users can simply install `llvm-dev`, and CMake will detect it.
-It can also be [build from source](#building-from-source).
-
-#### macOS
-
-Untested. Binaries seem to be available [here](https://github.com/llvm/llvm-project/releases/tag/llvmorg-10.0.0), so that may work. If not, you could [build from source](#building-from-source).
-
-#### Windows
-
-Unfortunately, development binaries don't exist for Windows, so you'll need to [build from source](#building-from-source).
-
-#### Building from source
-
-If you want a quick list of instructions to build LLVM from source with the minimum required components, follow these instructions:
+If you  want  a  quick  list of instructions to build LLVM from source with the
+minimum required components,  follow  these  instructions. The commands are for
+Windows, but are very similar on other platforms.
 
 Debug build:
+
 ```sh
 git clone https://github.com/llvm/llvm-project -b llvmorg-18.1.4 thirdparty/llvm-project
-cmake -S thirdparty/llvm-project/llvm -B build-llvm-debug -A x64 \
+cmake \
+  -S thirdparty/llvm-project/llvm \
+  -B build-llvm-debug -A x64 \
   -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_INSTALL_PREFIX:PATH="%CD%/build-llvm-debug/dist" \
   -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebug \
@@ -92,9 +80,12 @@ cmake --build build-llvm-debug --target install
 ```
 
 Release build:
+
 ```sh
 git clone https://github.com/llvm/llvm-project -b llvmorg-18.1.4 thirdparty/llvm-project
-cmake -S thirdparty/llvm-project/llvm -B build-llvm-release -A x64 \
+cmake \
+  -S thirdparty/llvm-project/llvm \
+  -B build-llvm-release -A x64 \
   -DCMAKE_INSTALL_PREFIX:PATH="%CD%/build-llvm-release/dist" \
   -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
   -DLLVM_INCLUDE_TESTS=OFF \
@@ -104,20 +95,77 @@ cmake -S thirdparty/llvm-project/llvm -B build-llvm-release -A x64 \
 cmake --build build-llvm-release --config Release --target install
 ```
 
-Note: lldb requires clang to be enabled as well. If not building lldb, you can remove clang.
+Note: lldb requires clang to be enabled as  well. If not building lldb, you can
+remove clang.
 
-LLVM binaries will be installed to `build-llvm-<config>/dist`.
+LLVM binaries will be installed to ```build-llvm-<config>/dist```.
 
-To configure OpenDarkBASIC, you need to pass the path to LLVM and LLD using
-`-DLLVM_DIR=build-llvm-<config>/lib/cmake/llvm` and
-`-DLLD_DIR=build-llvm-<config>/lib/cmake/lld`.
+## Building
+
+By default the project is built in release mode. If you want to develop on  it,
+you will want  to  set  it to debug mode. Here is the recommended CMake command
+for a debug build:
+
+```sh
+cmake \
+  -A x64 \
+  -G Ninja \
+  -S . \
+  -B build-Debug \
+  -DCMAKE_BUILD_TYPE=Debug \
+  # If you didn't add FLEX/BISON to your PATH, you can add it here \
+  -DCMAKE_PREFIX_PATH:PATH="/path/to/flex:/path/to/bison" \
+  -DLLVM_DIR=/usr/lib/llvm/18/lib64/cmake/llvm \
+  -DLLD_DIR=/usr/lib/llvm/18/lib64/cmake/lld
+cmake --build build-Debug --parallel $(nproc)
+```
+
+### Cross compilation and the DarkBASIC SDK
+
+On   Windows,  a  32-bit  DarkBASIC   runtime   is   built   automatically   if
+```-DDBP_SDK=ON``` (default). The compiler itself will be a 64-bit  executable.
+This allows you to use the original DarkBASIC SDK.
+
+On  Mac and Linux, only 64-bit executables are built, and the DarkBASIC SDK  is
+not  supported.  If  you wish to cross-compile DarkBASIC executables, you  will
+have to build the 32-bit  runtime  manually  on  Windows and copy the resulting
+files over to your Mac/Linux machine.
+
+If you want to build Linux/Mac executables from  Windows, you will also have to
+manually compile the linux runtimes and copy them over.
+
+### Build options
+
+A non-exhaustive list of build options:
+
+| Option                               | Default | Description                                                                 |
+| ------------------------------------ |:-------:| ----------------------------------------------------------------------------|
+| ODB_UTIL                             | ON      | The utility library is used by all subprojects.                             |
+| ODB_UTIL_i386                        | ON      | Also build a 32-bit version of the util library (required for DarkBASIC)    |
+| ODB_COMPILER                         | ON      | Build the compiler library. Required by the CLI, editor and LSP.            |
+| ODB_CLI                              | ON      | Build the command line interface to the compiler.                           |
+| ODB_SDK                              | ON      | Build the OpenDarkBASIC reimplementation of the DarkBASIC SDK.              |
+| DBP_SDK                              | ON      | Build the runtime for interfacing with the original DarkBASIC SDK.          |
+| ODB_EDITOR                           | OFF     | Build the editor (requires GTK4)                                            |
+| ODB_PROFILING                        | OFF     | Enable profiling support (-pg)                                              |
+| ODB_TESTS                            | ON      | Build the unit tests.                                                       |
+| ODB_WERROR                           | Debug   | Treat warnings as errors. Enabled in Debug mode.                            |
+| ODBCOMPILER_LIB_TYPE                 | SHARED  | Build the compiler library either as SHARED or STATIC                       |
+| ODBCOMPILER_BISON_COUNTER_EXAMPLES   | OFF     | Provide counter examples when sr/rr conflicts occur in the grammar          |
+| ODBCOMPILER_UPDATE_BUILDINFO         | Release | Re-generate the buildinfo.h header. Can get annoying when developing.       |
+| ODBCOMPILER_DOT_EXPORT               | ON      | Enable Graphviz DOT export capability. Unit tests will also export all ASTs |
+| ODBCOMPILER_VERBOSE_BISON            | OFF     | Makes the bison very noisy                                                  |
+| ODBCOMPILER_VERBOSE_FLEX             | OFF     | Output every token to stderr                                                |
+| ODBCOMPILER_TESTS                    | ON      | Build unit tests                                                            |
+| ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS  | OFF     | Link with a shared library build of LLVM                                    |
+| ODBUTIL_LIB_TYPE                     | SHARED  | Build the SDK library either as SHARED or STATIC
 
 Running
 =======
 
 You can run the unit tests by executing:
 ```sh
-(cd build/bin && ./odbc_tests)
+(cd build/bin && ./odb-tests)
 ```
 
 There is some sample DarkBASIC code in the folder ```dba-sources``` in the root directory which you can try and compile.

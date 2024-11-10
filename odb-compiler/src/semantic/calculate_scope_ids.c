@@ -2,7 +2,6 @@
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-util/log.h"
 
 static void
 process_node(
@@ -59,9 +58,12 @@ process_node(
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_UDT_DECL: {
+            ast_id identifier = ast->nodes[n].udt_decl.type_identifier;
             ast_id members = ast->nodes[n].udt_decl.members;
+
             ast->nodes[n].info.scope_id = current_scope;
 
+            process_node(ast, identifier, *scope_counter, scope_counter);
             ++(*scope_counter);
             process_node(ast, members, *scope_counter, scope_counter);
 
@@ -165,39 +167,6 @@ process_node(
     }
 }
 
-#if defined(ODBCOMPILER_AST_SANITY_CHECK)
-static void
-reset_scope_ids(struct ast* ast)
-{
-    ast_id n;
-    for (n = 0; n != ast_count(ast); ++n)
-        ast->nodes[n].info.scope_id = -1;
-}
-
-static void
-check_scope_ids(
-    struct ast* ast, struct db_source source, const struct cmd_list* cmds)
-{
-    ast_id n;
-    int    error = 0;
-    for (n = 0; n != ast_count(ast); ++n)
-    {
-        if (ast->nodes[n].info.scope_id == -1)
-        {
-            log_err(
-                "Node %d of type %d has no scope ID\n",
-                n,
-                ast_node_type(ast, n));
-            ast_export(
-                ast, cstr_ospathc("calculate_scope_ids.ast"), source, cmds);
-            error = -1;
-        }
-    }
-
-    ODBUTIL_DEBUG_ASSERT(!error, (void)0);
-}
-#endif
-
 static int
 calculate_scope_ids(
     struct ast**              tus,
@@ -213,15 +182,7 @@ calculate_scope_ids(
     struct ast* ast = tus[tu_id];
     int32_t     scope_counter = 0;
 
-#if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    reset_scope_ids(ast);
-#endif
-
     process_node(ast, ast->root, 0, &scope_counter);
-
-#if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    check_scope_ids(ast, sources[tu_id], cmds);
-#endif
 
     return 0;
 }

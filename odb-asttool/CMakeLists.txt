@@ -8,6 +8,7 @@ add_executable (odb-asttool
     "include/odb-asttool/asttool.h"
     "include/odb-asttool/export.h"
     "src/graphviz.c"
+    "src/gtest.c"
     "src/asttool.c")
 # Only need the ast.h header from odb-compiler
 get_target_property (COMPILER_INCLUDES odb-compiler INCLUDE_DIRECTORIES)

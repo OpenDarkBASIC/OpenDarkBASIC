@@ -13,3 +13,11 @@ export_graphviz(
     const char*       source,
     struct utf8_list* cmd_names,
     const struct cfg* cfg);
+
+int
+export_gtest(
+    FILE*             fp,
+    const struct ast* ast,
+    const char*       source,
+    struct utf8_list* cmd_names,
+    const struct cfg* cfg);

@@ -19,7 +19,7 @@ int
 err_assignment_incompatible_types(
     const struct ast* ast,
     ast_id            ass,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source);
 int
@@ -128,7 +128,7 @@ int
 err_param_redeclaration(
     const struct ast* ast,
     struct utf8_span  name,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source);
 int
@@ -147,7 +147,7 @@ err_var_decl_redeclaration(
     const char*       filename,
     const char*       source,
     const struct ast* first_ast,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       first_filename,
     const char*       first_source);
 int
@@ -157,7 +157,7 @@ err_udt_decl_redeclaration(
     const char*       filename,
     const char*       source,
     const struct ast* first_ast,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence, /* identifier, func_poly or func1 */
     const char*       first_filename,
     const char*       first_source);
 int
@@ -183,14 +183,14 @@ void
 warn_assignment_implicit_conversion(
     const struct ast* ast,
     ast_id            ass,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source);
 void
 warn_assignment_truncation(
     const struct ast* ast,
     ast_id            ass,
-    struct utf8_span  first_occurrence,
+    ast_id            first_occurrence,
     const char*       filename,
     const char*       source);
 void

@@ -89,7 +89,6 @@ const char* build_info_all()
     "CMake configuration:\n"
     ODBCOMPILER_CMAKE_CONFIG "\n"
     "Other interesting variables:\n"
-    "    HAVE_UNISTD_H=${HAVE_UNISTD_H}\n"
     /*"    ODBCOMPILER_PUBLIC_API=" STRINGIFY(ODBCOMPILER_PUBLIC_API) "\n"*/
     /*"    ODBCOMPILER_PRIVATE_API=" STRINGIFY(ODBCOMPILER_PRIVATE_API)*/
     ;
