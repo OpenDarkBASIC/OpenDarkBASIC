@@ -29,7 +29,7 @@ get_loop_var_lvalue(const struct ast* ast, ast_id loop)
     return ast->nodes[step_stmt].assignment.lvalue;
 }
 
-static void
+static ast_id
 create_step_block(struct ast** astp, ast_id loop, ast_id cont)
 {
     if ((*astp)->nodes[cont].cont.step > -1)
@@ -39,15 +39,15 @@ create_step_block(struct ast** astp, ast_id loop, ast_id cont)
         ast_id inc_var = ast_dup_lvalue(astp, loop_lvalue);
         ast_id inc_stmt
             = ast_inc_step(astp, inc_var, step_expr, ast_loc(*astp, step_expr));
-        (*astp)->nodes[cont].cont.step
-            = ast_block(astp, inc_stmt, ast_loc(*astp, step_expr));
+
+        return ast_block(astp, inc_stmt, ast_loc(*astp, step_expr));
     }
     else
     {
         ast_id loop_body = (*astp)->nodes[loop].loop1.loop2;
         ast_id post_body = (*astp)->nodes[loop_body].loop2.post_body;
         ODBUTIL_DEBUG_ASSERT(post_body > -1, (void)0);
-        (*astp)->nodes[cont].cont.step = post_body;
+        return ast_dup_subtree(astp, post_body);
     }
 }
 
@@ -118,7 +118,9 @@ check_loop_cont(
         if (loop == -1)
             return -1;
 
-        create_step_block(astp, loop, n);
+        (*astp)->nodes[n].cont.step = create_step_block(astp, loop, n);
+        if ((*astp)->nodes[n].cont.step == -1)
+            return -1;
     }
 
     return 0;

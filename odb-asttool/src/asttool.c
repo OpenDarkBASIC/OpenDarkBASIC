@@ -30,6 +30,7 @@ print_help(void)
         "  {emph1:-o} <{emph2:file}>        Write result to a file instead of stdout.\n"
         "  {emph1:--scopes}           Include scope_id for each node.\n"
         "  {emph1:--types}            Include node type information.\n"
+        "  {emph1:--node-filter}      Comma separated list of node names to include.\n"
         "  {emph1:--node-types}       Include asserts for node types.\n"
         "  {emph1:--node-properties}  Include asserts for node properties (names, values, etc.)\n"
         "  {emph1:--format} <{emph2:name}>  Output format. Defaults to {emph2:graphviz}. Available formats:\n"
@@ -75,6 +76,15 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
                 return log_err("Unknown format {quote:%s}\n", argv[i + 1]);
 
             ++i;
+        }
+        else if (strcmp(argv[i], "--node-filter") == 0)
+        {
+            if (i + 1 >= argc)
+                return log_err(
+                    "Missing comma separated list of filters to option "
+                    "--node-filter\n");
+
+            cfg->node_filter = argv[++i];
         }
         else if (strcmp(argv[i], "--scopes") == 0)
             cfg->with_scopes = 1;
