@@ -194,6 +194,50 @@ write_getter(FILE* fp, const struct ast* ast, ast_id p, ast_id n)
     }
 }
 
+static int
+is_node_name_in_filter(const char* var_name, const char* filter)
+{
+    return strstr(filter, var_name) != NULL;
+}
+
+static int
+is_node_in_filter(const struct ast* ast, ast_id n, const char* filter)
+{
+    if (filter == NULL)
+        return 1;
+
+    switch (ast_node_type(ast, n))
+    {
+#define X(enum, var, node, left, right)                                        \
+    case enum:                                                                 \
+        if (is_node_name_in_filter(var, filter))                               \
+            return 1;                                                          \
+        break;
+        NAMES_LIST
+#undef X
+    }
+
+    return 0;
+}
+
+static int
+is_tree_in_filter(const struct ast* ast, ast_id n, const char* filter)
+{
+    ast_id left, right;
+
+    if (is_node_in_filter(ast, n, filter))
+        return 1;
+
+    left = ast->nodes[n].base.left;
+    right = ast->nodes[n].base.right;
+    if (right > -1 && is_tree_in_filter(ast, right, filter))
+        return 1;
+    if (left > -1 && is_tree_in_filter(ast, left, filter))
+        return 1;
+
+    return 0;
+}
+
 static void
 write_unpack_ast(
     FILE*             fp,
@@ -204,13 +248,16 @@ write_unpack_ast(
     struct utf8_list* cmds,
     const struct cfg* cfg)
 {
+    if (!is_tree_in_filter(ast, n, cfg->node_filter))
+        return;
+
     fprintf(fp, "    ast_id ");
     write_var_name(fp, ast, n);
     fprintf(fp, " = ");
     write_getter(fp, ast, p, n);
     fprintf(fp, ";\n");
 
-    if (cfg->with_node_types)
+    if (cfg->with_node_types && is_node_in_filter(ast, n, cfg->node_filter))
     {
         fprintf(fp, "    ASSERT_THAT(ast_node_type(ast, ");
         write_var_name(fp, ast, n);
@@ -535,11 +582,12 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
 }
 
 static void
-write_property_checks(FILE* fp, const struct ast* ast)
+write_property_checks(FILE* fp, const struct ast* ast, const struct cfg* cfg)
 {
     ast_id n;
     for (n = 0; n != ast_count(ast); ++n)
-        write_property_check(fp, ast, n);
+        if (is_node_in_filter(ast, n, cfg->node_filter))
+            write_property_check(fp, ast, n);
 }
 
 static void
@@ -553,11 +601,12 @@ write_type_check(FILE* fp, const struct ast* ast, ast_id n)
 }
 
 static void
-write_type_checks(FILE* fp, const struct ast* ast)
+write_type_checks(FILE* fp, const struct ast* ast, const struct cfg* cfg)
 {
     ast_id n;
     for (n = 0; n != ast_count(ast); ++n)
-        write_type_check(fp, ast, n);
+        if (is_node_in_filter(ast, n, cfg->node_filter))
+            write_type_check(fp, ast, n);
 }
 
 static void
@@ -569,11 +618,12 @@ write_scope_check(FILE* fp, const struct ast* ast, ast_id n)
 }
 
 static void
-write_scope_checks(FILE* fp, const struct ast* ast)
+write_scope_checks(FILE* fp, const struct ast* ast, const struct cfg* cfg)
 {
     ast_id n;
     for (n = 0; n != ast_count(ast); ++n)
-        write_scope_check(fp, ast, n);
+        if (is_node_in_filter(ast, n, cfg->node_filter))
+            write_scope_check(fp, ast, n);
 }
 
 int
@@ -585,6 +635,8 @@ export_gtest(
     const struct cfg* cfg)
 {
     fprintf(fp, "    /* odb-asttool --format gtest");
+    if (cfg->node_filter)
+        fprintf(fp, " --node-filter %s", cfg->node_filter);
     if (cfg->with_types)
         fprintf(fp, " --types");
     if (cfg->with_scopes)
@@ -604,19 +656,19 @@ export_gtest(
     if (cfg->with_node_properties)
     {
         fprintf(fp, "\n");
-        write_property_checks(fp, ast);
+        write_property_checks(fp, ast, cfg);
     }
 
     if (cfg->with_types)
     {
         fprintf(fp, "\n");
-        write_type_checks(fp, ast);
+        write_type_checks(fp, ast, cfg);
     }
 
     if (cfg->with_scopes)
     {
         fprintf(fp, "\n");
-        write_scope_checks(fp, ast);
+        write_scope_checks(fp, ast, cfg);
     }
 
     fprintf(fp, "    /* odb-asttool end */");

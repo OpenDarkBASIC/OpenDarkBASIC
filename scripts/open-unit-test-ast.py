@@ -53,15 +53,18 @@ def find_parser_source(line_num):
         line_num += 1
     return "\n".join(source.split("\\n"))
 
-def get_asttool_args(line_num):
+def find_asttool_args(line_num):
     if "/* odb-asttool --format" not in lines[line_num]:
         raise RuntimeError("Failed to find asttool args")
-    line = lines[line_num].strip("/* ")
-    return line.split(" ")[3:]
+    args = lines[line_num].strip("/* ").split(" ")[1:]
+    while "*" in lines[line_num+1]:
+        args += lines[line_num+1].strip("/* ").split(" ")
+        line_num += 1
+    return args
 
 test_start = find_test_start(line_num)
 start_marker = find_start_marker(test_start + 1)
-asttool_args = get_asttool_args(start_marker) if start_marker else ""
+asttool_args = find_asttool_args(start_marker) if start_marker else ""
 
 if ast_type >= 1 and ast_type <= 2:
     source = find_parser_source(test_start)

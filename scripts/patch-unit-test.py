@@ -47,8 +47,11 @@ def find_end_marker(line_num):
 def find_asttool_args(line_num):
     if "/* odb-asttool --format" not in lines[line_num]:
         raise RuntimeError("Failed to find asttool args")
-    line = lines[line_num].strip("/* ")
-    return line.split(" ")[1:]
+    args = lines[line_num].strip("/* ").split(" ")[1:]
+    while "*" in lines[line_num+1]:
+        args += lines[line_num+1].strip("/* ").split(" ")
+        line_num += 1
+    return args
 
 
 test_start = find_test_start(line_num)

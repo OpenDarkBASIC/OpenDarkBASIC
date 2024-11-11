@@ -10,6 +10,7 @@ struct cfg
 {
     const char*      input_fname;
     const char*      output_fname;
+    const char*      node_filter;
     enum export_type export_type : 2;
     unsigned         with_scopes : 1;
     unsigned         with_types : 1;
