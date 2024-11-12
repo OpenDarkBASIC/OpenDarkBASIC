@@ -59,25 +59,23 @@ ls.add_snippets("c", {
         end, { 2 }),
         t(");"),
     }),
-    sn({ trig = "asta", docstring = "Assert AST nodes" }, {
-        t("ODBUTIL_DEBUG_ASSERT("),
-        c(1, {t("ast_node_type"), t("ast_type_info"),}),
-        t("("), c(2, { i(1, "ast"), i(2, "*astp") }),
-        t(", "), i(3, "node"), t(")"),
-        t(" == "),
-        f(function(values)
-            if values[1][1] == "ast_node_type" then return "AST_" else return "TYPE_" end
-        end, {1}),
-        i(4, "BLOCK"),
-        t(", log_err("),
-        f(function(values)
-            local func = values[1][1]
-            local ast = values[2][1]
-            local node = values[3][1]
-            return '"type: %d\\n", ' .. func .. "(" .. ast .. ", " .. node .. ")"
-        end, { 1, 2, 3 }),
-        t("));"),
-    }),
+    sn({ trig = "asta", docstring = "Assert AST nodes" },
+        fmt("ODBUTIL_DEBUG_ASSERT(\n    {}({}, {}) == {}{},\n    log_err({}));", {
+            c(1, { t("ast_node_type"), t("ast_type_info"), }),
+            c(2, { i(1, "ast"), i(2, "*astp") }),
+            i(3, "node"),
+            f(function(values)
+                if values[1][1] == "ast_node_type" then return "AST_" else return "TYPE_" end
+            end, { 1 }),
+            i(4, "BLOCK"),
+            f(function(values)
+                local func = values[1][1]
+                local ast = values[2][1]
+                local node = values[3][1]
+                return '"type: %d\\n", ' .. func .. "(" .. ast .. ", " .. node .. ")"
+            end, { 1, 2, 3 }),
+        })
+    ),
 }, { key = "OpenDarkBASIC-c" })
 
 ls.add_snippets("cpp", {
