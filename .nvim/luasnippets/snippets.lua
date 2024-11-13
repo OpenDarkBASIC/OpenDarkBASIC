@@ -1,7 +1,8 @@
 local ls = require("luasnip")
 local extras = require("luasnip.extras")
 local fmt = require("luasnip.extras.fmt").fmt
-local sn = ls.snippet
+local s = ls.snippet
+local sn = ls.snippet_node
 local c = ls.choice_node
 local i = ls.insert_node
 local r = ls.restore_node
@@ -16,11 +17,11 @@ local function var_to_node_name(value)
         ["ident"] = "identifier",
         ["ass"] = "assignment",
     }
-    return special_cases[value:gsub("[%d_]+$", "")] or value
+    return special_cases[value] or value
 end
 
 ls.add_snippets("c", {
-    sn({ trig = "ast", desc = "Access AST node" },
+    s({ trig = "ast", desc = "Access AST node" },
         fmt("{}->nodes[{}].{}.{};", {
             c(1, { i(1, "ast"), i(2, "(*astp)") }),
             i(2, "node", { key = "varname" }),
@@ -31,20 +32,35 @@ ls.add_snippets("c", {
             i(4, "property"),
         })
     ),
-    sn({ trig = "asd", desc = "Access AST node" },
-        -- In C the variable is usually declared at the top of the function
-        fmt("{} = {}->nodes[{}].{}.{};", {
-            i(1, "node", { key = "varname" }),
-            c(2, { i(1, "ast"), i(2, "(*astp)") }),
-            i(3, "parent"),
-            c(4, {
-                f(function(values) return var_to_node_name(values[1][1]) end, k("varname")),
-                i(2, "node"),
-            }),
-            i(5, "property")
+    s({ trig = "asd", desc = "Access AST node" },
+        c(1, {
+            sn(1,
+                fmt("{} = {}->nodes[{}].{}.{};", {
+                    i(1, "node", { key = "varname1" }),
+                    c(2, { i(1, "ast"), i(2, "(*astp)") }),
+                    i(3, "parent"),
+                    c(4, {
+                        f(function(values) return var_to_node_name(values[1][1]) end, k("varname1")),
+                        i(2, "node"),
+                    }),
+                    i(5, "property")
+                })
+            ),
+            sn(2,
+                fmt("ast_id {} = {}->nodes[{}].{}.{};", {
+                    i(1, "node", { key = "varname2" }),
+                    c(2, { i(1, "ast"), i(2, "(*astp)") }),
+                    i(3, "parent"),
+                    c(4, {
+                        f(function(values) return var_to_node_name(values[1][1]) end, k("varname2")),
+                        i(2, "node"),
+                    }),
+                    i(5, "property")
+                })
+            ),
         })
     ),
-    sn({ trig = "log", docstring = "Logging function" }, {
+    s({ trig = "log", docstring = "Logging function" }, {
         c(1, { i(1, "log_err"), i(2, "log_warn"), i(3, "log_dbg"), i(4, "log_info") }),
         t('("'), i(2, ""), t('\\n"'),
         d(3, function(values)
@@ -55,11 +71,39 @@ ls.add_snippets("c", {
                 table.insert(nodes, t(", "))
                 table.insert(nodes, r(idx, "arg" .. idx, i(nil, "arg" .. idx)))
             end
-            return sn({ docstring = "" }, nodes)
+            return sn(1, nodes)
         end, { 2 }),
         t(");"),
     }),
-    sn({ trig = "asta", docstring = "Assert AST nodes" },
+    s({ trig = "odba", docstring = "Assert" }, {
+        t("ODBUTIL_DEBUG_ASSERT("),
+        c(1, {
+            i(1, "stmt"),
+            sn(3, { i(1, "stmt"), t(" != NULL") }),
+            sn(2, { i(1, "stmt"), t(" > -1") }),
+        }),
+        t(", "),
+        c(2, {
+            i(1, "(void)0"),
+            sn(2, {
+                t('log_err("'),
+                i(1, ""), t('\\n"'),
+                d(2, function(values)
+                    local fmt_string = values[1][1]
+                    local nodes = {}
+                    for _ in fmt_string:gmatch("%%[^%%]") do
+                        local idx = #nodes / 2 + 1
+                        table.insert(nodes, t(", "))
+                        table.insert(nodes, r(idx, "arg" .. idx, i(nil, "arg" .. idx)))
+                    end
+                    return sn(1, nodes)
+                end, { 1 }),
+                t(")"),
+            }),
+        }),
+        t(");"),
+    }),
+    s({ trig = "asta", docstring = "Assert AST nodes" },
         fmt("ODBUTIL_DEBUG_ASSERT(\n    {}({}, {}) == {}{},\n    log_err({}));", {
             c(1, { t("ast_node_type"), t("ast_type_info"), }),
             c(2, { i(1, "ast"), i(2, "*astp") }),
@@ -79,7 +123,7 @@ ls.add_snippets("c", {
 }, { key = "OpenDarkBASIC-c" })
 
 ls.add_snippets("cpp", {
-    sn({ trig = "ast", desc = "Access AST node" },
+    s({ trig = "ast", desc = "Access AST node" },
         fmt("{}->nodes[{}].{}.{};", {
             c(1, { i(1, "ast"), i(2, "(*astp)") }),
             i(2, "node", { key = "varname" }),
@@ -90,17 +134,77 @@ ls.add_snippets("cpp", {
             i(4, "property"),
         })
     ),
-    sn({ trig = "asd", desc = "Define and access AST node" },
-        -- In C++ the variable is usually declared at the same location
-        fmt("ast_id {} = {}->nodes[{}].{}.{};", {
-            i(1, "node"),
-            c(2, { i(1, "ast"), i(2, "(*astp)") }),
-            i(3, "node", { key = "varname" }),
-            c(4, {
-                f(function(values) return var_to_node_name(values[1][1]) end, k("varname")),
-                i(2, "node"),
+    s({ trig = "asd", desc = "Access AST node" },
+        c(1, {
+            sn(1,
+                fmt("{} = {}->nodes[{}].{}.{};", {
+                    i(1, "node", { key = "varname1" }),
+                    c(2, { i(1, "ast"), i(2, "(*astp)") }),
+                    i(3, "parent"),
+                    c(4, {
+                        f(function(values) return var_to_node_name(values[1][1]) end, k("varname1")),
+                        i(2, "node"),
+                    }),
+                    i(5, "property")
+                })
+            ),
+            sn(2,
+                fmt("ast_id {} = {}->nodes[{}].{}.{};", {
+                    i(1, "node", { key = "varname2" }),
+                    c(2, { i(1, "ast"), i(2, "(*astp)") }),
+                    i(3, "parent"),
+                    c(4, {
+                        f(function(values) return var_to_node_name(values[1][1]) end, k("varname2")),
+                        i(2, "node"),
+                    }),
+                    i(5, "property")
+                })
+            ),
+        })
+    ),
+    s({ trig = "odba", docstring = "Assert" }, {
+        t("ODBUTIL_DEBUG_ASSERT("),
+        c(1, {
+            i(1, "stmt"),
+            sn(3, { i(1, "stmt"), t(" != NULL") }),
+            sn(2, { i(1, "stmt"), t(" > -1") }),
+        }),
+        t(", "),
+        c(2, {
+            i(1, "(void)0"),
+            sn(2, {
+                t('log_err("'),
+                i(1, ""), t('\\n"'),
+                d(2, function(values)
+                    local fmt_string = values[1][1]
+                    local nodes = {}
+                    for _ in fmt_string:gmatch("%%[^%%]") do
+                        local idx = #nodes / 2 + 1
+                        table.insert(nodes, t(", "))
+                        table.insert(nodes, r(idx, "arg" .. idx, i(nil, "arg" .. idx)))
+                    end
+                    return sn(1, nodes)
+                end, { 1 }),
+                t(")"),
             }),
-            i(5, "property")
+        }),
+        t(");"),
+    }),
+    s({ trig = "asta", docstring = "Assert AST nodes" },
+        fmt("ODBUTIL_DEBUG_ASSERT(\n    {}({}, {}) == {}{},\n    log_err({}));", {
+            c(1, { t("ast_node_type"), t("ast_type_info"), }),
+            c(2, { i(1, "ast"), i(2, "*astp") }),
+            i(3, "node"),
+            f(function(values)
+                if values[1][1] == "ast_node_type" then return "AST_" else return "TYPE_" end
+            end, { 1 }),
+            i(4, "BLOCK"),
+            f(function(values)
+                local func = values[1][1]
+                local ast = values[2][1]
+                local node = values[3][1]
+                return '"type: %d\\n", ' .. func .. "(" .. ast .. ", " .. node .. ")"
+            end, { 1, 2, 3 }),
         })
     ),
 }, { key = "OpenDarkBASIC-cpp" })
