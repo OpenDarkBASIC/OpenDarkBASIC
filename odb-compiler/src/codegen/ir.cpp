@@ -32,8 +32,8 @@ struct view_scope
     int32_t          scope;
 };
 
-VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
-VEC_DEFINE_API(spanlist, struct span_scope, 32)
+VEC_DECLARE_API(static, span_scopes, struct span_scope, 32)
+VEC_DEFINE_API(span_scopes, struct span_scope, 32)
 
 struct loop_stack_entry
 {
@@ -70,9 +70,9 @@ VEC_DEFINE_API(results, llvm::Value*, 32)
 
 struct allocamap_kvs
 {
-    const char*        source;
-    struct spanlist*   keys;
-    llvm::AllocaInst** values;
+    const char*         source;
+    struct span_scopes* keys;
+    llvm::AllocaInst**  values;
 };
 
 static hash32
@@ -86,16 +86,17 @@ allocamap_kvs_alloc(
     struct allocamap_kvs* kvs, struct allocamap_kvs* old_kvs, int32_t capacity)
 {
     kvs->source = NULL;
-    spanlist_init(&kvs->keys);
-    if (spanlist_resize(&kvs->keys, capacity) != 0)
+    span_scopes_init(&kvs->keys);
+    if (span_scopes_resize(&kvs->keys, capacity) != 0)
         return -1;
 
     kvs->values
-        = (llvm::AllocaInst**)mem_alloc(sizeof(llvm::AllocaInst*) * capacity);
+        = (llvm::AllocaInst**)mem_alloc(sizeof(*kvs->values) * capacity);
     if (kvs->values == NULL)
     {
-        spanlist_deinit(kvs->keys);
-        return log_oom(sizeof(enum type) * capacity, "allocamap_kvs_alloc()");
+        span_scopes_deinit(kvs->keys);
+        return log_oom(
+            sizeof(*kvs->values) * capacity, "allocamap_kvs_alloc()");
     }
 
     return 0;
@@ -104,13 +105,13 @@ static void
 allocamap_kvs_free_old(struct allocamap_kvs* kvs)
 {
     mem_free(kvs->values);
-    spanlist_deinit(kvs->keys);
+    span_scopes_deinit(kvs->keys);
 }
 static void
 allocamap_kvs_free(struct allocamap_kvs* kvs)
 {
     mem_free(kvs->values);
-    spanlist_deinit(kvs->keys);
+    span_scopes_deinit(kvs->keys);
 }
 static struct view_scope
 allocamap_kvs_get_key(const struct allocamap_kvs* kvs, int32_t slot)
@@ -180,9 +181,9 @@ HM_DEFINE_API_FULL(
 
 struct typemap_kvs
 {
-    const char*        source;
-    struct spanlist*   keys;
-    llvm::StructType** values;
+    const char*         source;
+    struct span_scopes* keys;
+    llvm::StructType**  values;
 };
 
 static hash32
@@ -196,16 +197,16 @@ typemap_kvs_alloc(
     struct typemap_kvs* kvs, struct typemap_kvs* old_kvs, int32_t capacity)
 {
     kvs->source = NULL;
-    spanlist_init(&kvs->keys);
-    if (spanlist_resize(&kvs->keys, capacity) != 0)
+    span_scopes_init(&kvs->keys);
+    if (span_scopes_resize(&kvs->keys, capacity) != 0)
         return -1;
 
     kvs->values
-        = (llvm::StructType**)mem_alloc(sizeof(llvm::StructType*) * capacity);
+        = (llvm::StructType**)mem_alloc(sizeof(*kvs->values) * capacity);
     if (kvs->values == NULL)
     {
-        spanlist_deinit(kvs->keys);
-        return log_oom(sizeof(enum type) * capacity, "typemap_kvs_alloc()");
+        span_scopes_deinit(kvs->keys);
+        return log_oom(sizeof(*kvs->values) * capacity, "typemap_kvs_alloc()");
     }
 
     return 0;
@@ -214,13 +215,13 @@ static void
 typemap_kvs_free_old(struct typemap_kvs* kvs)
 {
     mem_free(kvs->values);
-    spanlist_deinit(kvs->keys);
+    span_scopes_deinit(kvs->keys);
 }
 static void
 typemap_kvs_free(struct typemap_kvs* kvs)
 {
     mem_free(kvs->values);
-    spanlist_deinit(kvs->keys);
+    span_scopes_deinit(kvs->keys);
 }
 static struct view_scope
 typemap_kvs_get_key(const struct typemap_kvs* kvs, int32_t slot)
@@ -298,9 +299,13 @@ to_string(const llvm::Type* ty)
 }
 
 static llvm::Type*
-type_to_llvm(enum type type, llvm::LLVMContext* ctx)
+type_to_llvm(
+    union type         type,
+    const struct ast*  ast,
+    const char*        source,
+    llvm::LLVMContext* ctx)
 {
-    switch (type)
+    switch (type.primitive)
     {
         case TYPE_INVALID: break;
 
@@ -318,20 +323,14 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
         case TYPE_F64: return llvm::Type::getDoubleTy(*ctx);
 
         case TYPE_STRING:
-        case TYPE_ARRAY:
-            return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(*ctx));
-
-        case TYPE_LABEL:
-        case TYPE_DABEL: break;
-
-        case TYPE_ANY:
-            return llvm::PointerType::getUnqual(llvm::Type::getVoidTy(*ctx));
-
-        case TYPE_UDT_PTR:
             return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(*ctx));
     }
 
-    log_err("Don't know how to convert DBPro type {quote:%c} to LLVM\n", type);
+    struct utf8_view name = type_name(type, ast, source);
+    log_err(
+        "Don't know how to convert DBPro type {quote:%.*s} to LLVM\n",
+        name.len,
+        name.data + name.off);
     return nullptr;
 }
 
@@ -350,7 +349,7 @@ udt_to_llvm(
         ast_id ast_member = ast->nodes[ast_members].block.stmt;
         if (ast_node_type(ast, ast_member) == AST_VAR_DECL1)
             llvm_members.push_back(
-                type_to_llvm(ast_type_info(ast, ast_member), ctx));
+                type_to_llvm(ast_type_info(ast, ast_member), ast, source, ctx));
         else if (ast_node_type(ast, ast_member) == AST_UDT_DECL)
         {
             llvm::StructType* Ty = udt_to_llvm(ast, ast_member, source, ctx);
@@ -473,6 +472,29 @@ create_udt_table(
     return 0;
 }
 
+static char
+type_to_char(union type type)
+{
+    switch (type.primitive)
+    {
+        case TYPE_INVALID: break;
+
+        case TYPE_VOID: return '0';
+        case TYPE_I64: return 'R';
+        case TYPE_U32: return 'D';
+        case TYPE_I32: return 'L';
+        case TYPE_U16: return 'W';
+        case TYPE_U8: return 'Y';
+        case TYPE_BOOL: return 'B';
+        case TYPE_F32: return 'F';
+        case TYPE_F64: return 'O';
+        case TYPE_STRING: return 'S';
+    }
+
+    ODBUTIL_DEBUG_ASSERT(0, (void)0);
+    return 'E';
+}
+
 int
 func_name_from_paramlist(
     llvm::SmallString<128>& func_name,
@@ -551,15 +573,16 @@ create_db_func_table(
              ast_paramlist = ast->nodes[ast_paramlist].paramlist.next)
         {
             ast_id      ast_param = ast->nodes[ast_paramlist].paramlist.param;
-            enum type   param_type = ast_type_info(ast, ast_param);
-            llvm::Type* Ty = type_to_llvm(param_type, &ir->ctx);
+            union type  param_type = ast_type_info(ast, ast_param);
+            llvm::Type* Ty = type_to_llvm(param_type, ast, source, &ir->ctx);
             param_types.push_back(Ty);
         }
 
         /* Create return type */
         llvm::Type* llvm_retval
             = ast_retval > -1
-                  ? type_to_llvm(ast_type_info(ast, ast_retval), &ir->ctx)
+                  ? type_to_llvm(
+                        ast_type_info(ast, ast_retval), ast, source, &ir->ctx)
                   : llvm::Type::getVoidTy(ir->ctx);
 
         /* Because polymorphic functions exist, we append type information to
@@ -645,6 +668,7 @@ static llvm::FunctionType*
 get_cmd_func_signature(
     struct ir_module*      ir,
     const struct ast*      ast,
+    const char*            source,
     ast_id                 cmd,
     enum sdk_type          sdk_type,
     const struct cmd_list* cmds)
@@ -661,17 +685,18 @@ get_cmd_func_signature(
     const struct cmd_param*           param;
     vec_for_each(param_types, param)
     {
-        if (sdk_type == SDK_DBPRO && param->type == TYPE_F32)
+        if (sdk_type == SDK_DBPRO && param->primitive == TYPE_F32)
             ParamTypes.push_back(llvm::Type::getInt32Ty(ir->ctx));
         else
         {
-            llvm::Type* Ty = type_to_llvm(param->type, &ir->ctx);
+            llvm::Type* Ty = type_to_llvm(
+                type_primitive(param->primitive), ast, source, &ir->ctx);
             ParamTypes.push_back(Ty);
         }
     }
 
     /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
-    enum type ret_type = cmds->return_types->data[cmd_id];
+    enum primitive_type ret_type = cmds->return_types->data[cmd_id];
     if (sdk_type == SDK_DBPRO)
         if (ret_type == TYPE_F32)
             return llvm::FunctionType::get(
@@ -680,7 +705,7 @@ get_cmd_func_signature(
                 /* isVarArg */ false);
 
     return llvm::FunctionType::get(
-        type_to_llvm(ret_type, &ir->ctx),
+        type_to_llvm(type_primitive(ret_type), ast, source, &ir->ctx),
         ParamTypes,
         /* isVarArg */ false);
 }
@@ -692,6 +717,7 @@ process_command(
     struct ir_module*                             ir,
     llvm::IRBuilder<>&                            b,
     const struct ast*                             ast,
+    const char*                                   source,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table)
@@ -736,14 +762,14 @@ process_command(
         = cmd_func_table->find(CmdSymbol)->getValue();
 
     llvm::FunctionType* FT
-        = get_cmd_func_signature(ir, ast, cmd, sdk_type, cmds);
+        = get_cmd_func_signature(ir, ast, source, cmd, sdk_type, cmds);
     llvm::Value* CmdFuncAddr
         = b.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), CmdFuncPtr);
     llvm::Value* RetVal = b.CreateCall(FT, CmdFuncAddr, Args);
 
     /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
     if (sdk_type == SDK_DBPRO)
-        if (ast_type_info(ast, cmd) == TYPE_F32)
+        if (ast_type_info(ast, cmd).primitive == TYPE_F32)
             RetVal = b.CreateBitCast(RetVal, llvm::Type::getFloatTy(ir->ctx));
 
     return 0;
@@ -792,7 +818,7 @@ process_assignment(
 static int
 process_var_decl(
     struct stack**        stack,
-    struct results*       results,
+    struct results**      results,
     struct ir_module*     ir,
     llvm::IRBuilder<>&    builder,
     const char*           source,
@@ -817,18 +843,12 @@ process_var_decl(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
 
-    /* Evaluate init expression */
-    if (num_results == 0)
-    {
-        if (stack_push_node(stack, init_expr) != 0)
-            return -1;
-        entry->num_results = 1;
-        return 0;
-    }
-    llvm::Value* InitExpr = *results_pop(results);
-
+    /* udt_init expects the parent node to allocate the space for its members.
+     * This is because returning UDTs from e.g. functions can't be done through
+     * registers (generally). Instead, it must be returned through an
+     * out-parameter. */
     llvm::AllocaInst** Ap;
-    enum type          type = ast_type_info(ast, identifier);
+    union type         type = ast_type_info(ast, identifier);
     struct utf8_span   span = ast->nodes[identifier].identifier.name;
     struct utf8_view   name = utf8_span_view(source, span);
     struct view_scope  name_scope = {name, ast_scope(ast, identifier)};
@@ -837,17 +857,26 @@ process_var_decl(
         case HM_OOM: return -1;
         case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case HM_NEW:
-            if (type == TYPE_UDT_PTR)
+            if (type_is_primitive(type))
             {
-                ast_id as_udt = ast->nodes[decl2].var_decl2.as;
+                *Ap = builder.CreateAlloca(
+                    type_to_llvm(type, ast, source, &ir->ctx),
+                    nullptr,
+                    llvm::StringRef(name.data + name.off, name.len));
+            }
+            else
+            {
+                ast_id udt_decl = type_udt_decl(type);
                 ODBUTIL_DEBUG_ASSERT(
-                    ast_node_type(ast, as_udt) == AST_AS_UDT,
-                    log_err("type: %d\n", ast_node_type(ast, as_udt)));
+                    ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+                    log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
+                ast_id udt_ident
+                    = ast->nodes[udt_decl].udt_decl.type_identifier;
                 struct utf8_span type_span
-                    = ast->nodes[as_udt].as_udt.type_name;
+                    = ast->nodes[udt_ident].identifier.name;
                 struct utf8_view  type_name = utf8_span_view(source, type_span);
-                struct view_scope key = {type_name, ast_scope(ast, as_udt)};
+                struct view_scope key = {type_name, ast_scope(ast, udt_decl)};
                 llvm::StructType** StructTy = typemap_find(udt_table, key);
                 ODBUTIL_DEBUG_ASSERT(StructTy, (void)0);
 
@@ -855,17 +884,32 @@ process_var_decl(
                     type_name.data + type_name.off, type_name.len);
                 *Ap = builder.CreateAlloca(*StructTy, nullptr, TypeName);
             }
-            else
-            {
-                *Ap = builder.CreateAlloca(
-                    type_to_llvm(type, &ir->ctx),
-                    nullptr,
-                    llvm::StringRef(name.data + name.off, name.len));
-            }
             break;
     }
 
-    builder.CreateStore(InitExpr, *Ap);
+    /* Evaluate init expression */
+    if (num_results == 0)
+    {
+        if (!type_is_primitive(type))
+            if (results_push(results, *Ap) != 0)
+                return -1;
+
+        if (stack_push_node(stack, init_expr) != 0)
+            return -1;
+
+        entry->num_results = 1;
+        return 0;
+    }
+
+    /* If the variable is a primitive type, then it will have been pushed to the
+     * results-stack. if it is a complex type, then the child node will have
+     * already written to the alloca because it is handled as an out-parameter
+     */
+    if (!type_is_primitive(type))
+    {
+        llvm::Value* InitExpr = *results_pop(*results);
+        builder.CreateStore(InitExpr, *Ap);
+    }
 
     stack_pop(*stack);
     return 0;
@@ -922,7 +966,7 @@ process_var_write(
         log_err("type: %d\n", ast_node_type(ast, var_write)));
 
     llvm::AllocaInst** Ap;
-    enum type          type = ast_type_info(ast, var_write);
+    union type         type = ast_type_info(ast, var_write);
     ast_id             ident = ast->nodes[var_write].var_write.identifier;
     struct utf8_span   span = ast->nodes[ident].identifier.name;
     struct utf8_view   name = utf8_span_view(source, span);
@@ -933,7 +977,7 @@ process_var_write(
         case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap != NULL, (void)0); break;
         case HM_NEW:
             *Ap = builder.CreateAlloca(
-                type_to_llvm(type, &ir->ctx),
+                type_to_llvm(type, ast, source, &ir->ctx),
                 NULL,
                 llvm::StringRef(name.data + name.off, name.len));
             break;
@@ -972,7 +1016,36 @@ process_udt_init(
          * again */
         for (; members > -1; members = ast->nodes[members].arglist.next)
         {
-            ast_id member = ast->nodes[members].arglist.expr;
+            ast_id     member = ast->nodes[members].arglist.expr;
+            union type member_type = ast_type_info(ast, member);
+
+            /* udt_init expects the parent node to allocate the space for its
+             * members. This is because returning UDTs from e.g. functions can't
+             * be done through registers (generally). Instead, it must be
+             * returned through an out-parameter. */
+            if (!type_is_primitive(member_type))
+            {
+                ast_id udt_decl = type_udt_decl(member_type);
+                ODBUTIL_DEBUG_ASSERT(
+                    ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+                    log_err("type: %d\n", ast_node_type(ast, udt_decl)));
+
+                ast_id udt_ident
+                    = ast->nodes[udt_decl].udt_decl.type_identifier;
+                struct utf8_span type_span
+                    = ast->nodes[udt_ident].identifier.name;
+                struct utf8_view  type_name = utf8_span_view(source, type_span);
+                struct view_scope key = {type_name, ast_scope(ast, udt_decl)};
+                llvm::StructType** StructTy = typemap_find(udt_table, key);
+                ODBUTIL_DEBUG_ASSERT(StructTy, (void)0);
+
+                llvm::Value* StructPtr = *vec_last(*results);
+                llvm::Value* MemberPtr
+                    = b.CreateStructGEP(*StructTy, StructPtr, num_results);
+                if (results_push(results, MemberPtr) != 0)
+                    return -1;
+            }
+
             if (stack_push_node(stack, member) != 0)
                 return -1;
             num_results++;
@@ -982,26 +1055,22 @@ process_udt_init(
         return 0;
     }
 
+    /* Get child values */
     llvm::ArrayRef<llvm::Value*> InitValues(
         results_pop_by(*results, num_results), num_results);
 
-    struct utf8_span   type_span = ast->nodes[udt_init].udt_init.type_name;
-    struct utf8_view   type_name = utf8_span_view(source, type_span);
-    struct view_scope  key = {type_name, ast_scope(ast, udt_init)};
-    llvm::StructType** StructTy = typemap_find(udt_table, key);
-    ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
-
-    llvm::StringRef   TypeName(type_name.data + type_name.off, type_name.len);
-    llvm::AllocaInst* StructPtr = b.CreateAlloca(*StructTy, nullptr, TypeName);
-
+    /* Get parent alloca -- caller must ensure it allocates the space for us */
+    llvm::AllocaInst* StructPtr
+        = llvm::cast<llvm::AllocaInst>(*results_pop(*results));
     for (const auto& [index, InitValue] : llvm::enumerate(InitValues))
     {
-        llvm::Value* MemberPtr = b.CreateStructGEP(*StructTy, StructPtr, index);
+        llvm::Value* MemberPtr = b.CreateStructGEP(
+            StructPtr->getAllocatedType(), StructPtr, index);
         b.CreateStore(InitValue, MemberPtr);
     }
 
     stack_pop(*stack);
-    return results_push(results, StructPtr);
+    return 0;
 }
 
 static int
@@ -1021,9 +1090,9 @@ process_udt_read(
         ast_node_type(ast, udt_read) == AST_UDT_READ,
         log_err("type: %d\n", ast_node_type(ast, udt_read)));
 
-    struct utf8_span   type_span = ast->nodes[udt_read].udt_read.type_name;
-    struct utf8_view   type_name = utf8_span_view(source, type_span);
-    struct view_scope  key = {type_name, ast_scope(ast, udt_read)};
+    union type         type = ast_type_info(ast, udt_read);
+    struct utf8_view   name = type_name(type, ast, source);
+    struct view_scope  key = {name, ast_scope(ast, udt_read)};
     llvm::StructType** StructTy = typemap_find(udt_table, key);
     ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
 
@@ -1079,13 +1148,13 @@ process_binop(
     llvm::Value* LHS = *results_pop(*results);
     llvm::Value* RHS = *results_pop(*results);
 
-    enum type lhs_type = ast_type_info(ast, lhs);
-    enum type rhs_type = ast_type_info(ast, rhs);
-    enum type result_type = ast_type_info(ast, binop);
+    union type lhs_type = ast_type_info(ast, lhs);
+    union type rhs_type = ast_type_info(ast, rhs);
+    union type result_type = ast_type_info(ast, binop);
 
     /* Handle string operations seperately from arithmetic, since there
      * are only a handful of ops that are valid */
-    if (result_type == TYPE_STRING)
+    if (result_type.primitive == TYPE_STRING)
     {
         // TODO
         return -1;
@@ -1096,21 +1165,16 @@ process_binop(
         INT,
         UINT,
         FLOAT
-    } type_family
-        = INT;
+    } type_family;
     ODBUTIL_DEBUG_ASSERT(
-        lhs_type == rhs_type,
-        log_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
-    switch (lhs_type)
+        types_equal(lhs_type, rhs_type),
+        log_err("lhs: %d, rhs: %d\n", lhs_type.id, rhs_type.id));
+    ODBUTIL_DEBUG_ASSERT(type_is_primitive(lhs_type), (void)0);
+    switch (lhs_type.primitive)
     {
         case TYPE_INVALID:
         case TYPE_VOID:
-        case TYPE_STRING:
-        case TYPE_ARRAY:
-        case TYPE_LABEL:
-        case TYPE_DABEL:
-        case TYPE_ANY:
-        case TYPE_UDT_PTR: ODBUTIL_DEBUG_ASSERT(false, (void)0); return -1;
+        case TYPE_STRING: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
         case TYPE_BOOL:
         case TYPE_I32:
@@ -1175,7 +1239,8 @@ process_binop(
             }
             break;
         case BINOP_POW:
-            if (lhs_type == TYPE_F32 && rhs_type == TYPE_I32)
+            if (lhs_type.primitive == TYPE_F32
+                && rhs_type.primitive == TYPE_I32)
             {
                 llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
                     &ir->mod,
@@ -1184,7 +1249,9 @@ process_binop(
                      llvm::Type::getInt32Ty(ir->ctx)});
                 return results_push(results, b.CreateCall(FPowi, {LHS, RHS}));
             }
-            else if (lhs_type == TYPE_F64 && rhs_type == TYPE_I32)
+            else if (
+                lhs_type.primitive == TYPE_F64
+                && rhs_type.primitive == TYPE_I32)
             {
                 llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
                     &ir->mod,
@@ -1193,7 +1260,9 @@ process_binop(
                      llvm::Type::getInt32Ty(ir->ctx)});
                 return results_push(results, b.CreateCall(FPowi, {LHS, RHS}));
             }
-            else if (lhs_type == TYPE_F32 && rhs_type == TYPE_F32)
+            else if (
+                lhs_type.primitive == TYPE_F32
+                && rhs_type.primitive == TYPE_F32)
             {
                 llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
                     &ir->mod,
@@ -1202,7 +1271,9 @@ process_binop(
                      llvm::Type::getFloatTy(ir->ctx)});
                 return results_push(results, b.CreateCall(FPow, {LHS, RHS}));
             }
-            else if (lhs_type == TYPE_F64 && rhs_type == TYPE_F64)
+            else if (
+                lhs_type.primitive == TYPE_F64
+                && rhs_type.primitive == TYPE_F64)
             {
 
                 llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
@@ -1359,7 +1430,7 @@ process_cond(
             /* fallthrough */
 
         case 2: {
-            auto No = llvm::dyn_cast<llvm::BasicBlock>(*results_pop(*results));
+            auto No = llvm::cast<llvm::BasicBlock>(*results_pop(*results));
             llvm::BasicBlock* Merge = llvm::BasicBlock::Create(ir->ctx);
 
             /* The "Yes" block may have changed, for example, if a nested if
@@ -1390,8 +1461,7 @@ process_cond(
             /* fallthrough */
 
         case 3: {
-            auto Merge
-                = llvm::dyn_cast<llvm::BasicBlock>(*results_pop(*results));
+            auto Merge = llvm::cast<llvm::BasicBlock>(*results_pop(*results));
 
             /* The "No" block may have changed, for example, if a nested if
              * statement appended a new block. That's why we retrieve the
@@ -1776,7 +1846,8 @@ process_cast(
     struct results**   results,
     struct ir_module*  ir,
     llvm::IRBuilder<>& builder,
-    const struct ast*  ast)
+    const struct ast*  ast,
+    const char*        source)
 {
     struct stack_entry* entry = vec_last(*stack);
     int                 num_results = entry->num_results;
@@ -1797,9 +1868,12 @@ process_cast(
     llvm::Value* Expr = *results_pop(*results);
     stack_pop(*stack);
 
-    enum type from = ast_type_info(ast, expr);
-    enum type to = ast_type_info(ast, cast);
-    switch (to)
+    union type from = ast_type_info(ast, expr);
+    union type to = ast_type_info(ast, cast);
+    ODBUTIL_DEBUG_ASSERT(
+        type_is_primitive(from) && type_is_primitive(to),
+        log_err("from: %d, to: %d\n", from.id, to.id));
+    switch (to.primitive)
     {
         case TYPE_INVALID:
         case TYPE_VOID: break;
@@ -1836,12 +1910,14 @@ process_cast(
             /* clang-format on */
 
             llvm::Value* Cast = builder.CreateCast(
-                llvm_cast_ops[from][to], Expr, type_to_llvm(to, &ir->ctx));
+                llvm_cast_ops[from.primitive][to.primitive],
+                Expr,
+                type_to_llvm(to, ast, source, &ir->ctx));
             return results_push(results, Cast);
         }
 
         case TYPE_BOOL:
-            switch (from)
+            switch (from.primitive)
             {
                 case TYPE_INVALID: break;
                 case TYPE_VOID: break;
@@ -1855,7 +1931,7 @@ process_cast(
                     llvm::Value* Cast = builder.CreateICmpNE(
                         Expr,
                         llvm::ConstantInt::get(
-                            type_to_llvm(from, &ir->ctx), 0));
+                            type_to_llvm(from, ast, source, &ir->ctx), 0));
                     return results_push(results, Cast);
                 }
 
@@ -1867,21 +1943,11 @@ process_cast(
                     return results_push(results, Cast);
                 }
 
-                case TYPE_STRING:
-                case TYPE_ARRAY:
-                case TYPE_LABEL:
-                case TYPE_DABEL:
-                case TYPE_ANY:
-                case TYPE_UDT_PTR: break;
+                case TYPE_STRING: break;
             }
             break;
 
-        case TYPE_STRING:
-        case TYPE_ARRAY:
-        case TYPE_LABEL:
-        case TYPE_DABEL:
-        case TYPE_ANY:
-        case TYPE_UDT_PTR: break;
+        case TYPE_STRING: break;
     }
 
     ODBUTIL_DEBUG_ASSERT(0, log_err("Cast not implemented\n"));
@@ -1918,13 +1984,21 @@ process_node(
         case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_COMMAND:
             return process_command(
-                stack, results, ir, b, ast, sdk_type, cmds, cmd_func_table);
+                stack,
+                results,
+                ir,
+                b,
+                ast,
+                source,
+                sdk_type,
+                cmds,
+                cmd_func_table);
         case AST_ASSIGNMENT:
             return process_assignment(
                 stack, *results, ir, b, ast, source, allocamap);
         case AST_VAR_DECL1:
             return process_var_decl(
-                stack, *results, ir, b, source, ast, udt_table, allocamap);
+                stack, results, ir, b, source, ast, udt_table, allocamap);
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_VAR_READ:
             return process_var_read(stack, results, b, ast, source, allocamap);
@@ -2050,7 +2124,7 @@ process_node(
             llvm::StringRef  Str(source + span.off, span.len);
             return results_push(results, string_table->find(Str)->getValue());
         }
-        case AST_CAST: return process_cast(stack, results, ir, b, ast);
+        case AST_CAST: return process_cast(stack, results, ir, b, ast, source);
         case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_AS_EXPR: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -2060,7 +2134,7 @@ process_node(
     log_flc(filename, source, ast_loc(ast, n));
     log_err(
         "IR not implemented yet for node type %d.\n", ast_node_type(ast, n));
-    log_excerpt_1(source, ast_loc(ast, n), "", 0);
+    log_excerpt_1(source, ast_loc(ast, n), empty_utf8_view(), 0);
 
     return -1;
 }

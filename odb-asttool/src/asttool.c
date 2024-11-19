@@ -28,6 +28,9 @@ print_help(void)
         "Available options:\n"
         "  {emph1:-i} <{emph2:file}>        Read AST from a file instead of stdin.\n"
         "  {emph1:-o} <{emph2:file}>        Write result to a file instead of stdout.\n"
+        "  {emph1:--style} <{emph2:name}>  Style to use. Defaults to {emph2:catpuccin}. Available styles:\n"
+        "           {emph2:catpuccin}\n"
+        "           {emph2:nightfly}\n"
         "  {emph1:--scopes}           Include scope_id for each node.\n"
         "  {emph1:--types}            Include node type information.\n"
         "  {emph1:--node-filter}      Comma separated list of node names to include.\n"
@@ -62,6 +65,20 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
                 return log_err("Missing output filename to option -o\n");
 
             cfg->output_fname = argv[++i];
+        }
+        else if (strcmp(argv[i], "--style") == 0)
+        {
+            if (i + 1 >= argc)
+                return log_err("Missing style name to option --style\n");
+
+            if (strcmp(argv[i + 1], "catpuccin") == 0)
+                cfg->style = STYLE_CATPUCCIN;
+            else if (strcmp(argv[i + 1], "nightfly") == 0)
+                cfg->style = STYLE_NIGHTFLY;
+            else
+                return log_err("Unknown style {quote:%s}\n", argv[i + 1]);
+
+            ++i;
         }
         else if (strcmp(argv[i], "--format") == 0)
         {

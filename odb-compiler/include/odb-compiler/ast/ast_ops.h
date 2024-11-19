@@ -58,7 +58,7 @@ ast_trees_equal(
     const char* source, const struct ast* ast, ast_id n1, ast_id n2);
 
 void
-ast_set_subtree_type(struct ast* ast, ast_id node, enum type type);
+ast_set_subtree_type(struct ast* ast, ast_id node, union type type);
 
 void
 ast_set_subtree_scope(struct ast* ast, ast_id node, enum scope scope);

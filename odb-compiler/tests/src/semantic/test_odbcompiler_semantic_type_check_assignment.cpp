@@ -26,10 +26,10 @@ TEST_F(NAME, variable_initialized_with_byte_defaults_to_integer)
     ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
     ast_id expr = ast->nodes[decl1].assignment.expr;
     ast_id lit = ast->nodes[expr].cast.expr;
-    ASSERT_THAT(ast_type_info(ast, identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, expr), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, expr), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lit), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, expr).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit).primitive, Eq(TYPE_U8));
 }
 
 TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
@@ -59,10 +59,10 @@ TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
     ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
     ast_id init_expr = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lit = ast->nodes[init_expr].cast.expr;
-    ASSERT_THAT(ast_type_info(ast, identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, init_expr), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, init_expr), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lit), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, init_expr).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_true_boolean_defaults_to_integer)
@@ -91,10 +91,10 @@ TEST_F(NAME, undeclared_variable_assigned_true_boolean_defaults_to_integer)
     ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
     ast_id init_expr = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lit = ast->nodes[init_expr].cast.expr;
-    ASSERT_THAT(ast_type_info(ast, identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, init_expr), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, init_expr), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lit), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, init_expr).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_dword_defaults_to_integer)
@@ -120,10 +120,10 @@ TEST_F(NAME, undeclared_variable_assigned_dword_defaults_to_integer)
     ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
     ast_id init_expr = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lit = ast->nodes[init_expr].cast.expr;
-    ASSERT_THAT(ast_type_info(ast, identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, init_expr), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, init_expr), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lit), Eq(TYPE_U32));
+    ASSERT_THAT(ast_type_info(ast, init_expr).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit).primitive, Eq(TYPE_U32));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
@@ -152,10 +152,10 @@ TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
     ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
     ast_id init_expr = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lit = ast->nodes[init_expr].cast.expr;
-    ASSERT_THAT(ast_type_info(ast, identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, init_expr), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, init_expr), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lit), Eq(TYPE_I64));
+    ASSERT_THAT(ast_type_info(ast, init_expr).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit).primitive, Eq(TYPE_I64));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
@@ -184,10 +184,10 @@ TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
     ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
     ast_id init_expr = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lit = ast->nodes[init_expr].cast.expr;
-    ASSERT_THAT(ast_type_info(ast, identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, init_expr), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, init_expr), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lit), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, init_expr).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit).primitive, Eq(TYPE_F32));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
@@ -216,10 +216,10 @@ TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
     ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
     ast_id init_expr = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lit = ast->nodes[init_expr].cast.expr;
-    ASSERT_THAT(ast_type_info(ast, identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, init_expr), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, init_expr), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lit), Eq(TYPE_F64));
+    ASSERT_THAT(ast_type_info(ast, init_expr).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit).primitive, Eq(TYPE_F64));
 }
 
 TEST_F(NAME, circular_dependencies_default_to_integer)
@@ -248,10 +248,10 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ast_id c_init_expr = ast->nodes[c_decl1].var_decl1.init_expr;
     ASSERT_THAT(ast_node_type(ast, c_init_expr), Eq(AST_INTEGER_LITERAL));
     ASSERT_THAT(ast->nodes[c_init_expr].integer_literal.value, Eq(0));
-    ASSERT_THAT(ast_type_info(ast, c_identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, c_identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(c_as, Eq(-1));
-    ASSERT_THAT(ast_type_info(ast, c_decl2), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, c_decl1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, c_decl2).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, c_decl1).primitive, Eq(TYPE_I32));
 
     /* "b" is referenced before it is declared, so an initializer is inserted */
     ast_id b_decl1 = ast->nodes[block2].block.stmt;
@@ -261,10 +261,10 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ast_id b_init_expr = ast->nodes[b_decl1].var_decl1.init_expr;
     ASSERT_THAT(ast_node_type(ast, b_init_expr), Eq(AST_INTEGER_LITERAL));
     ASSERT_THAT(ast->nodes[b_init_expr].integer_literal.value, Eq(0));
-    ASSERT_THAT(ast_type_info(ast, b_identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, b_identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(b_as, Eq(-1));
-    ASSERT_THAT(ast_type_info(ast, b_decl2), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, b_decl1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, b_decl2).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, b_decl1).primitive, Eq(TYPE_I32));
 
     /* "a" written to for the first time, so it also becomes an initializer */
     ast_id a_decl1 = ast->nodes[block3].block.stmt;
@@ -274,16 +274,16 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ast_id a_init_expr = ast->nodes[a_decl1].var_decl1.init_expr;
     ASSERT_THAT(ast_node_type(ast, a_init_expr), Eq(AST_BINOP));
     ASSERT_THAT(ast->nodes[a_init_expr].binop.op, Eq(BINOP_ADD));
-    ASSERT_THAT(ast_type_info(ast, a_identifier), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, a_identifier).primitive, Eq(TYPE_I32));
     ASSERT_THAT(a_as, Eq(-1));
-    ASSERT_THAT(ast_type_info(ast, a_decl2), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, a_decl1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, a_decl2).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, a_decl1).primitive, Eq(TYPE_I32));
     ast_id lhs = ast->nodes[a_init_expr].binop.left;
     ast_id rhs = ast->nodes[a_init_expr].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_I32));
 
     /* b = a + c */
     ast_id ass = ast->nodes[block4].block.stmt;
@@ -292,18 +292,18 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
     ASSERT_THAT(ast_node_type(ast, var_write), Eq(AST_VAR_WRITE));
     ASSERT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_type_info(ast, ass), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, var_write), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ass).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, var_write).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_I32));
     ast_id add = ast->nodes[ass].assignment.expr;
     lhs = ast->nodes[add].binop.left;
     rhs = ast->nodes[add].binop.right;
     ASSERT_THAT(ast_node_type(ast, add), Eq(AST_BINOP));
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
-    ASSERT_THAT(ast_type_info(ast, add), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, add).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_I32));
 
     /* c = a + b */
     ass = ast->nodes[block5].block.stmt;
@@ -312,16 +312,16 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
     ASSERT_THAT(ast_node_type(ast, var_write), Eq(AST_VAR_WRITE));
     ASSERT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_type_info(ast, ass), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, var_write), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ass).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, var_write).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_I32));
     add = ast->nodes[ass].assignment.expr;
     lhs = ast->nodes[add].binop.left;
     rhs = ast->nodes[add].binop.right;
     ASSERT_THAT(ast_node_type(ast, add), Eq(AST_BINOP));
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
-    ASSERT_THAT(ast_type_info(ast, add), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, add).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_I32));
 }

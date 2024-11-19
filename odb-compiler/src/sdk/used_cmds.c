@@ -5,8 +5,8 @@
 #include "odb-util/utf8.h"
 #include "odb-util/vec.h"
 
-VEC_DECLARE_API(static, spanlist, struct utf8_span, 32)
-VEC_DEFINE_API(spanlist, struct utf8_span, 32)
+VEC_DECLARE_API(static, span_scopes, struct utf8_span, 32)
+VEC_DEFINE_API(span_scopes, struct utf8_span, 32)
 VEC_DEFINE_API(cmd_ids, cmd_id, 32)
 
 struct used_cmds_hm_kvs

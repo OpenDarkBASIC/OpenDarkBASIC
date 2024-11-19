@@ -252,7 +252,7 @@ TEST_F(NAME, var_decl)
     ASSERT_THAT(ast_node_type(ast, init), Eq(AST_VAR_DECL1));
     ast_id decl2 = ast->nodes[init].var_decl1.var_decl2;
     ast_id as_type = ast->nodes[decl2].var_decl2.as;
-    ASSERT_THAT(ast->nodes[as_type].as_type.type, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[as_type].as_type.type.primitive, Eq(TYPE_F32));
     ast_id begin = ast->nodes[init].var_decl1.init_expr;
     ast_id end = ast->nodes[for2].loop_for2.end;
     ast_id step = ast->nodes[for3].loop_for3.step;

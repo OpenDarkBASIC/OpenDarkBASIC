@@ -32,11 +32,11 @@ TEST_F(NAME, function_with_no_args_is_not_polymorphic)
     ast_id f4 = ast->nodes[f3].func3.func4;
     ast_id ident = ast->nodes[f1].func1.identifier;
     ast_id ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_VOID));
     ASSERT_THAT(ret, Eq(-1));
 }
 
@@ -58,11 +58,11 @@ TEST_F(NAME, function_with_no_args_called)
     ast_id f4 = ast->nodes[f3].func3.func4;
     ast_id ident = ast->nodes[f1].func1.identifier;
     ast_id ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_VOID));
     ASSERT_THAT(ret, Eq(-1));
 }
 
@@ -86,12 +86,12 @@ TEST_F(NAME, explicit_parameter)
     ast_id ret = ast->nodes[f4].func4.retval;
     ast_id param = ast->nodes[paramlist].paramlist.param;
     ast_id param_ident = ast->nodes[param].param.identifier;
-    ASSERT_THAT(ast_type_info(ast, param_ident), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, func_ident), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, param_ident).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, func_ident).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_VOID));
     ASSERT_THAT(ret, Eq(-1));
 }
 
@@ -128,13 +128,13 @@ TEST_F(NAME, explicit_return_type_implicit_conversion)
     ast_id ret = ast->nodes[f4].func4.retval;
     ast_id param = ast->nodes[paramlist].paramlist.param;
     ast_id param_ident = ast->nodes[param].param.identifier;
-    ASSERT_THAT(ast_type_info(ast, param_ident), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, func_ident), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, param_ident).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, func_ident).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_node_type(ast, ret), Eq(AST_CAST));
 }
 
@@ -171,13 +171,13 @@ TEST_F(NAME, explicit_return_type_truncation)
     ast_id ret = ast->nodes[f4].func4.retval;
     ast_id param = ast->nodes[paramlist].paramlist.param;
     ast_id param_ident = ast->nodes[param].param.identifier;
-    ASSERT_THAT(ast_type_info(ast, param_ident), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, func_ident), Eq(TYPE_U16));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_U16));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_U16));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_U16));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_U16));
-    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_U16));
+    ASSERT_THAT(ast_type_info(ast, param_ident).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, func_ident).primitive, Eq(TYPE_U16));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_U16));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_U16));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_U16));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_U16));
+    ASSERT_THAT(ast_type_info(ast, ret).primitive, Eq(TYPE_U16));
     ASSERT_THAT(ast_node_type(ast, ret), Eq(AST_CAST));
 }
 
@@ -218,8 +218,8 @@ TEST_F(NAME, pass_byte_to_func_with_different_arguments_inserts_casts)
     ast_id arg2 = ast->nodes[arglist2].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, arg1), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, arg2), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, arg1), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, arg2), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, arg1).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, arg2).primitive, Eq(TYPE_F32));
 }
 
 TEST_F(NAME, func_call_is_cast_to_correct_type)
@@ -235,7 +235,7 @@ TEST_F(NAME, func_call_is_cast_to_correct_type)
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, func_is_not_instantiated_given_different_arg_types)
@@ -262,11 +262,11 @@ TEST_F(NAME, func_is_not_instantiated_given_different_arg_types)
     ast_id f4 = ast->nodes[f3].func3.func4;
     ast_id ident = ast->nodes[f1].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f1), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_F32));
 
     ast_id paramlist1 = ast->nodes[f3].func3.paramlist;
     ast_id paramlist2 = ast->nodes[paramlist1].paramlist.next;
@@ -276,16 +276,16 @@ TEST_F(NAME, func_is_not_instantiated_given_different_arg_types)
     ast_id param2 = ast->nodes[paramlist2].paramlist.param;
     ast_id ident1 = ast->nodes[param1].param.identifier;
     ast_id ident2 = ast->nodes[param2].param.identifier;
-    ASSERT_THAT(ast_type_info(ast, param1), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, param2), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, ident1), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, ident2), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, param1).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, param2).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ident1).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ident2).primitive, Eq(TYPE_F32));
 
     ast_id body = ast->nodes[f4].func4.body;
     ASSERT_THAT(body, Eq(-1));
 
     ast_id ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ret).primitive, Eq(TYPE_F32));
 }
 
 TEST_F(NAME, func_returns_result_of_another_func)
@@ -312,7 +312,7 @@ TEST_F(NAME, func_returns_result_of_another_func)
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_type_info(ast, call), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
 
     ast_id f11 = ast->nodes[block2].block.stmt;
     ast_id f12 = ast->nodes[f11].func1.func2;
@@ -320,14 +320,14 @@ TEST_F(NAME, func_returns_result_of_another_func)
     ast_id f14 = ast->nodes[f13].func3.func4;
     ast_id ident1 = ast->nodes[f11].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f11), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f11), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f12), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f13), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f14), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f11).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f12).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f13).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f14).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident1).primitive, Eq(TYPE_I32));
 
     ast_id ret1 = ast->nodes[f14].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret1).primitive, Eq(TYPE_I32));
 
     ast_id f21 = ast->nodes[block3].block.stmt;
     ast_id f22 = ast->nodes[f21].func1.func2;
@@ -335,14 +335,14 @@ TEST_F(NAME, func_returns_result_of_another_func)
     ast_id f24 = ast->nodes[f23].func3.func4;
     ast_id ident2 = ast->nodes[f21].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f21), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f21), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f22), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f23), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f24), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f21).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f22).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f23).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f24).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident2).primitive, Eq(TYPE_I32));
 
     ast_id ret2 = ast->nodes[f24].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret2).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, func_result_as_arg_to_call)
@@ -369,12 +369,12 @@ TEST_F(NAME, func_result_as_arg_to_call)
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
     ast_id call_mul = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call_mul), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_type_info(ast, call_mul), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, call_mul).primitive, Eq(TYPE_I32));
 
     arglist = ast->nodes[call_mul].func_call.arglist;
     ast_id call_add = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call_add), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_type_info(ast, call_add), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, call_add).primitive, Eq(TYPE_I32));
 
     ast_id f11 = ast->nodes[block2].block.stmt;
     ast_id f12 = ast->nodes[f11].func1.func2;
@@ -382,14 +382,14 @@ TEST_F(NAME, func_result_as_arg_to_call)
     ast_id f14 = ast->nodes[f13].func3.func4;
     ast_id ident1 = ast->nodes[f11].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f11), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f11), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f12), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f13), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f14), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f11).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f12).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f13).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f14).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident1).primitive, Eq(TYPE_I32));
 
     ast_id ret1 = ast->nodes[f14].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret1).primitive, Eq(TYPE_I32));
 
     ast_id f21 = ast->nodes[block3].block.stmt;
     ast_id f22 = ast->nodes[f21].func1.func2;
@@ -397,14 +397,14 @@ TEST_F(NAME, func_result_as_arg_to_call)
     ast_id f24 = ast->nodes[f23].func3.func4;
     ast_id ident2 = ast->nodes[f21].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f21), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f21), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f22), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f23), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f24), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f21).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f22).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f23).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f24).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident2).primitive, Eq(TYPE_I32));
 
     ast_id ret2 = ast->nodes[f24].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret2).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, recursion_1)
@@ -429,7 +429,7 @@ TEST_F(NAME, recursion_1)
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_type_info(ast, call), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
 
     ast_id f1 = ast->nodes[block2].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
@@ -437,11 +437,11 @@ TEST_F(NAME, recursion_1)
     ast_id f4 = ast->nodes[f3].func3.func4;
     ast_id ident = ast->nodes[f1].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f1), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_I32));
 
     ast_id body = ast->nodes[f4].func4.body;
     ast_id cond = ast->nodes[body].block.stmt;
@@ -450,7 +450,7 @@ TEST_F(NAME, recursion_1)
     ast_id exit = ast->nodes[yes].block.stmt;
     ast_id ret = ast->nodes[f4].func4.retval;
     ASSERT_THAT(ast_node_type(ast, exit), Eq(AST_FUNC_EXIT));
-    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, recursion_2)
@@ -475,7 +475,7 @@ TEST_F(NAME, recursion_2)
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_type_info(ast, call), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
 
     ast_id f1 = ast->nodes[block2].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
@@ -483,11 +483,11 @@ TEST_F(NAME, recursion_2)
     ast_id f4 = ast->nodes[f3].func3.func4;
     ast_id ident = ast->nodes[f1].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f1), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_I32));
 
     ast_id body = ast->nodes[f4].func4.body;
     ast_id cond = ast->nodes[body].block.stmt;
@@ -496,7 +496,7 @@ TEST_F(NAME, recursion_2)
     ast_id exit = ast->nodes[yes].block.stmt;
     ast_id ret = ast->nodes[f4].func4.retval;
     ASSERT_THAT(ast_node_type(ast, exit), Eq(AST_FUNC_EXIT));
-    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, nested_recursion_1)
@@ -525,7 +525,7 @@ TEST_F(NAME, nested_recursion_1)
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_type_info(ast, call), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
 
     ast_id f11 = ast->nodes[block2].block.stmt;
     ast_id f12 = ast->nodes[f11].func1.func2;
@@ -533,14 +533,14 @@ TEST_F(NAME, nested_recursion_1)
     ast_id f14 = ast->nodes[f13].func3.func4;
     ast_id ident1 = ast->nodes[f11].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f11), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f11), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f12), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f13), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f14), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f11).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f12).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f13).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f14).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident1).primitive, Eq(TYPE_I32));
 
     ast_id ret1 = ast->nodes[f14].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret1).primitive, Eq(TYPE_I32));
 
     ast_id f21 = ast->nodes[block3].block.stmt;
     ast_id f22 = ast->nodes[f21].func1.func2;
@@ -548,14 +548,14 @@ TEST_F(NAME, nested_recursion_1)
     ast_id f24 = ast->nodes[f23].func3.func4;
     ast_id ident2 = ast->nodes[f21].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f21), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f21), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f22), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f23), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f24), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f21).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f22).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f23).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f24).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident2).primitive, Eq(TYPE_I32));
 
     ast_id ret2 = ast->nodes[f24].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret2).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, nested_recursion_2)
@@ -584,7 +584,7 @@ TEST_F(NAME, nested_recursion_2)
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_type_info(ast, call), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
 
     ast_id f11 = ast->nodes[block2].block.stmt;
     ast_id f12 = ast->nodes[f11].func1.func2;
@@ -592,11 +592,11 @@ TEST_F(NAME, nested_recursion_2)
     ast_id f14 = ast->nodes[f13].func3.func4;
     ast_id ident1 = ast->nodes[f11].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f11), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f11), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f12), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f13), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f14), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f11).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f12).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f13).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f14).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident1).primitive, Eq(TYPE_I32));
 
     ast_id body1 = ast->nodes[f14].func4.body;
     ast_id cond1 = ast->nodes[body1].block.stmt;
@@ -605,10 +605,10 @@ TEST_F(NAME, nested_recursion_2)
     ast_id exit1 = ast->nodes[yes1].block.stmt;
     ast_id ret1 = ast->nodes[exit1].func_exit.retval;
     ASSERT_THAT(ast_node_type(ast, exit1), Eq(AST_FUNC_EXIT));
-    ASSERT_THAT(ast_type_info(ast, ret1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret1).primitive, Eq(TYPE_I32));
 
     ret1 = ast->nodes[f14].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret1).primitive, Eq(TYPE_I32));
 
     ast_id f21 = ast->nodes[block3].block.stmt;
     ast_id f22 = ast->nodes[f21].func1.func2;
@@ -616,11 +616,11 @@ TEST_F(NAME, nested_recursion_2)
     ast_id f24 = ast->nodes[f23].func3.func4;
     ast_id ident2 = ast->nodes[f21].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f21), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f21), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f22), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f23), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, f24), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, ident2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f21).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f22).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f23).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, f24).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ident2).primitive, Eq(TYPE_I32));
 
     ast_id body2 = ast->nodes[f24].func4.body;
     ast_id cond2 = ast->nodes[body2].block.stmt;
@@ -629,8 +629,8 @@ TEST_F(NAME, nested_recursion_2)
     ast_id exit2 = ast->nodes[yes2].block.stmt;
     ast_id ret2 = ast->nodes[exit2].func_exit.retval;
     ASSERT_THAT(ast_node_type(ast, exit2), Eq(AST_FUNC_EXIT));
-    ASSERT_THAT(ast_type_info(ast, ret2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret2).primitive, Eq(TYPE_I32));
 
     ret2 = ast->nodes[f24].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, ret2).primitive, Eq(TYPE_I32));
 }

@@ -38,8 +38,8 @@ TEST_F(NAME, exponent_truncated_from_double)
     ast_id rhs = ast->nodes[op].binop.right;
     EXPECT_THAT(ast_node_type(ast, lhs), Eq(AST_FLOAT_LITERAL));
     EXPECT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    EXPECT_THAT(ast_type_info(ast, lhs), Eq(TYPE_F32));
-    EXPECT_THAT(ast_type_info(ast, rhs), Eq(TYPE_F32));
+    EXPECT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_F32));
+    EXPECT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_F32));
 }
 
 TEST_F(NAME, exponent_strange_conversion)
@@ -64,8 +64,8 @@ TEST_F(NAME, exponent_strange_conversion)
     EXPECT_THAT(
         ast_node_type(ast, rhs),
         Eq(AST_CAST)); // BOOLEAN literal cast to INTEGER
-    EXPECT_THAT(ast_type_info(ast, lhs), Eq(TYPE_F64));
-    EXPECT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
+    EXPECT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_F64));
+    EXPECT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, exponent_implicit_conversion_from_dword)
@@ -92,8 +92,8 @@ TEST_F(NAME, exponent_implicit_conversion_from_dword)
     EXPECT_THAT(
         ast_node_type(ast, rhs),
         Eq(AST_CAST)); // DWORD literal cast to INTEGER
-    EXPECT_THAT(ast_type_info(ast, lhs), Eq(TYPE_F64));
-    EXPECT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
+    EXPECT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_F64));
+    EXPECT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, exponent_truncated_from_long_integer)
@@ -120,6 +120,6 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
     EXPECT_THAT(
         ast_node_type(ast, rhs),
         Eq(AST_CAST)); // LONG INTEGER literal cast to INTEGER
-    EXPECT_THAT(ast_type_info(ast, lhs), Eq(TYPE_F64));
-    EXPECT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
+    EXPECT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_F64));
+    EXPECT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_I32));
 }

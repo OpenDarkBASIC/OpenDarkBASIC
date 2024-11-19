@@ -109,10 +109,10 @@ struct log_highlight
     /*! Only used in INSERT mode -- The text to insert at offset loc.off
      * The length of the inserted text must equal loc.len. If unused, set to "".
      * DON'T set to NULL. */
-    const char*             new_text;
+    struct utf8_view        new_text;
     /*! Annotate the highlighted section with additional information.
      * Can be an empty string, but should not be NULL */
-    const char*             annotation;
+    struct utf8_view        annotation;
     /*! If INSERT, then this is the offset in the original text where to insert
      * new_text. Len should be the length of the inserted text.
      * If HIGHLIGHT, then this is the location of the text to highlight. */
@@ -125,8 +125,8 @@ struct log_highlight
      * the same highlight group, they will be colored the same. */
     char                    group;
 };
-#define LOG_HIGHLIGHT_SENTINAL {0, 0, {0, 0}, (enum log_highlight_type)0, LOG_MARKERS, 0}
-#define LOG_IS_SENTINAL(hl) ((hl).new_text == NULL)
+#define LOG_HIGHLIGHT_SENTINAL {{NULL, 0, 0}, {NULL, 0, 0}, {0, 0}, (enum log_highlight_type)0, {'\0', '\0', '\0'}, 0}
+#define LOG_IS_SENTINAL(hl) ((hl).marker[0] == '\0')
 #define LOG_MARKERS {'^', '~', '<'}
 
 ODBUTIL_PUBLIC_API int
@@ -136,11 +136,12 @@ static inline int
 log_excerpt_1(
     const char* source,
     struct utf8_span location,
-    const char* annotation,
+    struct utf8_view annotation,
     char group)
 {
+    struct utf8_view ins = empty_utf8_view();
     struct log_highlight inst[] = {
-        {"", annotation, location, LOG_HIGHLIGHT, LOG_MARKERS, group},
+        {ins, annotation, location, LOG_HIGHLIGHT, LOG_MARKERS, group},
         LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, inst);
@@ -150,12 +151,13 @@ static inline int
 log_excerpt_2(
     const char* source,
     struct utf8_span loc1, struct utf8_span loc2,
-    const char* annotation1, const char* annotation2,
+    struct utf8_view annotation1, struct utf8_view annotation2,
     char group1, char group2)
 {
+    struct utf8_view ins = empty_utf8_view();
     struct log_highlight hl[] = {
-        {"", annotation1, loc1, LOG_HIGHLIGHT, LOG_MARKERS, group1},
-        {"", annotation2, loc2, LOG_INSERT, LOG_MARKERS, group2},
+        {ins, annotation1, loc1, LOG_HIGHLIGHT, LOG_MARKERS, group1},
+        {ins, annotation2, loc2, LOG_INSERT, LOG_MARKERS, group2},
         LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, hl);
@@ -165,12 +167,13 @@ static inline int
 log_excerpt_binop(
     const char* source,
     struct utf8_span lhs, struct utf8_span op, struct utf8_span rhs,
-    const char* lhs_text, const char* rhs_text)
+    struct utf8_view lhs_text, struct utf8_view rhs_text)
 {
+    struct utf8_view ins = empty_utf8_view();
     struct log_highlight hl[] = {
-        {"", lhs_text, lhs, LOG_HIGHLIGHT, {'>', '~', '~'}, 0},
-        {"", "", op, LOG_HIGHLIGHT,  {'^', '^', '^'}, 2},
-        {"", rhs_text, rhs, LOG_HIGHLIGHT, {'~', '~', '<'}, 1},
+        {ins, lhs_text,          lhs, LOG_HIGHLIGHT, {'>', '~', '~'}, 0},
+        {ins, empty_utf8_view(), op, LOG_HIGHLIGHT,  {'^', '^', '^'}, 2},
+        {ins, rhs_text,          rhs, LOG_HIGHLIGHT, {'~', '~', '<'}, 1},
         LOG_HIGHLIGHT_SENTINAL
     };
     if (lhs.len == 1)

@@ -33,11 +33,11 @@ TEST_F(NAME, unused_polymorphic_function_is_not_instantiated)
     ast_id f4 = ast->nodes[f3].func3.func4;
     ast_id ident = ast->nodes[f1].func1.identifier;
     ast_id ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_INVALID));
     ASSERT_THAT(ret, Eq(-1));
 }
 
@@ -141,55 +141,55 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
     ASSERT_THAT(ast->nodes[ident41].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[f1_42].func1.endfunction_location, Utf8SpanEq(35, 11));
     ASSERT_THAT(ast->nodes[f1_42].func1.scope, Eq(SCOPE_LOCAL));
-    ASSERT_THAT(ast->nodes[as_type44].as_type.type, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[as_type45].as_type.type, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[as_type44].as_type.type.primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[as_type45].as_type.type.primitive, Eq(TYPE_U8));
 
-    ASSERT_THAT(ast_type_info(ast, ident0), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, lit1), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, arglist2), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, lit3), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, arglist4), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, call5), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, arglist6), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, cmd7), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, block8), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, ident9), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, ident10), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, param11), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, paramlist12), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, ident13), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, param14), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, paramlist15), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, ident16), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, var_read17), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, ident18), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, var_read19), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, binop20), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, f1_21), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, f2_22), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, f3_23), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, f4_24), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, func_poly25), Eq(TYPE_INVALID));
-    ASSERT_THAT(ast_type_info(ast, block26), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, ident27), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, var_read28), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, ident29), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, var_read30), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, binop31), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, f4_32), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, ident33), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, param34), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, ident35), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, param36), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, paramlist37), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, paramlist38), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f3_39), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, f2_40), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, ident41), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, f1_42), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, block43), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, as_type44), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, as_type45), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident0).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, lit1).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, arglist2).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, lit3).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, arglist4).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, call5).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, arglist6).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, cmd7).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, block8).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident9).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, ident10).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, param11).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, paramlist12).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, ident13).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, param14).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, paramlist15).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, ident16).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, var_read17).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, ident18).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, var_read19).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, binop20).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f1_21).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f2_22).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f3_23).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f4_24).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, func_poly25).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, block26).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident27).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, var_read28).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident29).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, var_read30).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, binop31).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f4_32).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident33).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param34).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident35).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param36).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, paramlist37).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, paramlist38).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f3_39).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f2_40).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident41).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f1_42).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, block43).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, as_type44).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, as_type45).primitive, Eq(TYPE_U8));
     /* odb-asttool end */
 }
 
@@ -206,7 +206,7 @@ TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast).primitive, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
@@ -234,11 +234,11 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     ast_id f4 = ast->nodes[f3].func3.func4;
     ast_id ident = ast->nodes[f1].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f1), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_U8));
 
     ast_id paramlist1 = ast->nodes[f3].func3.paramlist;
     ast_id paramlist2 = ast->nodes[paramlist1].paramlist.next;
@@ -249,16 +249,16 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     ast_id param2 = ast->nodes[paramlist2].paramlist.param;
     ast_id ident1 = ast->nodes[param1].param.identifier;
     ast_id ident2 = ast->nodes[param2].param.identifier;
-    ASSERT_THAT(ast_type_info(ast, param1), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, param2), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, ident1), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, ident2), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param1).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param2).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident1).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident2).primitive, Eq(TYPE_U8));
 
     ast_id body = ast->nodes[f4].func4.body;
     ASSERT_THAT(body, Eq(-1));
 
     ast_id ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ret).primitive, Eq(TYPE_U8));
 
     // Float function --------------------------------------------------------
     f1 = ast->nodes[block4].block.stmt;
@@ -267,11 +267,11 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     f4 = ast->nodes[f3].func3.func4;
     ident = ast->nodes[f1].func1.identifier;
     ASSERT_THAT(ast_node_type(ast, f1), Eq(AST_FUNC1));
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f1).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f2).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f3).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, f4).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ident).primitive, Eq(TYPE_F32));
 
     paramlist1 = ast->nodes[f3].func3.paramlist;
     paramlist2 = ast->nodes[paramlist1].paramlist.next;
@@ -282,16 +282,16 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     param2 = ast->nodes[paramlist2].paramlist.param;
     ident1 = ast->nodes[param1].param.identifier;
     ident2 = ast->nodes[param2].param.identifier;
-    ASSERT_THAT(ast_type_info(ast, param1), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, param2), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, ident1), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, ident2), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, param1).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, param2).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ident1).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ident2).primitive, Eq(TYPE_F32));
 
     body = ast->nodes[f4].func4.body;
     ASSERT_THAT(body, Eq(-1));
 
     ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ret).primitive, Eq(TYPE_F32));
 }
 
 TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)

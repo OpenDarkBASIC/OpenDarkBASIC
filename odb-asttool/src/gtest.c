@@ -102,14 +102,14 @@ write_unop_enum_name(FILE* fp, enum unop_type op)
 }
 
 static void
-write_type_enum_name(FILE* fp, enum type type)
+write_primitive_type_enum_name(FILE* fp, enum primitive_type type)
 {
     switch (type)
     {
         case TYPE_INVALID: fprintf(fp, "TYPE_INVALID"); break;
-#define X(name, c)                                                             \
+#define X(name)                                                                \
     case TYPE_##name: fprintf(fp, "TYPE_" #name); break;
-            TYPE_LIST
+            PRIMITIVE_TYPE_LIST
 #undef X
     }
 }
@@ -363,26 +363,10 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
             write_var_name(fp, ast, n);
             fprintf(
                 fp,
-                "].udt_read.type_name, Utf8SpanEq(%d, %d));\n",
-                ast->nodes[n].udt_read.type_name.off,
-                ast->nodes[n].udt_read.type_name.len);
-
-            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
-            write_var_name(fp, ast, n);
-            fprintf(
-                fp,
                 "].udt_read.index, Eq(%d));\n",
                 ast->nodes[n].udt_read.index);
             break;
         case AST_UDT_WRITE:
-            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
-            write_var_name(fp, ast, n);
-            fprintf(
-                fp,
-                "].udt_write.type_name, Utf8SpanEq(%d, %d));\n",
-                ast->nodes[n].udt_write.type_name.off,
-                ast->nodes[n].udt_write.type_name.len);
-
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);
             fprintf(
@@ -563,8 +547,15 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
         case AST_AS_TYPE:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);
-            fprintf(fp, "].as_type.type, Eq(");
-            write_type_enum_name(fp, ast->nodes[n].as_type.type);
+            fprintf(fp, "].as_type.");
+            if (type_is_primitive(ast->nodes[n].as_type.type))
+            {
+                fprintf(fp, "type, Eq(");
+                write_primitive_type_enum_name(
+                    fp, ast->nodes[n].as_type.type.primitive);
+            }
+            else
+                fprintf(fp, "id, Eq(%d\n", ast->nodes[n].as_type.type.id);
             fprintf(fp, "));\n");
             break;
         case AST_AS_EXPR: break;
@@ -593,10 +584,19 @@ write_property_checks(FILE* fp, const struct ast* ast, const struct cfg* cfg)
 static void
 write_type_check(FILE* fp, const struct ast* ast, ast_id n)
 {
+    union type type = ast_type_info(ast, n);
     fprintf(fp, "    ASSERT_THAT(ast_type_info(ast, ");
     write_var_name(fp, ast, n);
-    fprintf(fp, "), Eq(");
-    write_type_enum_name(fp, ast_type_info(ast, n));
+    fprintf(fp, ")");
+
+    if (type_is_primitive(type))
+    {
+        fprintf(fp, ".primitive, Eq(");
+        write_primitive_type_enum_name(fp, type.primitive);
+    }
+    else
+        fprintf(fp, ".id, Eq(%d)", type.id);
+
     fprintf(fp, "));\n");
 }
 

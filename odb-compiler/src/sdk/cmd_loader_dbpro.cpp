@@ -2,15 +2,15 @@ extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/semantic/type.h"
-#include "odb-util/utf8.h"
 #include "odb-util/log.h"
+#include "odb-util/utf8.h"
 }
 
 #include "LIEF/PE.hpp"
 #include "LIEF/PE/Binary.hpp"
 #include "LIEF/PE/ResourceNode.hpp"
 
-static enum type
+static enum primitive_type
 convert_char_to_return_type(char c)
 {
     switch (c)
@@ -25,18 +25,18 @@ convert_char_to_return_type(char c)
         case 'F': return TYPE_F32;
         case 'O': return TYPE_F64;
         case 'S': return TYPE_STRING;
-        case 'H': return TYPE_ARRAY;
-        case 'P': return TYPE_LABEL;
-        case 'Q': return TYPE_DABEL;
-        case 'X': return TYPE_ANY;
 
+        case 'H': break;
+        case 'P': break;
+        case 'Q': break;
+        case 'X': break;
         case 'E': break;
     }
 
     return TYPE_INVALID;
 }
 
-static enum type
+static enum primitive_type
 convert_char_to_param_type(char c)
 {
     switch (c)
@@ -51,11 +51,11 @@ convert_char_to_param_type(char c)
         case 'F': return TYPE_F32;
         case 'O': return TYPE_F64;
         case 'S': return TYPE_STRING;
-        case 'H': return TYPE_ARRAY;
-        case 'P': return TYPE_LABEL;
-        case 'Q': return TYPE_DABEL;
-        case 'X': return TYPE_ANY;
 
+        case 'H': break;
+        case 'P': break;
+        case 'Q': break;
+        case 'X': break;
         case 'E': break;
     }
 
@@ -119,7 +119,7 @@ load_dbpro_commands(
     if (auto resmgr = pe->resources_manager())
         for (const auto& entry : resmgr.value().string_table())
         {
-            enum type             return_type;
+            enum primitive_type   return_type;
             cmd_id                cmd;
             const std::u16string& u16 = entry.name();
             struct utf16_view     u16v
@@ -208,7 +208,8 @@ load_dbpro_commands(
             {
                 char type_char = entry_str.data[type_str.off + i];
                 enum cmd_param_direction direction = CMD_PARAM_IN;
-                enum type type = convert_char_to_param_type(type_char);
+                enum primitive_type      type
+                    = convert_char_to_param_type(type_char);
 
                 utf8_split(
                     entry_str.data, db_params, ',', &db_param_name, &db_params);

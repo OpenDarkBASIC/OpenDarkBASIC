@@ -21,11 +21,12 @@ struct DBParserHelper
     virtual int parse(const char* code);
     int semantic(const struct semantic_check* check);
     int addCommand(const char* name);
-    int addCommand(type return_type, const char* name);
+    int addCommand(enum primitive_type return_type, const char* name);
     int addCommand(
-        type                        return_type,
-        const char*                 name,
-        std::initializer_list<type> param_types);
+        enum primitive_type      return_type,
+        const char*              name,
+        std::initializer_list<
+            enum primitive_type> param_types);
 
     struct plugin_list* plugins;
     struct cmd_list     cmds;

@@ -49,9 +49,9 @@ TEST_F(NAME, truncated)
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_WRITE));
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_F32));
 }
 
 TEST_F(NAME, implicit_conversion)
@@ -88,9 +88,9 @@ TEST_F(NAME, implicit_conversion)
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_WRITE));
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, integer_to_float_conversion)
@@ -127,7 +127,7 @@ TEST_F(NAME, integer_to_float_conversion)
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_WRITE));
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_F32));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, cast).primitive, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_I32));
 }

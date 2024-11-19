@@ -609,9 +609,11 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
                             break;
                         case LOG_INSERT:
                             log_printf(
-                                "%s%s%s",
+                                "%s%.*s%s",
                                 insert_style(),
-                                highlights[h].new_text,
+                                highlights[h].new_text.len,
+                                highlights[h].new_text.data
+                                    + highlights[h].new_text.off,
                                 reset_style());
                             break;
                         case LOG_REMOVE: break;
@@ -797,7 +799,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
 
             if (highlights[h].loc.off - block.off < c_start
                 || highlights[h].loc.off - block.off >= c_end
-                || !*highlights[h].annotation)
+                || highlights[h].annotation.len == 0)
             {
                 continue;
             }
@@ -813,9 +815,11 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
             if (num_proceeding == 0)
             {
                 log_printf(
-                    " %s%s%s",
+                    " %s%.*s%s",
                     emphn_style(highlights[h].group),
-                    highlights[h].annotation,
+                    highlights[h].annotation.len,
+                    highlights[h].annotation.data
+                        + highlights[h].annotation.off,
                     reset_style());
                 continue;
             }
@@ -831,9 +835,11 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
                 if (c == highlights[h].loc.off - block.off)
                 {
                     log_printf(
-                        "%s%s%s",
+                        "%s%.*s%s",
                         emphn_style(highlights[h].group),
-                        highlights[h].annotation,
+                        highlights[h].annotation.len,
+                        highlights[h].annotation.data
+                            + highlights[h].annotation.off,
                         reset_style());
                     break;
                 }

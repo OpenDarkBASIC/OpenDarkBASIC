@@ -37,14 +37,14 @@ TEST_F(NAME, exponent_cast_to_integer)
     ASSERT_THAT(ast->nodes[lit1].byte_literal.value, Eq(2));
     ASSERT_THAT(ast->nodes[binop2].binop.op, Eq(BINOP_POW));
 
-    ASSERT_THAT(ast_type_info(ast, lit0), Eq(TYPE_F64));
-    ASSERT_THAT(ast_type_info(ast, lit1), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, binop2), Eq(TYPE_F64));
-    ASSERT_THAT(ast_type_info(ast, arglist3), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, cmd4), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, block5), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, as_type6), Eq(TYPE_I32));
-    ASSERT_THAT(ast_type_info(ast, cast7), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lit0).primitive, Eq(TYPE_F64));
+    ASSERT_THAT(ast_type_info(ast, lit1).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, binop2).primitive, Eq(TYPE_F64));
+    ASSERT_THAT(ast_type_info(ast, arglist3).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, cmd4).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, block5).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, as_type6).primitive, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast7).primitive, Eq(TYPE_I32));
     /* odb-asttool end */
 }
 

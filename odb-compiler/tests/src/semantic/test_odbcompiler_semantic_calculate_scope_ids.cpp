@@ -24,12 +24,12 @@ TEST_F(NAME, poly_functions)
           "FUNCTION func1(a, b, c)\n"
           "  a = b + c\n"
           "ENDFUNCTION a\n";
-          "FUNCTION func3(g, h, i)\n"
-          "  g = h + i\n"
-          "ENDFUNCTION g\n"
-          "FUNCTION func2(d, e, f)\n"
-          "  d = e + f\n"
-          "ENDFUNCTION d\n";
+    "FUNCTION func3(g, h, i)\n"
+    "  g = h + i\n"
+    "ENDFUNCTION g\n"
+    "FUNCTION func2(d, e, f)\n"
+    "  d = e + f\n"
+    "ENDFUNCTION d\n";
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(semantic(&semantic_calculate_scope_ids), Eq(0));
 
@@ -71,7 +71,7 @@ TEST_F(NAME, poly_functions)
 
     ASSERT_THAT(ast->nodes[ident0].identifier.name, Utf8SpanEq(7, 2));
     ASSERT_THAT(ast->nodes[ident0].identifier.annotation, Eq(TA_F32));
-    ASSERT_THAT(ast->nodes[as_type1].as_type.type, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[as_type1].as_type.type.primitive, Eq(TYPE_F32));
     ASSERT_THAT(ast->nodes[decl12].var_decl1.scope_location, Utf8SpanEq(0, 6));
     ASSERT_THAT(ast->nodes[decl12].var_decl1.scope, Eq(SCOPE_GLOBAL));
     ASSERT_THAT(ast->nodes[decl23].var_decl2.op_location, Utf8SpanEq(0, 0));
@@ -79,13 +79,16 @@ TEST_F(NAME, poly_functions)
     ASSERT_THAT(ast->nodes[ident5].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[ident6].identifier.name, Utf8SpanEq(34, 1));
     ASSERT_THAT(ast->nodes[ident6].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[paramlist8].paramlist.combined_location, Utf8SpanEq(34, 7));
+    ASSERT_THAT(
+        ast->nodes[paramlist8].paramlist.combined_location, Utf8SpanEq(34, 7));
     ASSERT_THAT(ast->nodes[ident9].identifier.name, Utf8SpanEq(37, 1));
     ASSERT_THAT(ast->nodes[ident9].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[paramlist11].paramlist.combined_location, Utf8SpanEq(34, 7));
+    ASSERT_THAT(
+        ast->nodes[paramlist11].paramlist.combined_location, Utf8SpanEq(34, 7));
     ASSERT_THAT(ast->nodes[ident12].identifier.name, Utf8SpanEq(40, 1));
     ASSERT_THAT(ast->nodes[ident12].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[paramlist14].paramlist.combined_location, Utf8SpanEq(34, 7));
+    ASSERT_THAT(
+        ast->nodes[paramlist14].paramlist.combined_location, Utf8SpanEq(34, 7));
     ASSERT_THAT(ast->nodes[ident15].identifier.name, Utf8SpanEq(45, 1));
     ASSERT_THAT(ast->nodes[ident15].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[ident17].identifier.name, Utf8SpanEq(49, 1));
@@ -97,7 +100,8 @@ TEST_F(NAME, poly_functions)
     ASSERT_THAT(ast->nodes[ass22].assignment.op_location, Utf8SpanEq(47, 1));
     ASSERT_THAT(ast->nodes[ident24].identifier.name, Utf8SpanEq(67, 1));
     ASSERT_THAT(ast->nodes[ident24].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[f1_26].func1.endfunction_location, Utf8SpanEq(55, 11));
+    ASSERT_THAT(
+        ast->nodes[f1_26].func1.endfunction_location, Utf8SpanEq(55, 11));
     ASSERT_THAT(ast->nodes[f1_26].func1.scope, Eq(SCOPE_LOCAL));
 
     ASSERT_THAT(ast->nodes[ident0].info.scope_id, Eq(0));
@@ -145,12 +149,12 @@ TEST_F(NAME, instantiated_functions)
           "FUNCTION func1(a, b, c)\n"
           "  a = b + c\n"
           "ENDFUNCTION a\n";
-          "FUNCTION func3(g, h, i)\n"
-          "  g = h + i\n"
-          "ENDFUNCTION g\n"
-          "FUNCTION func2(d, e, f)\n"
-          "  d = e + f\n"
-          "ENDFUNCTION d\n";
+    "FUNCTION func3(g, h, i)\n"
+    "  g = h + i\n"
+    "ENDFUNCTION g\n"
+    "FUNCTION func2(d, e, f)\n"
+    "  d = e + f\n"
+    "ENDFUNCTION d\n";
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(semantic(&semantic_calculate_scope_ids), Eq(0));
 
@@ -189,29 +193,35 @@ TEST_F(NAME, instantiated_functions)
     ast_id var_write43 = ast->nodes[ass49].assignment.lvalue;
     ast_id ident42 = ast->nodes[var_write43].var_write.identifier;
     ast_id func_call_or_container_read30 = ast->nodes[block31].block.stmt;
-    ast_id arglist25 = ast->nodes[func_call_or_container_read30].func_call_or_container_read.arglist;
+    ast_id arglist25 = ast->nodes[func_call_or_container_read30]
+                           .func_call_or_container_read.arglist;
     ast_id arglist27 = ast->nodes[arglist25].arglist.next;
     ast_id arglist29 = ast->nodes[arglist27].arglist.next;
     ast_id lit28 = ast->nodes[arglist29].arglist.expr;
     ast_id lit26 = ast->nodes[arglist27].arglist.expr;
     ast_id lit24 = ast->nodes[arglist25].arglist.expr;
-    ast_id ident23 = ast->nodes[func_call_or_container_read30].func_call_or_container_read.identifier;
+    ast_id ident23 = ast->nodes[func_call_or_container_read30]
+                         .func_call_or_container_read.identifier;
     ast_id func_call_or_container_read21 = ast->nodes[block22].block.stmt;
-    ast_id arglist16 = ast->nodes[func_call_or_container_read21].func_call_or_container_read.arglist;
+    ast_id arglist16 = ast->nodes[func_call_or_container_read21]
+                           .func_call_or_container_read.arglist;
     ast_id arglist18 = ast->nodes[arglist16].arglist.next;
     ast_id arglist20 = ast->nodes[arglist18].arglist.next;
     ast_id lit19 = ast->nodes[arglist20].arglist.expr;
     ast_id lit17 = ast->nodes[arglist18].arglist.expr;
     ast_id lit15 = ast->nodes[arglist16].arglist.expr;
-    ast_id ident14 = ast->nodes[func_call_or_container_read21].func_call_or_container_read.identifier;
+    ast_id ident14 = ast->nodes[func_call_or_container_read21]
+                         .func_call_or_container_read.identifier;
     ast_id func_call_or_container_read12 = ast->nodes[block13].block.stmt;
-    ast_id arglist7 = ast->nodes[func_call_or_container_read12].func_call_or_container_read.arglist;
+    ast_id arglist7 = ast->nodes[func_call_or_container_read12]
+                          .func_call_or_container_read.arglist;
     ast_id arglist9 = ast->nodes[arglist7].arglist.next;
     ast_id arglist11 = ast->nodes[arglist9].arglist.next;
     ast_id lit10 = ast->nodes[arglist11].arglist.expr;
     ast_id lit8 = ast->nodes[arglist9].arglist.expr;
     ast_id lit6 = ast->nodes[arglist7].arglist.expr;
-    ast_id ident5 = ast->nodes[func_call_or_container_read12].func_call_or_container_read.identifier;
+    ast_id ident5 = ast->nodes[func_call_or_container_read12]
+                        .func_call_or_container_read.identifier;
     ast_id decl12 = ast->nodes[block4].block.stmt;
     ast_id decl23 = ast->nodes[decl12].var_decl1.var_decl2;
     ast_id as_type1 = ast->nodes[decl23].var_decl2.as;
@@ -219,45 +229,57 @@ TEST_F(NAME, instantiated_functions)
 
     ASSERT_THAT(ast->nodes[ident0].identifier.name, Utf8SpanEq(7, 2));
     ASSERT_THAT(ast->nodes[ident0].identifier.annotation, Eq(TA_F32));
-    ASSERT_THAT(ast->nodes[as_type1].as_type.type, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[as_type1].as_type.type.primitive, Eq(TYPE_F32));
     ASSERT_THAT(ast->nodes[decl12].var_decl1.scope_location, Utf8SpanEq(0, 6));
     ASSERT_THAT(ast->nodes[decl12].var_decl1.scope, Eq(SCOPE_GLOBAL));
     ASSERT_THAT(ast->nodes[decl23].var_decl2.op_location, Utf8SpanEq(0, 0));
     ASSERT_THAT(ast->nodes[ident5].identifier.name, Utf8SpanEq(19, 5));
     ASSERT_THAT(ast->nodes[ident5].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[lit6].byte_literal.value, Eq(1));
-    ASSERT_THAT(ast->nodes[arglist7].arglist.combined_location, Utf8SpanEq(25, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist7].arglist.combined_location, Utf8SpanEq(25, 7));
     ASSERT_THAT(ast->nodes[lit8].byte_literal.value, Eq(2));
-    ASSERT_THAT(ast->nodes[arglist9].arglist.combined_location, Utf8SpanEq(25, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist9].arglist.combined_location, Utf8SpanEq(25, 7));
     ASSERT_THAT(ast->nodes[lit10].byte_literal.value, Eq(3));
-    ASSERT_THAT(ast->nodes[arglist11].arglist.combined_location, Utf8SpanEq(25, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist11].arglist.combined_location, Utf8SpanEq(25, 7));
     ASSERT_THAT(ast->nodes[ident14].identifier.name, Utf8SpanEq(34, 5));
     ASSERT_THAT(ast->nodes[ident14].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[lit15].byte_literal.value, Eq(4));
-    ASSERT_THAT(ast->nodes[arglist16].arglist.combined_location, Utf8SpanEq(40, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist16].arglist.combined_location, Utf8SpanEq(40, 7));
     ASSERT_THAT(ast->nodes[lit17].byte_literal.value, Eq(5));
-    ASSERT_THAT(ast->nodes[arglist18].arglist.combined_location, Utf8SpanEq(40, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist18].arglist.combined_location, Utf8SpanEq(40, 7));
     ASSERT_THAT(ast->nodes[lit19].byte_literal.value, Eq(6));
-    ASSERT_THAT(ast->nodes[arglist20].arglist.combined_location, Utf8SpanEq(40, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist20].arglist.combined_location, Utf8SpanEq(40, 7));
     ASSERT_THAT(ast->nodes[ident23].identifier.name, Utf8SpanEq(49, 5));
     ASSERT_THAT(ast->nodes[ident23].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[lit24].byte_literal.value, Eq(7));
-    ASSERT_THAT(ast->nodes[arglist25].arglist.combined_location, Utf8SpanEq(55, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist25].arglist.combined_location, Utf8SpanEq(55, 7));
     ASSERT_THAT(ast->nodes[lit26].byte_literal.value, Eq(8));
-    ASSERT_THAT(ast->nodes[arglist27].arglist.combined_location, Utf8SpanEq(55, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist27].arglist.combined_location, Utf8SpanEq(55, 7));
     ASSERT_THAT(ast->nodes[lit28].byte_literal.value, Eq(9));
-    ASSERT_THAT(ast->nodes[arglist29].arglist.combined_location, Utf8SpanEq(55, 7));
+    ASSERT_THAT(
+        ast->nodes[arglist29].arglist.combined_location, Utf8SpanEq(55, 7));
     ASSERT_THAT(ast->nodes[ident32].identifier.name, Utf8SpanEq(73, 5));
     ASSERT_THAT(ast->nodes[ident32].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[ident33].identifier.name, Utf8SpanEq(79, 1));
     ASSERT_THAT(ast->nodes[ident33].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[paramlist35].paramlist.combined_location, Utf8SpanEq(79, 7));
+    ASSERT_THAT(
+        ast->nodes[paramlist35].paramlist.combined_location, Utf8SpanEq(79, 7));
     ASSERT_THAT(ast->nodes[ident36].identifier.name, Utf8SpanEq(82, 1));
     ASSERT_THAT(ast->nodes[ident36].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[paramlist38].paramlist.combined_location, Utf8SpanEq(79, 7));
+    ASSERT_THAT(
+        ast->nodes[paramlist38].paramlist.combined_location, Utf8SpanEq(79, 7));
     ASSERT_THAT(ast->nodes[ident39].identifier.name, Utf8SpanEq(85, 1));
     ASSERT_THAT(ast->nodes[ident39].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[paramlist41].paramlist.combined_location, Utf8SpanEq(79, 7));
+    ASSERT_THAT(
+        ast->nodes[paramlist41].paramlist.combined_location, Utf8SpanEq(79, 7));
     ASSERT_THAT(ast->nodes[ident42].identifier.name, Utf8SpanEq(90, 1));
     ASSERT_THAT(ast->nodes[ident42].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[ident44].identifier.name, Utf8SpanEq(94, 1));
@@ -269,7 +291,8 @@ TEST_F(NAME, instantiated_functions)
     ASSERT_THAT(ast->nodes[ass49].assignment.op_location, Utf8SpanEq(92, 1));
     ASSERT_THAT(ast->nodes[ident51].identifier.name, Utf8SpanEq(112, 1));
     ASSERT_THAT(ast->nodes[ident51].identifier.annotation, Eq(TA_NONE));
-    ASSERT_THAT(ast->nodes[f1_53].func1.endfunction_location, Utf8SpanEq(100, 11));
+    ASSERT_THAT(
+        ast->nodes[f1_53].func1.endfunction_location, Utf8SpanEq(100, 11));
     ASSERT_THAT(ast->nodes[f1_53].func1.scope, Eq(SCOPE_LOCAL));
 
     ASSERT_THAT(ast->nodes[ident0].info.scope_id, Eq(0));
@@ -386,13 +409,13 @@ TEST_F(NAME, udt)
 
     ASSERT_THAT(ast->nodes[ident0].identifier.name, Utf8SpanEq(14, 2));
     ASSERT_THAT(ast->nodes[ident0].identifier.annotation, Eq(TA_F32));
-    ASSERT_THAT(ast->nodes[as_type1].as_type.type, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[as_type1].as_type.type.primitive, Eq(TYPE_F32));
     ASSERT_THAT(ast->nodes[decl12].var_decl1.scope_location, Utf8SpanEq(14, 2));
     ASSERT_THAT(ast->nodes[decl12].var_decl1.scope, Eq(SCOPE_LOCAL));
     ASSERT_THAT(ast->nodes[decl23].var_decl2.op_location, Utf8SpanEq(0, 0));
     ASSERT_THAT(ast->nodes[ident5].identifier.name, Utf8SpanEq(30, 2));
     ASSERT_THAT(ast->nodes[ident5].identifier.annotation, Eq(TA_F32));
-    ASSERT_THAT(ast->nodes[as_type6].as_type.type, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[as_type6].as_type.type.primitive, Eq(TYPE_F32));
     ASSERT_THAT(ast->nodes[decl17].var_decl1.scope_location, Utf8SpanEq(30, 2));
     ASSERT_THAT(ast->nodes[decl17].var_decl1.scope, Eq(SCOPE_LOCAL));
     ASSERT_THAT(ast->nodes[decl28].var_decl2.op_location, Utf8SpanEq(0, 0));
@@ -400,20 +423,23 @@ TEST_F(NAME, udt)
     ASSERT_THAT(ast->nodes[ident10].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[ident13].identifier.name, Utf8SpanEq(64, 2));
     ASSERT_THAT(ast->nodes[ident13].identifier.annotation, Eq(TA_F32));
-    ASSERT_THAT(ast->nodes[as_type14].as_type.type, Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[decl115].var_decl1.scope_location, Utf8SpanEq(64, 2));
+    ASSERT_THAT(ast->nodes[as_type14].as_type.type.primitive, Eq(TYPE_F32));
+    ASSERT_THAT(
+        ast->nodes[decl115].var_decl1.scope_location, Utf8SpanEq(64, 2));
     ASSERT_THAT(ast->nodes[decl115].var_decl1.scope, Eq(SCOPE_LOCAL));
     ASSERT_THAT(ast->nodes[decl216].var_decl2.op_location, Utf8SpanEq(0, 0));
     ASSERT_THAT(ast->nodes[ident18].identifier.name, Utf8SpanEq(80, 2));
     ASSERT_THAT(ast->nodes[ident18].identifier.annotation, Eq(TA_F32));
-    ASSERT_THAT(ast->nodes[as_type19].as_type.type, Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[decl120].var_decl1.scope_location, Utf8SpanEq(80, 2));
+    ASSERT_THAT(ast->nodes[as_type19].as_type.type.primitive, Eq(TYPE_F32));
+    ASSERT_THAT(
+        ast->nodes[decl120].var_decl1.scope_location, Utf8SpanEq(80, 2));
     ASSERT_THAT(ast->nodes[decl120].var_decl1.scope, Eq(SCOPE_LOCAL));
     ASSERT_THAT(ast->nodes[decl221].var_decl2.op_location, Utf8SpanEq(0, 0));
     ASSERT_THAT(ast->nodes[ident23].identifier.name, Utf8SpanEq(96, 2));
     ASSERT_THAT(ast->nodes[ident23].identifier.annotation, Eq(TA_F32));
-    ASSERT_THAT(ast->nodes[as_type24].as_type.type, Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[decl125].var_decl1.scope_location, Utf8SpanEq(96, 2));
+    ASSERT_THAT(ast->nodes[as_type24].as_type.type.primitive, Eq(TYPE_F32));
+    ASSERT_THAT(
+        ast->nodes[decl125].var_decl1.scope_location, Utf8SpanEq(96, 2));
     ASSERT_THAT(ast->nodes[decl125].var_decl1.scope, Eq(SCOPE_LOCAL));
     ASSERT_THAT(ast->nodes[decl226].var_decl2.op_location, Utf8SpanEq(0, 0));
     ASSERT_THAT(ast->nodes[ident28].identifier.name, Utf8SpanEq(55, 4));
@@ -452,4 +478,3 @@ TEST_F(NAME, udt)
     ASSERT_THAT(ast->nodes[block30].info.scope_id, Eq(0));
     /* odb-asttool end */
 }
-

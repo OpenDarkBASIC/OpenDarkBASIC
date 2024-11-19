@@ -94,13 +94,13 @@ cmd_cache_load(
     cached_cmd_count = mstream_read_li32(&ms);
     for (cached_cmd = 0; cached_cmd != cached_cmd_count; ++cached_cmd)
     {
-        int              i;
-        cmd_id           cmd;
-        struct utf8_view db_cmd_name = mstream_read_utf8(&ms);
-        struct utf8_view c_symbol = mstream_read_utf8(&ms);
-        plugin_id        cached_plugin_id = mstream_read_li16(&ms);
-        enum type        return_type = mstream_read_u8(&ms);
-        int              param_count = mstream_read_u8(&ms);
+        int                 i;
+        cmd_id              cmd;
+        struct utf8_view    db_cmd_name = mstream_read_utf8(&ms);
+        struct utf8_view    c_symbol = mstream_read_utf8(&ms);
+        plugin_id           cached_plugin_id = mstream_read_li16(&ms);
+        enum primitive_type return_type = mstream_read_u8(&ms);
+        int                 param_count = mstream_read_u8(&ms);
 
         if (cached_plugin_id < 0
             || cached_plugin_id >= plugin_ids_count(cached_plugin_map)
@@ -133,9 +133,14 @@ cmd_cache_load(
             struct utf8_view         param_name = mstream_read_utf8(&ms);
             enum cmd_param_direction direction
                 = (data & 0x80) ? CMD_PARAM_OUT : CMD_PARAM_IN;
-            enum type param_type = (data & 0x7F);
+            enum primitive_type param_type = (data & 0x7F);
 
-            if (cmd_add_param(cmds, cmd, param_type, direction, param_name)
+            if (cmd_add_param(
+                    cmds,
+                    cmd,
+                    param_type,
+                    direction,
+                    param_name)
                 != 0)
                 goto parse_failed;
         }
@@ -227,7 +232,8 @@ cmd_cache_save(
             struct utf8_view param_name
                 = utf8_list_view(cmds->db_param_names->data[cmd], i);
             mstream_write_u8(
-                &ms, (param_type->type & 0x7F) | (param_type->direction << 7));
+                &ms,
+                (param_type->primitive & 0x7F) | (param_type->direction << 7));
             mstream_write_utf8(&ms, param_name);
         }
     }

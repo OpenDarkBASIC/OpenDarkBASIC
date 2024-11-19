@@ -84,6 +84,7 @@ asttool = subprocess.Popen([
     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 asttool_stdout, asttool_stderr = asttool.communicate(input=odbtests_stdout)
 if asttool.returncode != 0:
+    print(asttool_stdout, asttool_stderr)
     sys.exit(asttool.returncode)
 
 asttool_lines = asttool_stdout.decode("utf8").split("\n")

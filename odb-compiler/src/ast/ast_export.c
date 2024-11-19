@@ -2,7 +2,6 @@
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-util/log.h"
-#include "odb-util/mem.h"
 #include <errno.h>
 #include <stdio.h>
 
@@ -59,14 +58,14 @@ ast_export_fp(
 
     if (cmd_names == NULL)
     {
-        mem_size nothing = 0;
+        utf8_idx nothing = 0;
         if (fwrite(&nothing, sizeof(nothing), 1, fp) != 1)
             goto error;
     }
     else
     {
-        mem_size header_size = offsetof(struct utf8_list, data);
-        mem_size bytes = header_size + cmd_names->capacity;
+        utf8_idx header_size = offsetof(struct utf8_list, data);
+        utf8_idx bytes = header_size + cmd_names->count;
         if (fwrite(&bytes, sizeof(bytes), 1, fp) != 1)
             goto error;
         if (fwrite(cmd_names, bytes, 1, fp) != 1)

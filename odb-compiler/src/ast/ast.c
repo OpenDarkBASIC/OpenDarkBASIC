@@ -43,7 +43,7 @@ new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
     ast->nodes[n].info.location = location;
     ast->nodes[n].info.scope_id = -1;
     ast->nodes[n].info.node_type = type;
-    ast->nodes[n].info.type_info = TYPE_INVALID;
+    ast->nodes[n].info.type_info = type_primitive(TYPE_INVALID);
     ast->nodes[n].base.left = -1;
     ast->nodes[n].base.right = -1;
 
@@ -475,7 +475,6 @@ ast_udt_read(
     (*astp)->nodes[n].udt_read.member = member;
     (*astp)->nodes[n].udt_read.next = next;
     (*astp)->nodes[n].udt_read.index = -1;
-    (*astp)->nodes[n].udt_read.type_name = empty_utf8_span();
 
     return n;
 }
@@ -503,7 +502,6 @@ ast_udt_write(
     (*astp)->nodes[n].udt_write.member = member;
     (*astp)->nodes[n].udt_write.next = next;
     (*astp)->nodes[n].udt_write.index = -1;
-    (*astp)->nodes[n].udt_write.type_name = empty_utf8_span();
 
     return n;
 }
@@ -1169,13 +1167,13 @@ ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span location)
 }
 
 ast_id
-ast_cast_to_type(
-    struct ast**     astp,
-    ast_id           expr,
-    enum type        target_type,
-    struct utf8_span location)
+ast_cast_to_primitive_type(
+    struct ast**        astp,
+    ast_id              expr,
+    enum primitive_type target_type,
+    struct utf8_span    location)
 {
-    ast_id as = ast_as_type(astp, target_type, location);
+    ast_id as = ast_as_type(astp, type_primitive(target_type), location);
     if (as < 0)
         return -1;
 
@@ -1183,7 +1181,8 @@ ast_cast_to_type(
 }
 
 ast_id
-ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location)
+ast_as_type(
+    struct ast** astp, union type target_type, struct utf8_span location)
 {
     ast_id n = new_node(astp, AST_AS_TYPE, location);
     if (n < 0)

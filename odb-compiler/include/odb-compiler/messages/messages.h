@@ -33,16 +33,16 @@ int
 err_binop_pow_incompatible_base_type(
     const struct ast* ast,
     ast_id            op,
-    enum type         base_type,
-    enum type         target_type,
+    union type        base_type,
+    union type        target_type,
     const char*       filename,
     const char*       source);
 int
 err_binop_pow_incompatible_exponent_type(
     const struct ast* ast,
     ast_id            op,
-    enum type         exp_type,
-    enum type         target_type,
+    union type        exp_type,
+    union type        target_type,
     const char*       filename,
     const char*       source);
 int
@@ -199,8 +199,8 @@ warn_binop_implicit_conversion(
     ast_id            op,
     ast_id            source_node,
     ast_id            target_node,
-    const char*       source_filename,
-    const char*       source_text);
+    const char*       filename,
+    const char*       source);
 void
 warn_binop_truncation(
     const struct ast* ast,
@@ -213,32 +213,32 @@ void
 warn_binop_pow_base_implicit_conversion(
     const struct ast* ast,
     ast_id            op,
-    enum type         base_type,
-    enum type         target_type,
+    union type        base_type,
+    union type        target_type,
     const char*       filename,
     const char*       source);
 void
 warn_binop_pow_base_truncation(
     const struct ast* ast,
     ast_id            op,
-    enum type         base_type,
-    enum type         target_type,
+    union type        base_type,
+    union type        target_type,
     const char*       filename,
     const char*       source);
 void
 warn_binop_pow_exponent_implicit_conversion(
     const struct ast* ast,
     ast_id            op,
-    enum type         exp_type,
-    enum type         target_type,
+    union type        exp_type,
+    union type        target_type,
     const char*       filename,
     const char*       source);
 void
 warn_binop_pow_exponent_truncation(
     const struct ast* ast,
     ast_id            op,
-    enum type         exp_type,
-    enum type         target_type,
+    union type        exp_type,
+    union type        target_type,
     const char*       filename,
     const char*       source);
 void

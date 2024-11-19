@@ -1,80 +1,80 @@
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/type.h"
+#include "odb-util/log.h"
+#include <assert.h>
+#include <stdarg.h>
+#include <stddef.h>
 
-char
-type_to_char(enum type type)
+static int
+last_enum_idx(void)
 {
-    static const char table[]
-        = {'\0', /* TYPE_INVALID */
-#define X(name, c) c,
-           TYPE_LIST
+    int idx = 0;
+#define X(name) idx++;
+    PRIMITIVE_TYPE_LIST
 #undef X
-        };
-    return table[type];
+    return idx;
 }
 
-enum type
-type_from_char(char c)
+union type
+type_udt(int udt_decl)
 {
-    switch (c)
-    {
-#define X(name, c)                                                             \
-    case c: return TYPE_##name;
-        TYPE_LIST;
-#undef X
-    }
+    union type t;
+    t.id = udt_decl + last_enum_idx() + 1;
+    return t;
+}
 
-    return TYPE_INVALID;
+int
+type_udt_decl(union type type)
+{
+    return type.id - last_enum_idx() - 1;
 }
 
 enum type_annotation
-type_to_annotation(enum type type)
+type_to_annotation(union type type)
 {
-    switch (type)
+    switch (type.primitive)
     {
-        case TYPE_BOOL: return TA_BOOL;
-        case TYPE_U16: return TA_U16;
+        case TYPE_INVALID: break;
+        case TYPE_VOID: break;
+
         case TYPE_I64: return TA_I64;
+        case TYPE_U16: return TA_U16;
+        case TYPE_BOOL: return TA_BOOL;
         case TYPE_F32: return TA_F32;
         case TYPE_F64: return TA_F64;
         case TYPE_STRING: return TA_STRING;
 
-        case TYPE_INVALID: break;
-        case TYPE_VOID: break;
         case TYPE_U32: break;
         case TYPE_I32: break;
         case TYPE_U8: break;
-        case TYPE_ARRAY: break;
-        case TYPE_LABEL: break;
-        case TYPE_DABEL: break;
-        case TYPE_ANY: break;
-        case TYPE_UDT_PTR: break;
     }
 
     return TA_NONE;
 }
 
-enum type
+union type
 annotation_to_type(enum type_annotation annotation)
 {
     switch (annotation)
     {
         case TA_NONE: break;
-        case TA_BOOL: return TYPE_BOOL;
-        case TA_I64: return TYPE_I64;
-        case TA_U16: return TYPE_U16;
-        case TA_F64: return TYPE_F64;
-        case TA_F32: return TYPE_F32;
-        case TA_STRING: return TYPE_STRING;
+        case TA_BOOL: return type_primitive(TYPE_BOOL);
+        case TA_I64: return type_primitive(TYPE_I64);
+        case TA_U16: return type_primitive(TYPE_U16);
+        case TA_F64: return type_primitive(TYPE_F64);
+        case TA_F32: return type_primitive(TYPE_F32);
+        case TA_STRING: return type_primitive(TYPE_STRING);
     }
-    return TYPE_I32;
+
+    return type_primitive(TYPE_I32);
 }
 
 const char*
-type_to_db_name(enum type type)
+primitive_type_name(enum primitive_type primitive)
 {
-    switch (type)
+    switch (primitive)
     {
-        case TYPE_INVALID: break;
+        case TYPE_INVALID: return "(invalid type)";
         case TYPE_VOID: return "VOID";
         case TYPE_I64: return "DOUBLE INTEGER";
         case TYPE_U32: return "DWORD";
@@ -85,41 +85,56 @@ type_to_db_name(enum type type)
         case TYPE_F32: return "FLOAT";
         case TYPE_F64: return "DOUBLE";
         case TYPE_STRING: return "STRING";
-
-        case TYPE_ARRAY: break;
-        case TYPE_LABEL: break;
-        case TYPE_DABEL: break;
-        case TYPE_ANY: break;
-        case TYPE_UDT_PTR: break;
     }
 
     return "(unknown type)";
 }
 
-enum type_conversion_result
-type_convert(enum type from, enum type to)
+struct utf8_view
+type_name(union type type, const struct ast* ast, const char* source)
 {
+    ast_id udt_decl, ident;
+
+    if (type_is_primitive(type))
+        return cstr_utf8_view(primitive_type_name(type.primitive));
+
+    udt_decl = type_udt_decl(type);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
+    ident = ast->nodes[udt_decl].udt_decl.type_identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, ident) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, ident)));
+
+    return utf8_span_view(source, ast->nodes[ident].identifier.name);
+}
+
+enum type_conversion_result
+type_convert(union type from, union type to)
+{
+    ODBUTIL_DEBUG_ASSERT(from.primitive != TYPE_INVALID, (void)0);
+    ODBUTIL_DEBUG_ASSERT(to.primitive != TYPE_INVALID, (void)0);
+
     /* clang-format off */
-    static enum type_conversion_result rules[16][16] = {
+    static enum type_conversion_result rules[11][11] = {
 /*       TO */
-/*FROM     0 R D L W Y B F O S H P Q X E */
-        {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, /* INVALID */
-/* 0 */ {0,1,0,0,0,0,0,0,0,0,0,0,0,0,4,0}, /* VOID */
-/* R */ {0,0,1,2,2,2,2,4,5,5,0,0,0,0,4,0}, /* LONG */
-/* D */ {0,0,1,1,3,2,2,4,5,5,0,0,0,0,4,0}, /* DWORD */
-/* L */ {0,0,1,3,1,2,2,4,5,5,0,0,0,0,4,0}, /* INTEGER */
-/* W */ {0,0,1,1,1,1,2,4,5,5,0,0,0,0,4,0}, /* WORD */
-/* Y */ {0,0,1,1,1,1,1,4,5,5,0,0,0,0,4,0}, /* BYTE */
-/* B */ {0,0,6,6,6,6,6,1,5,5,0,0,0,0,4,0}, /* BOOLEAN */
-/* F */ {0,0,2,2,2,2,2,4,1,1,0,0,0,0,4,0}, /* FLOAT */
-/* O */ {0,0,2,2,2,2,2,4,2,1,0,0,0,0,4,0}, /* DOUBLE */
-/* S */ {0,0,0,0,0,0,0,0,0,0,1,0,0,0,4,0}, /* STRING */
-/* H */ {0,0,0,0,0,0,0,0,0,0,0,1,0,0,4,0}, /* ARRAY */
-/* P */ {0,0,0,0,0,0,0,0,0,0,0,0,1,0,4,0}, /* LABEL */
-/* Q */ {0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,0}, /* DLABEL */
-/* X */ {0,4,4,4,4,4,4,4,4,4,4,4,4,4,1,0}, /* ANY (reinterpret)*/
-/* E */ {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, /* USER DEFINED */
+/*FROM   0 R D L W Y B F O S */
+/* 0 */ {1,0,0,0,0,0,0,0,0,0}, /* VOID */
+/* R */ {0,1,2,2,2,2,4,5,5,0}, /* LONG */
+/* D */ {0,1,1,3,2,2,4,5,5,0}, /* DWORD */
+/* L */ {0,1,3,1,2,2,4,5,5,0}, /* INTEGER */
+/* W */ {0,1,1,1,1,2,4,5,5,0}, /* WORD */
+/* Y */ {0,1,1,1,1,1,4,5,5,0}, /* BYTE */
+/* B */ {0,6,6,6,6,6,1,5,5,0}, /* BOOLEAN */
+/* F */ {0,2,2,2,2,2,4,1,1,0}, /* FLOAT */
+/* O */ {0,2,2,2,2,2,4,2,1,0}, /* DOUBLE */
+/* S */ {0,0,0,0,0,0,0,0,0,1}, /* STRING */
     };
     /* clang-format on */
-    return rules[from][to];
+
+    if (type_is_primitive(from) && type_is_primitive(to))
+        return rules[from.id - 1][to.id - 1];
+
+    return TC_DISALLOW;
 }

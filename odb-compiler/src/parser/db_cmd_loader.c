@@ -25,8 +25,8 @@ struct parser
     utf8_idx    end;
     union
     {
-        enum type        type;
-        struct utf8_span str;
+        enum primitive_type type;
+        struct utf8_span    str;
     } value;
 };
 
@@ -40,7 +40,7 @@ static ODBUTIL_PRINTF_FORMAT(2, 3) enum token
     va_start(ap, fmt);
     log_verr(fmt, ap);
     va_end(ap);
-    log_excerpt_1(p->source, loc, "", 0);
+    log_excerpt_1(p->source, loc, empty_utf8_view(), 0);
 
     return TOK_ERROR;
 }
@@ -151,13 +151,13 @@ parse_load_command(
 {
     /* #load command "init window", "./raylib", "InitWindow", void, integer,
      * integer, string */
-    plugin_id        plugin;
-    cmd_id           cmd;
-    enum type        ret_type;
-    enum token       tok;
-    struct utf8_span c_symbol;
-    struct utf8      cmd_name = empty_utf8();
-    struct ospath    plugin_filepath = empty_ospath();
+    plugin_id           plugin;
+    cmd_id              cmd;
+    enum primitive_type ret_type;
+    enum token          tok;
+    struct utf8_span    c_symbol;
+    struct utf8         cmd_name = empty_utf8();
+    struct ospath       plugin_filepath = empty_ospath();
 
     /* Extract command name and convert to upper case */
     if (scan_next(p) != TOK_STRING)
@@ -246,7 +246,7 @@ next_param:
                 cmd,
                 p->value.type,
                 CMD_PARAM_IN,
-                cstr_utf8_view(type_to_db_name(p->value.type)))
+                cstr_utf8_view(primitive_type_name(p->value.type)))
             < 0)
         {
             goto error;

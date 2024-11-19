@@ -130,9 +130,9 @@ union ast_node
 {
     struct info {
         struct utf8_span location;
+        union type type_info;
         int32_t scope_id;
         enum ast_type node_type : 6;
-        enum type type_info : 4;
     } info;
 
     struct base{
@@ -224,7 +224,6 @@ union ast_node
         ast_id member;
         ast_id next;
         int index;
-        struct utf8_span type_name;
     } udt_read;
 
     struct {
@@ -232,7 +231,6 @@ union ast_node
         ast_id member;
         ast_id next;
         int index;
-        struct utf8_span type_name;
     } udt_write;
 
     struct {
@@ -435,24 +433,28 @@ union ast_node
         ast_id as;
     } cast;
 
+    /* AS <TYPE> */
     struct {
         struct info info;
         ast_id _pad1, _pad2;
-        enum type type;
+        union type type;
     } as_type;
 
+    /* AS TYPE(expr) */
     struct {
         struct info info;
         ast_id expr;
         ast_id _pad;
     } as_expr;
 
+    /* AS MyType */
     struct {
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span type_name;
     } as_udt;
 
+    /* AS */
     struct {
         struct info info;
         ast_id _pad1, _pad2;
@@ -501,9 +503,12 @@ ast_count_unsafe(const struct ast* ast)
 static inline enum ast_type
 ast_node_type(const struct ast* ast, ast_id n)
     { return ast->nodes[n].info.node_type; }
-static inline enum type
+static inline union type
 ast_type_info(const struct ast* ast, ast_id n)
     { return ast->nodes[n].info.type_info; }
+static inline int
+ast_type_is_invalid(const struct ast* ast, ast_id n)
+    { return ast->nodes[n].info.type_info.primitive == TYPE_INVALID; }
 static inline struct utf8_span
 ast_loc(const struct ast* ast, ast_id n)
     { return ast->nodes[n].info.location; }
@@ -597,9 +602,9 @@ ast_id ast_integer_like_literal(struct ast** astp, int64_t value, struct utf8_sp
 ast_id ast_float_literal(struct ast** astp, float value, struct utf8_span location);
 ast_id ast_double_literal(struct ast** astp, double value, struct utf8_span location);
 ast_id ast_string_literal(struct ast** astp, struct utf8_span str, struct utf8_span location);
-ast_id ast_cast_to_type(struct ast** astp, ast_id expr, enum type target_type, struct utf8_span location);
+ast_id ast_cast_to_primitive_type(struct ast** astp, ast_id expr, enum primitive_type target_type, struct utf8_span location);
 ast_id ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span location);
-ast_id ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location);
+ast_id ast_as_type(struct ast** astp, union type target_type, struct utf8_span location);
 ast_id ast_as_expr(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_as_auto(struct ast** astp, struct utf8_span location);
 ast_id ast_as_udt(struct ast** astp, struct utf8_span type_name, struct utf8_span location);

@@ -9,6 +9,26 @@ extern "C" {
 #include "LIEF/PE.hpp"
 #include <iostream>
 
+static enum primitive_type
+type_from_char(char c)
+{
+    switch (c)
+    {
+        case '0': return TYPE_VOID;
+        case 'R': return TYPE_I64;
+        case 'D': return TYPE_U32;
+        case 'L': return TYPE_I32;
+        case 'W': return TYPE_U16;
+        case 'Y': return TYPE_U8;
+        case 'B': return TYPE_BOOL;
+        case 'F': return TYPE_F32;
+        case 'O': return TYPE_F64;
+        case 'S': return TYPE_STRING;
+    }
+
+    return TYPE_INVALID;
+}
+
 static int
 parse_command_string(
     struct cmd_list* commands,
@@ -32,8 +52,8 @@ parse_command_string(
         return 0;
     }
 
-    enum type return_type = type_from_char(data[type_str.off]);
-    if (return_type == 0)
+    enum primitive_type return_type = type_from_char(data[type_str.off]);
+    if (return_type == TYPE_INVALID)
     {
         log_warn(
             "Invalid command return type {quote:%c} in string {quote:%.*s} in "
@@ -85,11 +105,11 @@ parse_command_string(
     {
         char                     type_char = data[type_str.off + i];
         enum cmd_param_direction direction = CMD_PARAM_IN;
-        enum type                type = type_from_char(type_char);
+        enum primitive_type      type = type_from_char(type_char);
 
         utf8_split(data, db_params, ',', &db_param_name, &db_params);
 
-        if (type == 0)
+        if (type == TYPE_INVALID)
         {
             log_warn(
                 "Invalid command parameter type {quote:%c} in string "

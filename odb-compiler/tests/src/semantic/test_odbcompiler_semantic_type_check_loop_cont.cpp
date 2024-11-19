@@ -60,10 +60,10 @@ TEST_F(NAME, continue_with_step)
     ASSERT_THAT(ast->nodes[cont6].cont.name, Utf8SpanEq(0, 0));
     ASSERT_THAT(ast->nodes[lit25].byte_literal.value, Eq(1));
 
-    ASSERT_THAT(ast_type_info(ast, lit2), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, lit4), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, lit5), Eq(TYPE_U8));
-    ASSERT_THAT(ast_type_info(ast, cont6), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, lit25), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, lit2).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, lit4).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, lit5).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, cont6).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, lit25).primitive, Eq(TYPE_U8));
     /* odb-asttool end */
 }

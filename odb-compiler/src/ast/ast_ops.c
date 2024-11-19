@@ -217,7 +217,7 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
 {
     if (ast_node_type(ast, n1) != ast_node_type(ast, n1))
         return 0;
-    if (ast_type_info(ast, n1) != ast_type_info(ast, n2))
+    if (types_equal(ast_type_info(ast, n1), ast_type_info(ast, n2)))
         return 0;
 
     switch (ast_node_type(ast, n1))
@@ -250,18 +250,10 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
                 return 0;
             break;
         case AST_UDT_READ:
-            if (!utf8_equal(
-                    utf8_span_view(source, ast->nodes[n1].udt_read.type_name),
-                    utf8_span_view(source, ast->nodes[n2].udt_read.type_name)))
-                return 0;
             if (ast->nodes[n1].udt_read.index != ast->nodes[n2].udt_read.index)
                 return 0;
             break;
         case AST_UDT_WRITE:
-            if (!utf8_equal(
-                    utf8_span_view(source, ast->nodes[n1].udt_write.type_name),
-                    utf8_span_view(source, ast->nodes[n2].udt_write.type_name)))
-                return 0;
             if (ast->nodes[n1].udt_write.index
                 != ast->nodes[n2].udt_write.index)
                 return 0;
@@ -372,7 +364,8 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
             break;
         case AST_CAST: break;
         case AST_AS_TYPE:
-            if (ast->nodes[n1].as_type.type != ast->nodes[n2].as_type.type)
+            if (!types_equal(
+                    ast->nodes[n1].as_type.type, ast->nodes[n2].as_type.type))
                 return 0;
             break;
         case AST_AS_EXPR: break;
@@ -411,7 +404,7 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
 }
 
 void
-ast_set_subtree_type(struct ast* ast, ast_id node, enum type type)
+ast_set_subtree_type(struct ast* ast, ast_id node, union type type)
 {
     ast_id left = ast->nodes[node].base.left;
     ast_id right = ast->nodes[node].base.right;

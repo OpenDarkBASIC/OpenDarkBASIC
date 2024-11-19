@@ -1,4 +1,3 @@
-#include "./type_check.h"
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_ops.h"
@@ -39,15 +38,11 @@ struct local
      * the stack is popped up until this node. */
     ast_id dependent;
 
-    /* If type == TYPE_UDT_PTR, then this points to the AST_UDT_DECL node of
-     * that type. Otherwise -1. */
-    ast_id udt_decl;
-
-    enum type type;
+    union type type;
 };
 
-VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
-VEC_DEFINE_API(spanlist, struct span_scope, 32)
+VEC_DECLARE_API(static, span_scopes, struct span_scope, 32)
+VEC_DEFINE_API(span_scopes, struct span_scope, 32)
 
 struct stack_entry
 {
@@ -110,7 +105,7 @@ stack_erase_node_and_get_parent(struct stack* stack, ast_id node)
  * the context surrounding it. If the variable is later referenced, then the
  * type is extracted from the locals.
  *
- * The "text" field references the source text. The spanlist contains
+ * The "text" field references the source text. The span_scopes contains
  * utf8_span's that index into the source code. Because it's possible to have
  * the same variable name in a different scope, the key also contains the
  * current scope (0=global, 1, 2, 3, ... = nesting) such that the same variable
@@ -118,9 +113,9 @@ stack_erase_node_and_get_parent(struct stack* stack, ast_id node)
  */
 struct locals_kvs
 {
-    const char*      text;
-    struct spanlist* keys;
-    struct local*    values;
+    const char*         text;
+    struct span_scopes* keys;
+    struct local*       values;
 };
 
 static hash32
@@ -134,14 +129,14 @@ locals_kvs_alloc(
     struct locals_kvs* kvs, struct locals_kvs* old_kvs, int32_t capacity)
 {
     kvs->text = NULL;
-    spanlist_init(&kvs->keys);
-    if (spanlist_resize(&kvs->keys, capacity) != 0)
+    span_scopes_init(&kvs->keys);
+    if (span_scopes_resize(&kvs->keys, capacity) != 0)
         return -1;
 
     if ((kvs->values = mem_alloc(sizeof(*kvs->values) * capacity)) == NULL)
     {
-        spanlist_deinit(kvs->keys);
-        return log_oom(sizeof(enum type) * capacity, "locals_kvs_alloc()");
+        span_scopes_deinit(kvs->keys);
+        return log_oom(sizeof(*kvs->values) * capacity, "locals_kvs_alloc()");
     }
 
     return 0;
@@ -150,13 +145,13 @@ static void
 locals_kvs_free_old(struct locals_kvs* kvs)
 {
     mem_free(kvs->values);
-    spanlist_deinit(kvs->keys);
+    span_scopes_deinit(kvs->keys);
 }
 static void
 locals_kvs_free(struct locals_kvs* kvs)
 {
     mem_free(kvs->values);
-    spanlist_deinit(kvs->keys);
+    span_scopes_deinit(kvs->keys);
 }
 static struct view_scope
 locals_kvs_get_key(const struct locals_kvs* kvs, int32_t slot)
@@ -288,30 +283,15 @@ init_local(
     struct local* local,
     ast_id        first_occurrence,
     ast_id        dependent,
-    enum type     type)
+    union type    type)
 {
-    ODBUTIL_DEBUG_ASSERT(type != TYPE_UDT_PTR, (void)0);
     local->first_occurrence = first_occurrence;
-    local->udt_decl = -1;
     local->dependent = dependent;
     local->type = type;
 }
 
-static void
-local_init_udt(
-    struct local* local,
-    ast_id        first_occurrence,
-    ast_id        dependent,
-    ast_id        udt_decl)
-{
-    local->first_occurrence = first_occurrence;
-    local->udt_decl = udt_decl;
-    local->dependent = dependent;
-    local->type = TYPE_UDT_PTR;
-}
-
 static ast_id
-cast_to_type(struct ast** astp, ast_id expr, enum type target_type)
+cast_to_type(struct ast** astp, ast_id expr, union type target_type)
 {
     ast_id cast, as_type;
     as_type = ast_as_type(astp, target_type, ast_loc(*astp, expr));
@@ -339,16 +319,17 @@ cast_expr_to_boolean(
     const char*  filename,
     const char*  source)
 {
-    if (ast_type_info(*astp, n) == TYPE_BOOL)
+    union type target_type = type_primitive(TYPE_BOOL);
+    if (types_equal(ast_type_info(*astp, n), target_type))
         return 0;
 
-    switch (type_convert(ast_type_info(*astp, n), TYPE_BOOL))
+    switch (type_convert(ast_type_info(*astp, n), target_type))
     {
         case TC_TRUENESS:
             warn_boolean_implicit_evaluation(*astp, n, filename, source);
             /* fallthrough */
         case TC_ALLOW: {
-            ast_id cast = cast_to_type(astp, n, TYPE_BOOL);
+            ast_id cast = cast_to_type(astp, n, target_type);
             if (cast < 0)
                 return -1;
 
@@ -376,7 +357,7 @@ cast_expr_to_boolean(
 
 struct balanced_conversion_result
 {
-    enum type                   type;
+    union type                  type;
     enum type_conversion_result conversion;
     ast_id                      src;
     ast_id                      target;
@@ -384,7 +365,7 @@ struct balanced_conversion_result
 
 static struct balanced_conversion_result
 make_balanced_conversion_result(
-    enum type                   type,
+    union type                  type,
     enum type_conversion_result conversion,
     ast_id                      src,
     ast_id                      target)
@@ -400,8 +381,8 @@ make_balanced_conversion_result(
 static struct balanced_conversion_result
 balanced_type_conversion(const struct ast* ast, ast_id lhs, ast_id rhs)
 {
-    enum type lhs_type = ast_type_info(ast, lhs);
-    enum type rhs_type = ast_type_info(ast, rhs);
+    union type lhs_type = ast_type_info(ast, lhs);
+    union type rhs_type = ast_type_info(ast, rhs);
 
     enum type_conversion_result l2r = type_convert(lhs_type, rhs_type);
     enum type_conversion_result r2l = type_convert(rhs_type, lhs_type);
@@ -425,7 +406,8 @@ balanced_type_conversion(const struct ast* ast, ast_id lhs, ast_id rhs)
     if (l2r == TC_TRUENESS)
         return make_balanced_conversion_result(rhs_type, l2r, lhs, rhs);
 
-    return make_balanced_conversion_result(TYPE_INVALID, TC_DISALLOW, -1, -1);
+    return make_balanced_conversion_result(
+        type_primitive(TYPE_INVALID), TC_DISALLOW, -1, -1);
 }
 
 enum process_result
@@ -454,12 +436,12 @@ process_block(struct stack** stack, struct ast* ast, ast_id block)
         log_err("type: %d\n", ast_node_type(ast, block)));
 
     next = ast->nodes[block].block.next;
-    if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
+    if (next > -1 && type_is_invalid(ast_type_info(ast, next)))
         stack_push_entry(stack, block, next);
 
     stmt = ast->nodes[block].block.stmt;
     ODBUTIL_DEBUG_ASSERT(stmt > -1, (void)0);
-    if (ast_type_info(ast, stmt) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, stmt)))
     {
         /* Polymorphic functions cannot be resolved without knowing the input
          * parameters at the callsite. Polymorphic function nodes are procssed
@@ -474,7 +456,7 @@ process_block(struct stack** stack, struct ast* ast, ast_id block)
 
     /* Blocks (statements) are not expressions, so set the entire list to VOID
      */
-    ast->nodes[block].info.type_info = TYPE_VOID;
+    ast->nodes[block].info.type_info = type_primitive(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -492,19 +474,19 @@ process_arglist(struct stack** stack, struct ast* ast, ast_id arglist)
         log_err("type: %d\n", ast_node_type(ast, arglist)));
 
     next = ast->nodes[arglist].arglist.next;
-    if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
+    if (next > -1 && type_is_invalid(ast_type_info(ast, next)))
         stack_push_entry(stack, arglist, next);
 
     expr = ast->nodes[arglist].arglist.expr;
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
-    if (ast_type_info(ast, expr) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, expr)))
         stack_push_entry(stack, arglist, expr);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
 
     /* Arglists are not expressions, so set the entire list to VOID */
-    ast->nodes[arglist].info.type_info = TYPE_VOID;
+    ast->nodes[arglist].info.type_info = type_primitive(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -522,7 +504,7 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
         log_err("type: %d\n", ast_node_type(ast, paramlist)));
 
     next = ast->nodes[paramlist].paramlist.next;
-    if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
+    if (next > -1 && type_is_invalid(ast_type_info(ast, next)))
         stack_push_entry(stack, paramlist, next);
 
     param = ast->nodes[paramlist].paramlist.param;
@@ -530,14 +512,14 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, param) == AST_PARAM,
         log_err("type: %d\n", ast_node_type(ast, param)));
-    if (ast_type_info(ast, param) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, param)))
         stack_push_entry(stack, paramlist, param);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
 
     /* Paramlists are not expressions, so set the entire list to VOID */
-    ast->nodes[paramlist].info.type_info = TYPE_VOID;
+    ast->nodes[paramlist].info.type_info = type_primitive(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -574,10 +556,12 @@ process_param(
     scope_id = (*astp)->nodes[identifier].info.scope_id;
     switch (declare_local(locals, source, name, scope_id, &local))
     {
-        case HM_NEW: init_local(local, identifier, param, TYPE_INVALID); break;
+        case HM_NEW:
+            init_local(local, identifier, param, type_primitive(TYPE_INVALID));
+            break;
 
         case HM_EXISTS:
-            if (local->type != TYPE_INVALID)
+            if (type_is_valid(local->type))
             {
                 err_param_redeclaration(
                     *astp, name, local->first_occurrence, filename, source);
@@ -589,7 +573,7 @@ process_param(
     }
 
     as = (*astp)->nodes[param].param.as;
-    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID)
+    if (as > -1 && type_is_invalid(ast_type_info(*astp, as)))
         stack_push_entry(stack, param, as);
 
     if (stack_count(*stack) != top)
@@ -597,8 +581,8 @@ process_param(
 
     /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
      * to the identifier's type annotation */
-    ODBUTIL_DEBUG_ASSERT(local->type == TYPE_INVALID, (void)0);
-    if (local->type == TYPE_INVALID)
+    ODBUTIL_DEBUG_ASSERT(type_is_invalid(local->type), (void)0);
+    if (type_is_invalid(local->type))
     {
         if (as > -1)
             local->type = ast_type_info(*astp, as);
@@ -634,13 +618,14 @@ process_command(
     arglist = ast->nodes[cmd].cmd.arglist;
     cmd_id = ast->nodes[cmd].cmd.id;
 
-    if (arglist > -1 && ast_type_info(ast, arglist) == TYPE_INVALID)
+    if (arglist > -1 && type_is_invalid(ast_type_info(ast, arglist)))
     {
         stack_push_entry(stack, cmd, arglist);
         return DEP_ADDED_CHILDREN;
     }
 
-    ast->nodes[cmd].info.type_info = cmds->return_types->data[cmd_id];
+    ast->nodes[cmd].info.type_info
+        = type_primitive(cmds->return_types->data[cmd_id]);
     stack_pop(*stack);
     return DEP_SOLVED;
 }
@@ -691,7 +676,7 @@ convert_to_var_decl_with_cast(
     struct ast** astp, ast_id ass, const char* filename, const char* source)
 {
     struct utf8_span op_loc;
-    enum type        ident_type, expr_type;
+    union type       ident_type, expr_type;
     ast_id           var_write, identifier, expr, decl1, decl2;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -727,7 +712,7 @@ convert_to_var_decl_with_cast(
     (*astp)->nodes[decl1].var_decl1.scope_location = ast_loc(*astp, identifier);
 
     /* May need to insert a cast from rhs to lhs */
-    if (ident_type != expr_type)
+    if (!types_equal(ident_type, expr_type))
     {
         ast_id cast;
         switch (type_convert(expr_type, ident_type))
@@ -767,9 +752,9 @@ process_assignment(
     const char*     source,
     struct locals** locals)
 {
-    ast_id    lvalue, expr;
-    enum type lvalue_type, expr_type;
-    int32_t   top = stack_count(*stack);
+    ast_id     lvalue, expr;
+    union type lvalue_type, expr_type;
+    int32_t    top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(ass > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -781,9 +766,9 @@ process_assignment(
     ODBUTIL_DEBUG_ASSERT(lvalue > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
 
-    if (ast_type_info(*astp, lvalue) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(*astp, lvalue)))
         stack_push_entry(stack, ass, lvalue);
-    if (ast_type_info(*astp, expr) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(*astp, expr)))
         stack_push_entry(stack, ass, expr);
 
     if (top != stack_count(*stack))
@@ -821,7 +806,7 @@ process_assignment(
     /* May need to insert a cast from rhs to lhs */
     lvalue_type = ast_type_info(*astp, lvalue);
     expr_type = ast_type_info(*astp, expr);
-    if (lvalue_type != expr_type)
+    if (!types_equal(lvalue_type, expr_type))
     {
         ast_id cast;
         ast_id first_occurrence;
@@ -862,16 +847,16 @@ process_assignment(
 
     /* Assignments are not expressions, thus they do not evaluate to a
      * type */
-    (*astp)->nodes[ass].info.type_info = TYPE_VOID;
+    (*astp)->nodes[ass].info.type_info = type_primitive(TYPE_VOID);
     stack_pop(*stack);
     return DEP_SOLVED;
 }
 
 static ast_id
-create_initializer_literal(
-    struct ast** astp, enum type type, struct utf8_span loc)
+create_default_initializer(
+    struct ast** astp, union type type, struct utf8_span loc)
 {
-    switch (type)
+    switch (type.primitive)
     {
         case TYPE_BOOL: return ast_boolean_literal(astp, 0, loc); break;
         case TYPE_I64: return ast_double_integer_literal(astp, 0L, loc); break;
@@ -884,33 +869,25 @@ create_initializer_literal(
         case TYPE_STRING:
             return ast_string_literal(astp, empty_utf8_span(), loc);
 
-        case TYPE_UDT_PTR:
-            ODBUTIL_DEBUG_ASSERT(
-                0,
-                log_err("UDT initializers must be created with "
-                        "create_udt_initializer().\n"));
-            return -1;
-
         case TYPE_INVALID:
         case TYPE_VOID:
-        case TYPE_ARRAY:
-        case TYPE_LABEL:
-        case TYPE_DABEL:
-        case TYPE_ANY:
             ODBUTIL_DEBUG_ASSERT(
                 0,
                 log_err(
-                    "Creating default initializers for type %d is not "
-                    "yet implemented.\n",
-                    type));
+                    "Can't create initializer for type: %s\n",
+                    primitive_type_name(type.primitive)));
             return -1;
     }
 
+    ODBUTIL_DEBUG_ASSERT(
+        0,
+        log_err("UDT initializers must be created with "
+                "create_default_initializer_udt().\n"));
     return -1;
 }
 
 static ast_id
-create_initializer_from_udt_identifier(
+create_default_initializer_udt(
     struct ast**          astp,
     struct utf8_span      udt_name,
     const char*           filename,
@@ -927,7 +904,7 @@ create_initializer_from_udt_identifier(
     {
         log_flc(filename, source, udt_name);
         log_err("User-Defined Type not found.\n");
-        log_excerpt_1(source, udt_name, "", 0);
+        log_excerpt_1(source, udt_name, empty_utf8_view(), 0);
         return -1;
     }
     udt_decl = entry->ast_node;
@@ -963,7 +940,8 @@ create_initializer_from_udt_identifier(
             }
             if (arglist_entry < 0)
                 return -1;
-            (*astp)->nodes[arglist_entry].info.type_info = TYPE_VOID;
+            (*astp)->nodes[arglist_entry].info.type_info
+                = type_primitive(TYPE_VOID);
         }
         else if (ast_node_type(*astp, member) == AST_UDT_DECL)
         {
@@ -1026,11 +1004,12 @@ process_var_decl(
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
-            init_local(local, identifier, var_decl, TYPE_INVALID);
+            init_local(
+                local, identifier, var_decl, type_primitive(TYPE_INVALID));
             break;
         }
         case HM_EXISTS: {
-            if (local->type != TYPE_INVALID)
+            if (type_is_valid(local->type))
             {
                 err_var_decl_redeclaration(
                     *astp,
@@ -1052,11 +1031,11 @@ process_var_decl(
      * Since we already did the hashmap lookup here, and we have access to the
      * initializer expression, we set the type of as_auto here instead of doing
      * it in its own process_as_auto() function */
-    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID
+    if (as > -1 && type_is_invalid(ast_type_info(*astp, as))
         && ast_node_type(*astp, as) != AST_AS_AUTO)
         stack_push_entry(stack, var_decl, as);
 
-    if (init_expr > -1 && ast_type_info(*astp, init_expr) == TYPE_INVALID)
+    if (init_expr > -1 && type_is_invalid(ast_type_info(*astp, init_expr)))
         stack_push_entry(stack, var_decl, init_expr);
 
     if (stack_count(*stack) != top)
@@ -1064,28 +1043,18 @@ process_var_decl(
 
     /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
      * to the identifier's type annotation */
-    ODBUTIL_DEBUG_ASSERT(local->type == TYPE_INVALID, (void)0);
+    ODBUTIL_DEBUG_ASSERT(type_is_invalid(local->type), (void)0);
     if (as > -1 && ast_node_type(*astp, as) == AST_AS_AUTO)
     {
         ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
         ODBUTIL_DEBUG_ASSERT(
-            ast_type_info(*astp, init_expr) != TYPE_INVALID, (void)0);
+            type_is_valid(ast_type_info(*astp, init_expr)), (void)0);
         local->type = ast_type_info(*astp, init_expr);
         (*astp)->nodes[as].info.type_info = local->type;
     }
-    else if (as > -1 && ast_node_type(*astp, as) == AST_AS_UDT)
-    {
-        struct local*    udt_local;
-        struct utf8_span udt_name = (*astp)->nodes[as].as_udt.type_name;
-        udt_local = find_local(*locals, source, udt_name, scope_id);
-        ODBUTIL_DEBUG_ASSERT(udt_local != NULL, (void)0);
-
-        local->type = TYPE_UDT_PTR;
-        local->udt_decl = udt_local->udt_decl;
-    }
     else if (as > -1)
     {
-        ODBUTIL_DEBUG_ASSERT(ast_type_info(*astp, as) != TYPE_INVALID, (void)0);
+        ODBUTIL_DEBUG_ASSERT(type_is_valid(ast_type_info(*astp, as)), (void)0);
         local->type = ast_type_info(*astp, as);
     }
     else
@@ -1095,26 +1064,26 @@ process_var_decl(
     /* TODO: Global variables are not yet supported */
 
     /* All variables must have an initial value */
-    if (init_expr < 0 && local->type == TYPE_UDT_PTR)
+    if (init_expr < 0 && type_is_primitive(local->type))
+    {
+        struct utf8_span loc = ast_loc(*astp, var_decl);
+        init_expr = create_default_initializer(astp, local->type, loc);
+        if (init_expr < 0)
+            return DEP_ERROR;
+
+        (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
+        (*astp)->nodes[init_expr].info.type_info = local->type;
+        ast_set_subtree_scope(*astp, init_expr, ast_scope(*astp, var_decl));
+    }
+    else if (init_expr < 0)
     {
         struct utf8_span udt_name;
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(*astp, as) == AST_AS_UDT,
             log_err("type: %d\n", ast_node_type(*astp, as)));
         udt_name = (*astp)->nodes[as].as_udt.type_name;
-        init_expr = create_initializer_from_udt_identifier(
+        init_expr = create_default_initializer_udt(
             astp, udt_name, filename, source, globals);
-        if (init_expr < 0)
-            return DEP_ERROR;
-
-        (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
-        (*astp)->nodes[init_expr].info.type_info = TYPE_UDT_PTR;
-        ast_set_subtree_scope(*astp, init_expr, ast_scope(*astp, var_decl));
-    }
-    else if (init_expr < 0)
-    {
-        struct utf8_span loc = ast_loc(*astp, var_decl);
-        init_expr = create_initializer_literal(astp, local->type, loc);
         if (init_expr < 0)
             return DEP_ERROR;
 
@@ -1129,7 +1098,7 @@ process_var_decl(
     (*astp)->nodes[identifier].info.type_info = local->type;
 
     /* May need to insert a cast from init expression */
-    if (ast_type_info(*astp, init_expr) != local->type)
+    if (!types_equal(ast_type_info(*astp, init_expr), local->type))
     {
         ast_id cast;
         switch (type_convert(ast_type_info(*astp, init_expr), local->type))
@@ -1194,7 +1163,7 @@ process_var_write(
         case HM_NEW: {
             /* Type always defaults to the annotation if a variable is
              * created by referencing it */
-            enum type ann_type = annotation_to_type(
+            union type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
             init_local(local, identifier, var_write, ann_type);
 
@@ -1204,7 +1173,7 @@ process_var_write(
         }
 
         case HM_EXISTS:
-            if (local->type == TYPE_INVALID)
+            if (type_is_invalid(local->type))
             {
                 ast_id n = var_write;
                 while (n > -1 && n != local->dependent)
@@ -1217,7 +1186,7 @@ process_var_write(
         case HM_OOM: return DEP_ERROR;
     }
 
-    ODBUTIL_DEBUG_ASSERT(local->type != TYPE_INVALID, (void)0);
+    ODBUTIL_DEBUG_ASSERT(type_is_valid(local->type), (void)0);
     (*astp)->nodes[identifier].info.type_info = local->type;
     (*astp)->nodes[var_write].info.type_info = local->type;
 
@@ -1262,7 +1231,7 @@ process_udt_decl(
         ast_node_type(ast, type_identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, type_identifier)));
 
-    if (ast_type_info(ast, members) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, members)))
     {
         stack_push_entry(stack, udt_decl, members);
         return DEP_ADDED_CHILDREN;
@@ -1313,31 +1282,36 @@ process_udt_decl(
                 source);
         }
         case HM_NEW: {
-            local_init_udt(local, type_identifier, udt_decl, udt_decl);
+            init_local(local, type_identifier, udt_decl, type_udt(udt_decl));
             break;
         }
     }
 
-    ast->nodes[udt_decl].info.type_info = TYPE_UDT_PTR;
-    ast->nodes[type_identifier].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[udt_decl].info.type_info = local->type;
+    ast->nodes[type_identifier].info.type_info = local->type;
 
     stack_pop(*stack);
     return DEP_SOLVED;
 }
 
-static enum type
+static union type
 find_udt_read_type(
-    struct ast*     ast,
-    ast_id          parent,
-    ast_id          udt_decl,
-    ast_id          member,
-    const char*     filename,
-    const char*     source,
-    struct locals** locals)
+    struct ast* ast,
+    ast_id      container,
+    union type  container_type,
+    ast_id      member,
+    const char* filename,
+    const char* source)
 {
     int              index;
-    ast_id           block, left, left_identifier, udt_member_decl;
+    ast_id           udt_decl, block, left, left_identifier, udt_member_decl;
     struct utf8_span left_name;
+    union type       udt_member_type;
+
+    udt_decl = type_udt_decl(container_type);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
     left = ast_node_type(ast, member) == AST_UDT_READ
                ? ast->nodes[member].udt_read.member
@@ -1350,7 +1324,7 @@ find_udt_read_type(
     {
         ODBUTIL_DEBUG_ASSERT(
             0, log_err("type: %d\n", ast_node_type(ast, left)));
-        return TYPE_INVALID;
+        return type_invalid();
     }
     left_name = ast->nodes[left_identifier].identifier.name;
 
@@ -1370,60 +1344,45 @@ find_udt_read_type(
         {
             ODBUTIL_DEBUG_ASSERT(
                 0, log_err("type: %d\n", ast_node_type(ast, udt_member_decl)));
-            return TYPE_INVALID;
+            return type_invalid();
         }
 
         udt_member_name = ast->nodes[udt_member_identifier].identifier.name;
+        udt_member_type = ast_type_info(ast, udt_member_decl);
         if (utf8_equal_span(source, left_name, udt_member_name))
             break;
     }
     if (block < 0)
     {
         err_udt_member_not_found(ast, left_name, filename, source);
-        return TYPE_INVALID;
+        return type_invalid();
     }
+
+    ast->nodes[container].udt_read.index = index;
+    ast->nodes[left].info.type_info = udt_member_type;
+    ast->nodes[left_identifier].info.type_info = udt_member_type;
 
     /* Get type of UDT member -- If it is a nested UDT, then we have to look up
      * the type name to get the nested udt_decl structure */
-    if (ast_type_info(ast, udt_member_decl) == TYPE_UDT_PTR)
+    if (type_is_primitive(ast_type_info(ast, udt_member_decl)))
+        return udt_member_type;
+    else
     {
-        enum type        type;
-        struct local*    local;
-        ast_id           right, decl2, as_udt;
-        struct utf8_span nested_type_name;
-        int32_t          scope_id;
+        union type read_type;
+        ast_id     right;
 
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, member) == AST_UDT_READ,
             log_err("type: %d\n", ast_node_type(ast, member)));
         right = ast->nodes[member].udt_read.next;
 
-        decl2 = ast->nodes[udt_member_decl].var_decl1.var_decl2;
-        as_udt = ast->nodes[decl2].var_decl2.as;
-        nested_type_name = ast->nodes[as_udt].as_udt.type_name;
-        scope_id = ast->nodes[udt_member_decl].info.scope_id;
-        local = find_local(*locals, source, nested_type_name, scope_id);
-        ODBUTIL_DEBUG_ASSERT(local != NULL, (void)0);
+        read_type = find_udt_read_type(
+            ast, member, udt_member_type, right, filename, source);
+        if (type_is_invalid(read_type))
+            return type_invalid();
 
-        type = find_udt_read_type(
-            ast, member, local->udt_decl, right, filename, source, locals);
-        if (type == TYPE_INVALID)
-            return TYPE_INVALID;
-
-        ast->nodes[parent].udt_read.index = index;
-        ast->nodes[member].udt_read.type_name = nested_type_name;
-        ast->nodes[member].info.type_info = type;
-        ast->nodes[left].info.type_info = TYPE_UDT_PTR;
-        ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
-        return type;
-    }
-    else
-    {
-        enum type type = ast_type_info(ast, udt_member_decl);
-        ast->nodes[parent].udt_read.index = index;
-        ast->nodes[left].info.type_info = type;
-        ast->nodes[left_identifier].info.type_info = type;
-        return type;
+        ast->nodes[member].info.type_info = read_type;
+        return read_type;
     }
 }
 
@@ -1436,10 +1395,10 @@ process_udt_read(
     const char*     source,
     struct locals** locals)
 {
-    enum type        type;
-    ast_id           left, right, udt_decl, type_ident, left_identifier;
+    union type       type;
+    ast_id           left, right, left_identifier;
     int32_t          scope_id;
-    struct utf8_span left_name, type_name;
+    struct utf8_span left_name;
     struct local*    local;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1467,46 +1426,43 @@ process_udt_read(
             return err_udt_not_found(ast, left_name, filename, source);
         }
         case HM_EXISTS: {
-            if (local->type != TYPE_UDT_PTR)
+            if (type_is_primitive(local->type))
                 return err_udt_is_not_udt(ast, left_name, filename, source);
             break;
         }
     }
 
-    udt_decl = local->udt_decl;
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
-        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
-    type_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
-    type_name = ast->nodes[type_ident].identifier.name;
-
     type = find_udt_read_type(
-        ast, udt_read, udt_decl, right, filename, source, locals);
-    if (type == TYPE_INVALID)
+        ast, udt_read, local->type, right, filename, source);
+    if (type_is_invalid(type))
         return DEP_ERROR;
 
-    ast->nodes[udt_read].udt_read.type_name = type_name;
     ast->nodes[udt_read].info.type_info = type;
-    ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
-    ast->nodes[left].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[left_identifier].info.type_info = local->type;
+    ast->nodes[left].info.type_info = local->type;
 
     stack_pop(*stack);
     return DEP_SOLVED;
 }
 
-static enum type
+static union type
 find_udt_write_type(
-    struct ast*     ast,
-    ast_id          parent,
-    ast_id          udt_decl,
-    ast_id          member,
-    const char*     filename,
-    const char*     source,
-    struct locals** locals)
+    struct ast* ast,
+    ast_id      container,
+    union type  container_type,
+    ast_id      member,
+    const char* filename,
+    const char* source)
 {
     int              index;
-    ast_id           block, left, left_identifier, udt_member_decl;
+    ast_id           udt_decl, block, left, left_identifier, udt_member_decl;
     struct utf8_span left_name;
+    union type       udt_member_type;
+
+    udt_decl = type_udt_decl(container_type);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
     left = ast_node_type(ast, member) == AST_UDT_WRITE
                ? ast->nodes[member].udt_write.member
@@ -1519,7 +1475,7 @@ find_udt_write_type(
     {
         ODBUTIL_DEBUG_ASSERT(
             0, log_err("type: %d\n", ast_node_type(ast, left)));
-        return TYPE_INVALID;
+        return type_invalid();
     }
     left_name = ast->nodes[left_identifier].identifier.name;
 
@@ -1539,60 +1495,45 @@ find_udt_write_type(
         {
             ODBUTIL_DEBUG_ASSERT(
                 0, log_err("type: %d\n", ast_node_type(ast, udt_member_decl)));
-            return TYPE_INVALID;
+            return type_invalid();
         }
 
         udt_member_name = ast->nodes[udt_member_identifier].identifier.name;
+        udt_member_type = ast_type_info(ast, udt_member_decl);
         if (utf8_equal_span(source, left_name, udt_member_name))
             break;
     }
     if (block < 0)
     {
         err_udt_member_not_found(ast, left_name, filename, source);
-        return TYPE_INVALID;
+        return type_invalid();
     }
+
+    ast->nodes[container].udt_write.index = index;
+    ast->nodes[left].info.type_info = udt_member_type;
+    ast->nodes[left_identifier].info.type_info = udt_member_type;
 
     /* Get type of UDT member -- If it is a nested UDT, then we have to look up
      * the type name to get the nested udt_decl structure */
-    if (ast_type_info(ast, udt_member_decl) == TYPE_UDT_PTR)
+    if (type_is_primitive(ast_type_info(ast, udt_member_decl)))
+        return udt_member_type;
+    else
     {
-        enum type        type;
-        struct local*    local;
-        ast_id           right, decl2, as_udt;
-        struct utf8_span nested_type_name;
-        int32_t          scope_id;
+        union type write_type;
+        ast_id     right;
 
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, member) == AST_UDT_WRITE,
             log_err("type: %d\n", ast_node_type(ast, member)));
         right = ast->nodes[member].udt_write.next;
 
-        decl2 = ast->nodes[udt_member_decl].var_decl1.var_decl2;
-        as_udt = ast->nodes[decl2].var_decl2.as;
-        nested_type_name = ast->nodes[as_udt].as_udt.type_name;
-        scope_id = ast->nodes[udt_member_decl].info.scope_id;
-        local = find_local(*locals, source, nested_type_name, scope_id);
-        ODBUTIL_DEBUG_ASSERT(local != NULL, (void)0);
+        write_type = find_udt_write_type(
+            ast, member, udt_member_type, right, filename, source);
+        if (type_is_invalid(write_type))
+            return type_invalid();
 
-        type = find_udt_write_type(
-            ast, member, local->udt_decl, right, filename, source, locals);
-        if (type == TYPE_INVALID)
-            return TYPE_INVALID;
-
-        ast->nodes[parent].udt_write.index = index;
-        ast->nodes[member].udt_write.type_name = nested_type_name;
-        ast->nodes[member].info.type_info = type;
-        ast->nodes[left].info.type_info = TYPE_UDT_PTR;
-        ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
-        return type;
-    }
-    else
-    {
-        enum type type = ast_type_info(ast, udt_member_decl);
-        ast->nodes[parent].udt_write.index = index;
-        ast->nodes[left].info.type_info = type;
-        ast->nodes[left_identifier].info.type_info = type;
-        return type;
+        ast->nodes[member].info.type_info = write_type;
+        return write_type;
     }
 }
 
@@ -1605,10 +1546,10 @@ process_udt_write(
     const char*     source,
     struct locals** locals)
 {
-    enum type        type;
-    ast_id           left, right, udt_decl, type_ident, left_identifier;
+    union type       type;
+    ast_id           left, right, left_identifier;
     int32_t          scope_id;
-    struct utf8_span left_name, type_name;
+    struct utf8_span left_name;
     struct local*    local;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1636,29 +1577,20 @@ process_udt_write(
             return err_udt_not_found(ast, left_name, filename, source);
         }
         case HM_EXISTS: {
-            if (local->type != TYPE_UDT_PTR)
+            if (type_is_primitive(local->type))
                 return err_udt_is_not_udt(ast, left_name, filename, source);
             break;
         }
     }
 
-    udt_decl = local->udt_decl;
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
-        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
-    type_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
-    type_name = ast->nodes[type_ident].identifier.name;
-
     type = find_udt_write_type(
-        ast, udt_write, udt_decl, right, filename, source, locals);
-    if (type == TYPE_INVALID)
+        ast, udt_write, local->type, right, filename, source);
+    if (type_is_invalid(type))
         return DEP_ERROR;
 
-    ast->nodes[udt_write].udt_write.index = 0;
-    ast->nodes[udt_write].udt_write.type_name = type_name;
     ast->nodes[udt_write].info.type_info = type;
-    ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
-    ast->nodes[left].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[left_identifier].info.type_info = local->type;
+    ast->nodes[left].info.type_info = local->type;
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -1699,14 +1631,14 @@ process_var_read(
 
             /* Type always defaults to the annotation if a variable is
              * created by referencing it */
-            enum type ann_type = annotation_to_type(
+            union type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
             init_local(local, identifier, var_read, ann_type);
 
             /* TODO: Global variables are not yet supported */
 
             /* Create a declaration of the variable with a default value */
-            init_expr = create_initializer_literal(astp, local->type, loc);
+            init_expr = create_default_initializer(astp, local->type, loc);
             if (init_expr < 0)
                 return DEP_ERROR;
             init_ident = ast_dup_identifier(astp, identifier);
@@ -1723,7 +1655,8 @@ process_var_read(
             /* NOTE: We do NOT set the block's type, because it is linked as a
              * parent into the block list, and it's possible that adjacent nodes
              * are still unexplored. */
-            (*astp)->nodes[init_block].info.type_info = TYPE_INVALID;
+            (*astp)->nodes[init_block].info.type_info
+                = type_primitive(TYPE_INVALID);
 
             /* Insert into beginning of current scope's block list */
             for (scope_start = var_read,
@@ -1767,7 +1700,7 @@ process_var_read(
         }
 
         case HM_EXISTS:
-            if (local->type == TYPE_INVALID)
+            if (type_is_invalid(local->type))
             {
                 ast_id n = var_read;
                 while (n > -1 && n != local->dependent)
@@ -1805,9 +1738,9 @@ process_binop(
     lhs = (*astp)->nodes[binop].binop.left;
     rhs = (*astp)->nodes[binop].binop.right;
 
-    if (ast_type_info(*astp, rhs) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(*astp, rhs)))
         stack_push_entry(stack, binop, rhs);
-    if (ast_type_info(*astp, lhs) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(*astp, lhs)))
         stack_push_entry(stack, binop, lhs);
 
     if (stack_count(*stack) != top)
@@ -1853,7 +1786,7 @@ process_binop(
                 }
             }
 
-            if (ast_type_info(*astp, conv.src) != conv.type)
+            if (!types_equal(ast_type_info(*astp, conv.src), conv.type))
             {
                 ast_id cast = cast_to_type(astp, conv.src, conv.type);
                 if (cast < 0)
@@ -1876,8 +1809,8 @@ process_binop(
             ast_id lhs = (*astp)->nodes[binop].binop.left;
             ast_id rhs = (*astp)->nodes[binop].binop.right;
 
-            enum type base_type = ast_type_info(*astp, lhs);
-            enum type exp_type = ast_type_info(*astp, rhs);
+            union type base_type = ast_type_info(*astp, lhs);
+            union type exp_type = ast_type_info(*astp, rhs);
 
             /*
              * The supported instructions are as of this writing:
@@ -1886,20 +1819,22 @@ process_binop(
              *   pow(f32, f32)
              *   pow(f64, f64)
              */
-            enum type base_target_type
-                = base_type == TYPE_F64 ? TYPE_F64 : TYPE_F32;
-            enum type exp_target_type = exp_type == TYPE_F64   ? TYPE_F64
-                                        : exp_type == TYPE_F32 ? TYPE_F32
-                                                               : TYPE_I32;
+            union type base_target_type = base_type.primitive == TYPE_F64
+                                              ? type_primitive(TYPE_F64)
+                                              : type_primitive(TYPE_F32);
+            union type exp_target_type
+                = exp_type.primitive == TYPE_F64   ? type_primitive(TYPE_F64)
+                  : exp_type.primitive == TYPE_F32 ? type_primitive(TYPE_F32)
+                                                   : type_primitive(TYPE_I32);
             /*
              * It makes sense to prioritize the LHS type higher than the
              * RHS type. For example, if the LHS is a f32, but the RHS
              * is a f64, then the RHS should be cast to a f32.
              */
-            if (exp_target_type != TYPE_I32)
+            if (exp_target_type.primitive != TYPE_I32)
                 exp_target_type = base_target_type;
 
-            if (base_type != base_target_type)
+            if (!types_equal(base_type, base_target_type))
             {
                 /* Cast is required, insert one in the AST */
                 ast_id cast_lhs = cast_to_type(astp, lhs, base_target_type);
@@ -1944,7 +1879,7 @@ process_binop(
                 }
             }
 
-            if (exp_type != exp_target_type)
+            if (!types_equal(exp_type, exp_target_type))
             {
                 /* Cast is required, insert one in the AST */
                 ast_id cast_rhs = cast_to_type(astp, rhs, exp_target_type);
@@ -2044,7 +1979,7 @@ process_binop(
                 }
             }
 
-            if (ast_type_info(*astp, conv.src) != conv.type)
+            if (!types_equal(ast_type_info(*astp, conv.src), conv.type))
             {
                 ast_id cast = cast_to_type(astp, conv.src, conv.type);
                 if (cast < 0)
@@ -2056,7 +1991,7 @@ process_binop(
                     (*astp)->nodes[binop].binop.right = cast;
             }
 
-            (*astp)->nodes[binop].info.type_info = TYPE_BOOL;
+            (*astp)->nodes[binop].info.type_info = type_primitive(TYPE_BOOL);
 
             stack_pop(*stack);
             return DEP_SOLVED;
@@ -2070,7 +2005,7 @@ process_binop(
             if (cast_expr_to_boolean(astp, rhs, binop, filename, source) != 0)
                 return DEP_ERROR;
 
-            (*astp)->nodes[binop].info.type_info = TYPE_BOOL;
+            (*astp)->nodes[binop].info.type_info = type_primitive(TYPE_BOOL);
             stack_pop(*stack);
             return DEP_SOLVED;
         }
@@ -2094,7 +2029,7 @@ process_unop(
         ast_node_type(*astp, unop) == AST_UNOP,
         log_err("type: %d\n", ast_node_type(*astp, unop)));
 
-    if (ast_type_info(*astp, expr) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(*astp, expr)))
     {
         stack_push_entry(stack, unop, expr);
         return DEP_ADDED_CHILDREN;
@@ -2129,11 +2064,11 @@ process_cond(
     yes = (*astp)->nodes[branches].cond_branches.yes;
     no = (*astp)->nodes[branches].cond_branches.no;
 
-    if (no > -1 && ast_type_info(*astp, no) == TYPE_INVALID)
+    if (no > -1 && type_is_invalid(ast_type_info(*astp, no)))
         stack_push_entry(stack, cond, no);
-    if (yes > -1 && ast_type_info(*astp, yes) == TYPE_INVALID)
+    if (yes > -1 && type_is_invalid(ast_type_info(*astp, yes)))
         stack_push_entry(stack, cond, yes);
-    if (ast_type_info(*astp, expr) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(*astp, expr)))
         stack_push_entry(stack, cond, expr);
 
     if (stack_count(*stack) != top)
@@ -2144,8 +2079,8 @@ process_cond(
     if (cast_expr_to_boolean(astp, expr, cond, filename, source) != 0)
         return DEP_ERROR;
 
-    (*astp)->nodes[branches].info.type_info = TYPE_VOID;
-    (*astp)->nodes[cond].info.type_info = TYPE_VOID;
+    (*astp)->nodes[branches].info.type_info = type_primitive(TYPE_VOID);
+    (*astp)->nodes[cond].info.type_info = type_primitive(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2178,16 +2113,16 @@ process_loop(
     body = (*astp)->nodes[loop_body].loop2.body;
     post_body = (*astp)->nodes[loop_body].loop2.post_body;
 
-    if (post_body > -1 && ast_type_info(*astp, post_body) == TYPE_INVALID)
+    if (post_body > -1 && type_is_invalid(ast_type_info(*astp, post_body)))
         stack_push_entry(stack, loop, post_body);
-    if (body > -1 && ast_type_info(*astp, body) == TYPE_INVALID)
+    if (body > -1 && type_is_invalid(ast_type_info(*astp, body)))
         stack_push_entry(stack, loop, body);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
 
-    (*astp)->nodes[loop].info.type_info = TYPE_VOID;
-    (*astp)->nodes[loop_body].info.type_info = TYPE_VOID;
+    (*astp)->nodes[loop].info.type_info = type_primitive(TYPE_VOID);
+    (*astp)->nodes[loop_body].info.type_info = type_primitive(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2204,27 +2139,27 @@ process_loop_cont(struct stack** stack, struct ast* ast, ast_id cont)
         log_err("type: %d\n", ast_node_type(ast, cont)));
 
     step = ast->nodes[cont].cont.step;
-    if (step > -1 && ast_type_info(ast, step) == TYPE_INVALID)
+    if (step > -1 && type_is_invalid(ast_type_info(ast, step)))
     {
         stack_push_entry(stack, cont, step);
         return DEP_ADDED_CHILDREN;
     }
 
-    ast->nodes[cont].info.type_info = TYPE_VOID;
+    ast->nodes[cont].info.type_info = type_primitive(TYPE_VOID);
     stack_pop(*stack);
     return DEP_SOLVED;
 }
 
 /* Sets the return type if not yet set, and returns the type */
-static enum type
-set_or_get_return_type(struct ast* ast, ast_id func, enum type type)
+static union type
+set_or_get_return_type(struct ast* ast, ast_id func, union type type)
 {
     ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, func) == AST_FUNC1,
         log_err("type: %d\n", ast_node_type(ast, func)));
 
-    if (ast_type_info(ast, func) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, func)))
     {
         ast_id f1, f2, f3, f4, identifier;
 
@@ -2255,8 +2190,8 @@ process_func_return(
     const char*  filename,
     const char*  source)
 {
-    ast_id    func;
-    enum type target_ret_type, current_ret_type;
+    ast_id     func;
+    union type target_ret_type, current_ret_type;
 
     ODBUTIL_DEBUG_ASSERT(func_or_exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -2275,10 +2210,11 @@ process_func_return(
         ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
     }
 
-    target_ret_type = retval > -1 ? ast_type_info(*astp, retval) : TYPE_VOID;
+    target_ret_type = retval > -1 ? ast_type_info(*astp, retval)
+                                  : type_primitive(TYPE_VOID);
     current_ret_type = set_or_get_return_type(*astp, func, target_ret_type);
 
-    if (retval > -1 && current_ret_type != target_ret_type)
+    if (retval > -1 && !types_equal(current_ret_type, target_ret_type))
     {
         ast_id cast;
         switch (type_convert(target_ret_type, current_ret_type))
@@ -2319,7 +2255,7 @@ process_func_return(
             (*astp)->nodes[func_or_exit].func_exit.retval = cast;
     }
 
-    if (retval == -1 && current_ret_type != target_ret_type)
+    if (retval == -1 && !types_equal(current_ret_type, target_ret_type))
     {
         struct utf8_span ret_loc
             = ast_node_type(*astp, func_or_exit) == AST_FUNC_EXIT
@@ -2348,7 +2284,7 @@ process_func_exit(
         log_err("type: %d\n", ast_node_type(*astp, exit)));
 
     ret = (*astp)->nodes[exit].func_exit.retval;
-    if (ret > -1 && ast_type_info(*astp, ret) == TYPE_INVALID)
+    if (ret > -1 && type_is_invalid(ast_type_info(*astp, ret)))
     {
         stack_push_entry(stack, exit, ret);
         return DEP_ADDED_CHILDREN;
@@ -2359,7 +2295,7 @@ process_func_exit(
 
     /* The exitfunction statement itself is not an expression, so it
      * "returns" VOID */
-    (*astp)->nodes[exit].info.type_info = TYPE_VOID;
+    (*astp)->nodes[exit].info.type_info = type_primitive(TYPE_VOID);
     stack_pop(*stack);
     return DEP_SOLVED;
 }
@@ -2390,25 +2326,25 @@ process_func(
     body = (*astp)->nodes[f4].func4.body;
     retval = (*astp)->nodes[f4].func4.retval;
 
-    if (retval > -1 && ast_type_info(*astp, retval) == TYPE_INVALID)
+    if (retval > -1 && type_is_invalid(ast_type_info(*astp, retval)))
         stack_push_entry(stack, func, retval);
-    if (body > -1 && ast_type_info(*astp, body) == TYPE_INVALID)
+    if (body > -1 && type_is_invalid(ast_type_info(*astp, body)))
         stack_push_entry(stack, func, body);
-    if (paramlist > -1 && ast_type_info(*astp, paramlist) == TYPE_INVALID)
+    if (paramlist > -1 && type_is_invalid(ast_type_info(*astp, paramlist)))
         stack_push_entry(stack, func, paramlist);
-    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID)
+    if (as > -1 && type_is_invalid(ast_type_info(*astp, as)))
         stack_push_entry(stack, func, as);
 
     /* If the function has been declared with an explicit return type, set
      * that here now. Child nodes will attempt to set the return type and
      * need this to generate warnings. */
-    if (as > -1 && ast_type_info(*astp, as) != TYPE_INVALID)
+    if (as > -1 && type_is_valid(ast_type_info(*astp, as)))
         set_or_get_return_type(*astp, func, ast_type_info(*astp, as));
 
     /* If the function's return expression has been evaluated, try to set
      * the return type of the function. Recursive function calls depend on
      * this to be set now. */
-    if (retval > -1 && ast_type_info(*astp, retval) != TYPE_INVALID)
+    if (retval > -1 && type_is_valid(ast_type_info(*astp, retval)))
         if (process_func_return(astp, func, retval, filename, source) != 0)
             return DEP_ERROR;
 
@@ -2417,7 +2353,7 @@ process_func(
 
     /* If no exitfunction statement existed, and no return value exists, and
      * no explicit type was used, then we default to VOID */
-    set_or_get_return_type(*astp, func, TYPE_VOID);
+    set_or_get_return_type(*astp, func, type_primitive(TYPE_VOID));
 
     /* TODO: Type check identifier's return type with explicit_type */
 
@@ -2516,9 +2452,9 @@ instantiate_func(
          pl_node = (*func_astp)->nodes[pl_node].paramlist.next,
         al_node = (*call_astp)->nodes[al_node].arglist.next)
     {
-        ast_id    param = (*func_astp)->nodes[pl_node].paramlist.param;
-        ast_id    arg = (*call_astp)->nodes[al_node].arglist.expr;
-        enum type arg_type = ast_type_info((*call_astp), arg);
+        ast_id     param = (*func_astp)->nodes[pl_node].paramlist.param;
+        ast_id     arg = (*call_astp)->nodes[al_node].arglist.expr;
+        union type arg_type = ast_type_info((*call_astp), arg);
 
         if ((*func_astp)->nodes[param].param.as < 0)
         {
@@ -2538,10 +2474,11 @@ instantiate_func(
         log_err(
             al_node > -1 ? "Too many arguments to function call.\n"
                          : "Too few arguments to function call.\n");
-        log_excerpt_1(call_source, call_location, "", 0);
+        log_excerpt_1(call_source, call_location, empty_utf8_view(), 0);
 
         log_note("Function has the following signature:\n");
-        log_excerpt_1(call_source, ast_loc(*func_astp, f1), "", 0);
+        log_excerpt_1(
+            call_source, ast_loc(*func_astp, f1), empty_utf8_view(), 0);
         return -1;
     }
 
@@ -2625,8 +2562,8 @@ find_func_instantiation(
             pl_param = func_ast->nodes[pl_param].paramlist.next,
             al_arg = call_ast->nodes[al_arg].arglist.next)
         {
-            ast_id    param_poly, param, arg;
-            enum type param_type, arg_type;
+            ast_id     param_poly, param, arg;
+            union type param_type, arg_type;
 
             ODBUTIL_DEBUG_ASSERT(pl_param > -1, (void)0);
             ODBUTIL_DEBUG_ASSERT(al_arg > -1, (void)0);
@@ -2637,7 +2574,7 @@ find_func_instantiation(
             param_type = ast_type_info(func_ast, param);
             arg_type = ast_type_info(call_ast, arg);
 
-            if (param_type != arg_type
+            if (!types_equal(param_type, arg_type)
                 /* Casts are inserted later. This function only tries to
                    find a matching instantiation on parameters that are
                    polymorphic. */
@@ -2689,7 +2626,7 @@ process_func_or_container_ref(
     /* NOTE: The function has an identifier, but the type of it is set when
      * the return type is known. */
     arglist = (*astp)->nodes[n].func_call_or_container_read.arglist;
-    if (arglist > -1 && ast_type_info(*astp, arglist) == TYPE_INVALID)
+    if (arglist > -1 && type_is_invalid(ast_type_info(*astp, arglist)))
     {
         stack_push_entry(stack, n, arglist);
         return DEP_ADDED_CHILDREN;
@@ -2702,7 +2639,7 @@ process_func_or_container_ref(
     {
         log_flc(filename, source, ast_loc(*astp, identifier));
         log_err("Command or function not found.\n");
-        log_excerpt_1(source, ast_loc(*astp, n), "", 0);
+        log_excerpt_1(source, ast_loc(*astp, n), empty_utf8_view(), 0);
         return -1;
     }
 
@@ -2746,7 +2683,7 @@ process_func_or_container_ref(
             f1 = global->ast_node;
         }
 
-        if (ast_type_info(*astp, f1) != TYPE_INVALID)
+        if (type_is_valid(ast_type_info(*astp, f1)))
         {
             ast_id f2, f3, paramlist, pl_node, al_node, cast;
             int    arg_num;
@@ -2766,14 +2703,14 @@ process_func_or_container_ref(
                 pl_node = (*astp)->nodes[pl_node].paramlist.next,
                 al_node = (*astp)->nodes[al_node].arglist.next)
             {
-                ast_id    param = (*astp)->nodes[pl_node].paramlist.param;
-                ast_id    arg = (*astp)->nodes[al_node].arglist.expr;
-                enum type param_type = ast_type_info(*astp, param);
-                enum type arg_type = ast_type_info(*astp, arg);
-                ODBUTIL_DEBUG_ASSERT(param_type != TYPE_INVALID, (void)0);
-                ODBUTIL_DEBUG_ASSERT(arg_type != TYPE_INVALID, (void)0);
+                ast_id     param = (*astp)->nodes[pl_node].paramlist.param;
+                ast_id     arg = (*astp)->nodes[al_node].arglist.expr;
+                union type param_type = ast_type_info(*astp, param);
+                union type arg_type = ast_type_info(*astp, arg);
+                ODBUTIL_DEBUG_ASSERT(type_is_valid(param_type), (void)0);
+                ODBUTIL_DEBUG_ASSERT(type_is_valid(arg_type), (void)0);
 
-                if (param_type == arg_type)
+                if (types_equal(param_type, arg_type))
                     continue;
 
                 switch (type_convert(arg_type, param_type))
@@ -2872,9 +2809,9 @@ process_cast(
     const char*    filename,
     const char*    source)
 {
-    ast_id    expr, as;
-    enum type source_type, target_type;
-    int32_t   top = stack_count(*stack);
+    ast_id     expr, as;
+    union type source_type, target_type;
+    int32_t    top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(cast > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -2887,9 +2824,9 @@ process_cast(
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(as > -1, (void)0);
 
-    if (ast_type_info(ast, expr) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, expr)))
         stack_push_entry(stack, cast, expr);
-    if (ast_type_info(ast, as) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, as)))
         stack_push_entry(stack, cast, as);
 
     if (stack_count(*stack) != top)
@@ -2930,7 +2867,7 @@ process_as_expr(struct stack** stack, struct ast* ast, ast_id as_expr)
     expr = ast->nodes[as_expr].cast.expr;
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
 
-    if (ast_type_info(ast, expr) == TYPE_INVALID)
+    if (type_is_invalid(ast_type_info(ast, expr)))
     {
         stack_push_entry(stack, as_expr, expr);
         return DEP_ADDED_CHILDREN;
@@ -2990,17 +2927,17 @@ process_as_udt(
                 return DEP_ERROR;
             mutex_unlock(their_mutex);
 
-            local_init_udt(
+            init_local(
                 local,
                 (*astp)->nodes[udt_decl].udt_decl.type_identifier,
                 as_udt,
-                udt_decl);
+                type_udt(udt_decl));
 
             break;
         }
     }
 
-    (*astp)->nodes[as_udt].info.type_info = TYPE_UDT_PTR;
+    (*astp)->nodes[as_udt].info.type_info = local->type;
     stack_pop(*stack);
     return DEP_SOLVED;
 }
@@ -3028,7 +2965,7 @@ process_node(
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_BLOCK: return process_block(stack, *astp, n);
         case AST_END:
-            (*astp)->nodes[n].info.type_info = TYPE_VOID;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_VOID);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_ARGLIST: return process_arglist(stack, *astp, n);
@@ -3085,7 +3022,7 @@ process_node(
         case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP_CONT: return process_loop_cont(stack, *astp, n);
         case AST_LOOP_EXIT:
-            (*astp)->nodes[n].info.type_info = TYPE_VOID;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_VOID);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_FUNC_EXIT:
@@ -3109,39 +3046,39 @@ process_node(
                 stack, tus, tu_id, tu_mutexes, n, filenames, sources, globals);
 
         case AST_BOOLEAN_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_BOOL;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_BOOL);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_BYTE_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_U8;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_U8);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_WORD_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_U16;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_U16);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_INTEGER_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_I32;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_I32);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_DWORD_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_U32;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_U32);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_DOUBLE_INTEGER_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_I64;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_I64);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_FLOAT_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_F32;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_F32);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_DOUBLE_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_F64;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_F64);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_STRING_LITERAL:
-            (*astp)->nodes[n].info.type_info = TYPE_STRING;
+            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_STRING);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_CAST: return process_cast(stack, *astp, n, filename, source);
@@ -3180,7 +3117,7 @@ sanity_check(
     int    error = 0;
     for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast_type_info(ast, n) == TYPE_INVALID)
+        if (type_is_invalid(ast_type_info(ast, n)))
         {
             ast_id parent;
 
@@ -3202,7 +3139,8 @@ sanity_check(
                 "%d.\n",
                 n,
                 ast_node_type(ast, n));
-            log_excerpt_1(source.text.data, ast_loc(ast, n), "", 0);
+            log_excerpt_1(
+                source.text.data, ast_loc(ast, n), empty_utf8_view(), 0);
             error = -1;
         }
 
@@ -3293,7 +3231,8 @@ type_check(
                     log_err(
                         "Type depends on itself. Cannot resolve type "
                         "information.\n");
-                    log_excerpt_1(source, ast_loc(*astp, n), "", 0);
+                    log_excerpt_1(
+                        source, ast_loc(*astp, n), empty_utf8_view(), 0);
                     return_code = -1;
                     stack_clear(stack);
                 }

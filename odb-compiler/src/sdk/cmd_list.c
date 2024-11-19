@@ -6,7 +6,7 @@
 #include "odb-util/vec.h"
 
 VEC_DEFINE_API(plugin_ids, int16_t, 16)
-VEC_DEFINE_API(return_types_list, enum type, 32)
+VEC_DEFINE_API(return_types_list, enum primitive_type, 32)
 VEC_DEFINE_API(cmd_param_types_list, struct cmd_param, 8)
 VEC_DEFINE_API(cmd_param_types_lists, struct cmd_param_types_list*, 32)
 VEC_DEFINE_API(db_param_names, struct utf8_list*, 32)
@@ -45,12 +45,12 @@ cmd_list_deinit(struct cmd_list* cmds)
 
 cmd_id
 cmd_list_insert(
-    struct cmd_list* cmds,
-    utf8_idx         insert,
-    plugin_id        plugin_id,
-    enum type        return_type,
-    struct utf8_view db_cmd_name,
-    struct utf8_view c_symbol)
+    struct cmd_list*    cmds,
+    utf8_idx            insert,
+    plugin_id           plugin_id,
+    enum primitive_type return_type,
+    struct utf8_view    db_cmd_name,
+    struct utf8_view    c_symbol)
 {
     struct cmd_param_types_list** param_types;
     struct utf8_list**            db_param_names;
@@ -171,11 +171,11 @@ mem_release_cmd_list(struct cmd_list* cmds)
 
 cmd_id
 cmd_list_add(
-    struct cmd_list* cmds,
-    plugin_id        plugin_id,
-    enum type        return_type,
-    struct utf8_view db_cmd_name,
-    struct utf8_view c_symbol)
+    struct cmd_list*    cmds,
+    plugin_id           plugin_id,
+    enum primitive_type return_type,
+    struct utf8_view    db_cmd_name,
+    struct utf8_view    c_symbol)
 {
     utf8_idx insert = utf8_lower_bound(cmds->db_cmd_names, db_cmd_name);
     return cmd_list_insert(
@@ -218,7 +218,7 @@ int
 cmd_add_param(
     struct cmd_list*         cmds,
     cmd_id                   cmd_id,
-    enum type                type,
+    enum primitive_type      type,
     enum cmd_param_direction direction,
     struct utf8_view         db_param_name)
 {
@@ -228,7 +228,7 @@ cmd_add_param(
     struct cmd_param* param = cmd_param_types_list_emplace(params);
     if (param == NULL)
         return -1;
-    param->type = type;
+    param->primitive = type;
     param->direction = direction;
 
     if (utf8_list_add(param_names, db_param_name) != 0)

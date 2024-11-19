@@ -13,7 +13,7 @@
 VEC_DECLARE_API(static, candidates, cmd_id, 8)
 VEC_DEFINE_API(candidates, cmd_id, 8)
 
-typedef int (*conversion_valid_func)(enum type, enum type);
+typedef int (*conversion_valid_func)(union type from, union type to);
 
 struct ctx
 {
@@ -25,7 +25,7 @@ struct ctx
 };
 
 static int
-allow_all(enum type from, enum type to)
+allow_all(union type from, union type to)
 {
     switch (type_convert(from, to))
     {
@@ -42,7 +42,7 @@ allow_all(enum type from, enum type to)
 }
 
 static int
-allow_non_information_losing_casts(enum type from, enum type to)
+allow_non_information_losing_casts(union type from, union type to)
 {
     switch (type_convert(from, to))
     {
@@ -59,7 +59,7 @@ allow_non_information_losing_casts(enum type from, enum type to)
 }
 
 static int
-allow_non_problematic_casts(enum type from, enum type to)
+allow_non_problematic_casts(union type from, union type to)
 {
     switch (type_convert(from, to))
     {
@@ -75,17 +75,11 @@ allow_non_problematic_casts(enum type from, enum type to)
     return 0;
 }
 
-static int
-exact_match(enum type from, enum type to)
-{
-    return from == to;
-}
-
 static const conversion_valid_func narrowing_rules[]
     = {allow_all,
        allow_non_information_losing_casts,
        allow_non_problematic_casts,
-       exact_match,
+       types_equal,
        NULL};
 
 static int
@@ -104,9 +98,9 @@ eliminate_candidates(cmd_id* cmd_id, void* user)
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
          ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
-        ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
-        enum type param = params->data[i].type;
-        enum type arg = ast_type_info(ctx->ast, expr);
+        ast_id     expr = ctx->ast->nodes[arglist].arglist.expr;
+        union type param = type_primitive(params->data[i].primitive);
+        union type arg = ast_type_info(ctx->ast, expr);
 
         if (!ctx->is_conversion_valid(arg, param))
             return 0;
@@ -140,7 +134,7 @@ report_duplicate_commands(
 
     log_flc(filename, source, ast_loc(ast, cmd));
     log_err("Command has multiple definitions.\n");
-    gutter = log_excerpt_1(source, ast_loc(ast, cmd), "", 0);
+    gutter = log_excerpt_1(source, ast_loc(ast, cmd), empty_utf8_view(), 0);
 
     log_note("Conflicting definitions are:\n");
     vec_for_each(candidates, cmdp)
@@ -148,9 +142,9 @@ report_duplicate_commands(
         struct utf8_view name = utf8_list_view(cmds->db_cmd_names, *cmdp);
         const struct cmd_param_types_list* param_types
             = cmds->param_types->data[*cmdp];
-        struct utf8_list* param_names = cmds->db_param_names->data[*cmdp];
-        enum type         ret_type = cmds->return_types->data[*cmdp];
-        plugin_id         plugin_id = cmds->plugin_ids->data[*cmdp];
+        struct utf8_list*   param_names = cmds->db_param_names->data[*cmdp];
+        enum primitive_type ret_type = cmds->return_types->data[*cmdp];
+        plugin_id           plugin_id = cmds->plugin_ids->data[*cmdp];
         const struct plugin_info* plugin = &plugins->data[plugin_id];
         log_raw(
             "%*s|   {emph:%.*s}%s",
@@ -166,7 +160,7 @@ report_duplicate_commands(
             log_raw(
                 "%s AS %s",
                 utf8_list_cstr(param_names, arg_idx),
-                type_to_db_name(param_types->data[arg_idx].type));
+                primitive_type_name(param_types->data[arg_idx].primitive));
         }
         log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
         log_raw("[%s]\n", utf8_cstr(plugin->name));
@@ -212,22 +206,21 @@ report_ambiguous_overloads(
     for (arg = arglist, arg_idx = 0; arg > -1;
          arg = ast->nodes[arg].arglist.next, ++arg_idx)
     {
-        ast_id    expr = ast->nodes[arg].arglist.expr;
-        enum type arg_type = ast_type_info(ast, expr);
+        ast_id     expr = ast->nodes[arg].arglist.expr;
+        union type arg_type
+            = type_primitive(ast_type_info(ast, expr).primitive);
         vec_for_each(candidates, cmdp)
         {
-            enum type param_type
-                = cmds->param_types->data[*cmdp]->data[arg_idx].type;
+            union type param_type = type_primitive(
+                cmds->param_types->data[*cmdp]->data[arg_idx].primitive);
 
             if (narrowing_rules[rule_idx](arg_type, param_type))
             {
+                struct utf8_view     ins = empty_utf8_view();
+                struct utf8_view     ann = type_name(arg_type, ast, source);
+                struct utf8_span     loc = ast_loc(ast, expr);
                 struct log_highlight item
-                    = {"",
-                       type_to_db_name(arg_type),
-                       ast_loc(ast, expr),
-                       LOG_HIGHLIGHT,
-                       LOG_MARKERS,
-                       hl_count};
+                    = {ins, ann, loc, LOG_HIGHLIGHT, LOG_MARKERS, hl_count};
                 hl[hl_count] = item;
                 arg_positions[hl_count] = arg_idx + 1;
                 ++hl_count;
@@ -243,15 +236,14 @@ report_ambiguous_overloads(
         for (arg = arglist, arg_idx = 0; arg > -1;
              arg = ast->nodes[arg].arglist.next, ++arg_idx)
         {
-            ast_id               expr = ast->nodes[arg].arglist.expr;
-            enum type            arg_type = ast_type_info(ast, expr);
+            ast_id              expr = ast->nodes[arg].arglist.expr;
+            enum primitive_type arg_type = ast_type_info(ast, expr).primitive;
+            struct utf8_view    ins = empty_utf8_view();
+            struct utf8_view    ann
+                = cstr_utf8_view(primitive_type_name(arg_type));
+            struct utf8_span     loc = ast_loc(ast, expr);
             struct log_highlight item
-                = {"",
-                   type_to_db_name(arg_type),
-                   ast_loc(ast, expr),
-                   LOG_HIGHLIGHT,
-                   LOG_MARKERS,
-                   0};
+                = {ins, ann, loc, LOG_HIGHLIGHT, LOG_MARKERS, 0};
             hl[hl_count] = item;
             arg_positions[hl_count] = arg_idx + 1;
             ++hl_count;
@@ -279,9 +271,9 @@ report_ambiguous_overloads(
         struct utf8_view name = utf8_list_view(cmds->db_cmd_names, *cmdp);
         const struct cmd_param_types_list* param_types
             = cmds->param_types->data[*cmdp];
-        struct utf8_list* param_names = cmds->db_param_names->data[*cmdp];
-        enum type         ret_type = cmds->return_types->data[*cmdp];
-        plugin_id         plugin_id = cmds->plugin_ids->data[*cmdp];
+        struct utf8_list*   param_names = cmds->db_param_names->data[*cmdp];
+        enum primitive_type ret_type = cmds->return_types->data[*cmdp];
+        plugin_id           plugin_id = cmds->plugin_ids->data[*cmdp];
         const struct plugin_info* plugin = &plugins->data[plugin_id];
         log_raw(
             "%*s|   {emph:%.*s}%s",
@@ -302,7 +294,7 @@ report_ambiguous_overloads(
             log_raw(
                 fmt,
                 utf8_list_cstr(param_names, arg_idx),
-                type_to_db_name(param_types->data[arg_idx].type));
+                primitive_type_name(param_types->data[arg_idx].primitive));
         }
         log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
         log_raw("[%s]\n", utf8_cstr(plugin->name));
@@ -319,10 +311,12 @@ report_ambiguous_overloads(
          arg = ast->nodes[arg].arglist.next, ++arg_idx)
     {
         ast_id               expr = ast->nodes[arg].arglist.expr;
+        struct utf8_view     ins = cstr_utf8_view("AS <TYPE>");
+        struct utf8_view     ann = empty_utf8_view();
         struct utf8_span     loc = ast_loc(ast, expr);
         utf8_idx             loc_end = loc.off + loc.len;
         struct log_highlight item
-            = {" AS <TYPE>", "", {loc_end, 10}, LOG_INSERT, LOG_MARKERS, 0};
+            = {ins, ann, {loc_end, ins.len}, LOG_INSERT, LOG_MARKERS, 0};
 
         if (arg_positions[hl_count] != arg_idx + 1)
             continue;
@@ -352,7 +346,10 @@ report_available_commands(
     log_flc(filename, source, ast->nodes[arglist].arglist.combined_location);
     log_err("%s", msg);
     gutter = log_excerpt_1(
-        source, ast->nodes[arglist].arglist.combined_location, "", 0);
+        source,
+        ast->nodes[arglist].arglist.combined_location,
+        empty_utf8_view(),
+        0);
     log_note("Available candidates:\n");
     cmd_name = utf8_list_view(cmds->db_cmd_names, cmd);
     for (; cmd < cmd_list_count(cmds)
@@ -360,7 +357,7 @@ report_available_commands(
          ++cmd)
     {
         int                       i;
-        enum type                 ret_type = cmds->return_types->data[cmd];
+        enum primitive_type       ret_type = cmds->return_types->data[cmd];
         plugin_id                 plugin_id = cmds->plugin_ids->data[cmd];
         const struct plugin_info* plugin = &plugins->data[plugin_id];
         const struct cmd_param_types_list* param_types
@@ -380,7 +377,7 @@ report_available_commands(
             log_raw(
                 "%s {emph0:AS %s}",
                 utf8_list_cstr(param_names, i),
-                type_to_db_name(param_types->data[i].type));
+                primitive_type_name(param_types->data[i].primitive));
         }
         log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
         log_raw("[%s]\n", utf8_cstr(plugin->name));
@@ -398,7 +395,7 @@ log_signature(
     const struct cmd_param_types_list* param_types
         = cmds->param_types->data[cmd_id];
     struct utf8_list*         param_names = cmds->db_param_names->data[cmd_id];
-    enum type                 ret_type = cmds->return_types->data[cmd_id];
+    enum primitive_type       ret_type = cmds->return_types->data[cmd_id];
     plugin_id                 plugin_id = cmds->plugin_ids->data[cmd_id];
     const struct plugin_info* plugin = &plugins->data[plugin_id];
 
@@ -414,7 +411,7 @@ log_signature(
         log_raw(
             "%s {emph0:AS %s}",
             utf8_list_cstr(param_names, i),
-            type_to_db_name(param_types->data[i].type));
+            primitive_type_name(param_types->data[i].primitive));
     }
     log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
     log_raw("[%s]\n", utf8_cstr(plugin->name));
@@ -445,9 +442,11 @@ typecheck_warnings(
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, arglist) == AST_ARGLIST,
             log_err("type: %d\n", ast_node_type(ast, arglist)));
-        ast_id    arg = ast->nodes[arglist].arglist.expr;
-        enum type arg_type = ast_type_info(ast, arg);
-        enum type param_type = params->data[i].type;
+        ast_id           arg = ast->nodes[arglist].arglist.expr;
+        union type       arg_type = ast_type_info(ast, arg);
+        union type       param_type = type_primitive(params->data[i].primitive);
+        struct utf8_view arg_tname = type_name(arg_type, ast, source);
+        struct utf8_view param_tname = type_name(param_type, ast, source);
 
         switch (type_convert(arg_type, param_type))
         {
@@ -457,13 +456,14 @@ typecheck_warnings(
             case TC_TRUNCATE:
                 log_flc(filename, source, ast_loc(ast, arg));
                 log_warn(
-                    "Argument %d is truncated in conversion from {emph0:%s} to "
-                    "{emph1:%s} in command call.\n",
+                    "Argument %d is truncated in conversion from {emph0:%.*s} "
+                    "to {emph1:%.*s} in command call.\n",
                     i + 1,
-                    type_to_db_name(arg_type),
-                    type_to_db_name(param_type));
-                log_excerpt_1(
-                    source, ast_loc(ast, arg), type_to_db_name(arg_type), 0);
+                    arg_tname.len,
+                    arg_tname.data + arg_tname.off,
+                    param_tname.len,
+                    param_tname.data + param_tname.off);
+                log_excerpt_1(source, ast_loc(ast, arg), arg_tname, 0);
                 log_signature(cmd_id, plugins, cmds);
                 break;
 
@@ -473,23 +473,24 @@ typecheck_warnings(
             case TC_BOOL_PROMOTION:
                 log_flc(filename, source, ast_loc(ast, arg));
                 log_warn(
-                    "Implicit conversion of argument %d from {emph0:%s} to "
-                    "{emph1:%s} in command call.\n",
+                    "Implicit conversion of argument %d from {emph0:%.*s} to "
+                    "{emph1:%.*s} in command call.\n",
                     i + 1,
-                    type_to_db_name(arg_type),
-                    type_to_db_name(param_type));
-                log_excerpt_1(
-                    source, ast_loc(ast, arg), type_to_db_name(arg_type), 0);
+                    arg_tname.len,
+                    arg_tname.data + arg_tname.off,
+                    param_tname.len,
+                    param_tname.data + param_tname.off);
+                log_excerpt_1(source, ast_loc(ast, arg), arg_tname, 0);
                 log_signature(cmd_id, plugins, cmds);
                 break;
         }
 
         /* Insert cast to correct type if necessary */
-        if (arg_type != param_type)
+        if (!types_equal(arg_type, param_type))
         {
             ast_id as;
-            ast_id cast
-                = ast_cast_to_type(astp, arg, param_type, ast_loc(ast, arg));
+            ast_id cast = ast_cast_to_primitive_type(
+                astp, arg, param_type.primitive, ast_loc(ast, arg));
             if (cast < -1)
                 return -1;
             ast = *astp;
@@ -558,7 +559,7 @@ resolve_cmd_overloads(
             continue;
 
         /* Skip processing commands that exist in polymorphic functions */
-        if (ast_type_info(ast, n) == TYPE_INVALID)
+        if (ast_type_is_invalid(ast, n))
             continue;
 
         /* Collect all overloads of the command */

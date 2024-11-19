@@ -47,8 +47,8 @@ TEST_F(NAME, and_implicit_evaluation_of_integer)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, and_implicit_evaluation_of_float)
@@ -82,8 +82,8 @@ TEST_F(NAME, and_implicit_evaluation_of_float)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, and_implicit_evaluation_of_double)
@@ -118,8 +118,8 @@ TEST_F(NAME, and_implicit_evaluation_of_double)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_integer)
@@ -154,8 +154,8 @@ TEST_F(NAME, or_implicit_evaluation_of_integer)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_float)
@@ -189,8 +189,8 @@ TEST_F(NAME, or_implicit_evaluation_of_float)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_double)
@@ -225,8 +225,8 @@ TEST_F(NAME, or_implicit_evaluation_of_double)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_integer)
@@ -261,8 +261,8 @@ TEST_F(NAME, xor_implicit_evaluation_of_integer)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_float)
@@ -296,8 +296,8 @@ TEST_F(NAME, xor_implicit_evaluation_of_float)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_double)
@@ -332,6 +332,6 @@ TEST_F(NAME, xor_implicit_evaluation_of_double)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
-    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, lhs).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs).primitive, Eq(TYPE_BOOL));
 }

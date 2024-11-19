@@ -38,8 +38,9 @@ struct NAME : DBParserHelper, LogHelper, Test
             f4 = ast->nodes[f3].func3.func4;
             identifier = ast->nodes[f1].func1.identifier;
             as_expr = ast->nodes[f2].func2.as;
-            identifier_type = as_expr > -1 ? ast->nodes[as_expr].as_type.type
-                                           : TYPE_INVALID;
+            identifier_type = as_expr > -1
+                                  ? ast->nodes[as_expr].as_type.type.primitive
+                                  : TYPE_INVALID;
             paramlist = ast->nodes[f3].func3.paramlist;
             body = ast->nodes[f4].func4.body;
             retval = ast->nodes[f4].func4.retval;
@@ -55,13 +56,13 @@ struct NAME : DBParserHelper, LogHelper, Test
         return result;
     }
 
-    ast_id    poly = -42, f1 = -42, f2 = -42, f3 = -42, f4 = -42;
-    ast_id    identifier = -42;
-    ast_id    as_expr = -42;
-    ast_id    paramlist = -42;
-    ast_id    body = -42;
-    ast_id    retval = -42;
-    enum type identifier_type = TYPE_INVALID;
+    ast_id              poly = -42, f1 = -42, f2 = -42, f3 = -42, f4 = -42;
+    ast_id              identifier = -42;
+    ast_id              as_expr = -42;
+    ast_id              paramlist = -42;
+    ast_id              body = -42;
+    ast_id              retval = -42;
+    enum primitive_type identifier_type = TYPE_INVALID;
 };
 
 TEST_F(NAME, empty_body_no_params_no_return)
@@ -233,8 +234,8 @@ TEST_F(NAME, function_with_explicit_types)
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[ident1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast->nodes[ident2].identifier.name, Utf8SpanEq(26, 1));
-    EXPECT_THAT(ast->nodes[as_type1].as_type.type, Eq(TYPE_STRING));
-    EXPECT_THAT(ast->nodes[as_type2].as_type.type, Eq(TYPE_U16));
+    EXPECT_THAT(ast->nodes[as_type1].as_type.type.primitive, Eq(TYPE_STRING));
+    EXPECT_THAT(ast->nodes[as_type2].as_type.type.primitive, Eq(TYPE_U16));
     EXPECT_THAT(pl3, Eq(-1));
 
     ast_id block1 = body;

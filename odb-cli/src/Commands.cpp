@@ -164,8 +164,8 @@ dumpCommandNames(const std::vector<std::string>& args)
 {
     for (int i = 0; i != cmd_list_count(&commands); ++i)
     {
-        enum type ret_type = commands.return_types->data[i];
-        printf("%s ", type_to_db_name(ret_type));
+        enum primitive_type ret_type = commands.return_types->data[i];
+        printf("%s ", primitive_type_name(ret_type));
         printf("%s", utf8_list_cstr(commands.db_cmd_names, i));
         printf("%s", ret_type == TYPE_VOID ? " " : "(");
         const struct cmd_param_types_list* param_types
@@ -180,7 +180,7 @@ dumpCommandNames(const std::vector<std::string>& args)
             printf("%s", utf8_list_cstr(param_names, n));
             if (param->direction == CMD_PARAM_OUT)
                 printf("*");
-            printf(" AS %s", type_to_db_name(param->type));
+            printf(" AS %s", primitive_type_name(param->primitive));
         }
         if (ret_type != TYPE_VOID)
             printf(")");

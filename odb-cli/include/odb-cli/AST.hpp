@@ -2,10 +2,6 @@
 
 #include "odb-cli/Actions.argdef.hpp"
 
-extern "C" {
-#include "odb-compiler/parser/db_source.h"
-}
-
 struct ast;
 
 int initAST(void);

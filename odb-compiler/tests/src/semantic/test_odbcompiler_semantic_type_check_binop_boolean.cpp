@@ -44,6 +44,6 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
     ASSERT_THAT(ast_node_type(ast, b_var_read), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, a_ident), Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast_node_type(ast, b_ident), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_type_info(ast, a_var_read), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, b_var_read), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, a_var_read).primitive, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, b_var_read).primitive, Eq(TYPE_BOOL));
 }

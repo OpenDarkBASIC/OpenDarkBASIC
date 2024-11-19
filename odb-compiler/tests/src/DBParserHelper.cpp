@@ -121,20 +121,22 @@ DBParserHelper::semantic(const struct semantic_check* check)
 
 int
 DBParserHelper::addCommand(
-    type return_type, const char* name, std::initializer_list<type> param_types)
+    primitive_type                             return_type,
+    const char*                                name,
+    std::initializer_list<enum primitive_type> param_types)
 {
     cmd_id cmd = cmd_list_add(
         &cmds, 0, return_type, cstr_utf8_view(name), empty_utf8_view());
     if (cmd < 0)
         return cmd;
 
-    for (type type : param_types)
+    for (enum primitive_type type : param_types)
         if (cmd_add_param(
                 &cmds,
                 cmd,
                 type,
                 CMD_PARAM_IN,
-                cstr_utf8_view(type_to_db_name(type)))
+                cstr_utf8_view(primitive_type_name(type)))
             < 0)
         {
             cmd_list_erase(&cmds, cmd);
@@ -149,7 +151,7 @@ DBParserHelper::addCommand(const char* name)
     return addCommand(TYPE_VOID, name);
 }
 int
-DBParserHelper::addCommand(type return_type, const char* name)
+DBParserHelper::addCommand(enum primitive_type return_type, const char* name)
 {
     return addCommand(return_type, name, {});
 }
