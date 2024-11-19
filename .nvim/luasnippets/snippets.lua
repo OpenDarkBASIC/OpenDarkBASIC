@@ -75,6 +75,22 @@ ls.add_snippets("c", {
         end, { 2 }),
         t(");"),
     }),
+    s({ trig = "fprintf", docstring = "fprintf" }, {
+        t("fprintf("),
+        c(1, { i(1, "fp"), i(2, "stderr"), i(3, "stdout") }),
+        t(', "'), i(2, ""), t('\\n"'),
+        d(3, function(values)
+            local fmt_string = values[1][1]
+            local nodes = {}
+            for _ in fmt_string:gmatch("%%[^%%]") do
+                local idx = #nodes / 2 + 1
+                table.insert(nodes, t(", "))
+                table.insert(nodes, r(idx, "arg" .. idx, i(nil, "arg" .. idx)))
+            end
+            return sn(1, nodes)
+        end, { 2 }),
+        t(");"),
+    }),
     s({ trig = "odba", docstring = "Assert" }, {
         t("ODBUTIL_DEBUG_ASSERT("),
         c(1, {
@@ -120,6 +136,13 @@ ls.add_snippets("c", {
             end, { 1, 2, 3 }),
         })
     ),
+    s({trig = "view", docstring = "Print utf8_view to std format string"}, {
+        i(1, "view"),
+        f(function(values)
+            local name = values[1][1]
+            return ".len, " .. name .. ".data + " .. name .. ".off"
+        end, {1}),
+    }),
 }, { key = "OpenDarkBASIC-c" })
 
 ls.add_snippets("cpp", {
@@ -207,4 +230,11 @@ ls.add_snippets("cpp", {
             end, { 1, 2, 3 }),
         })
     ),
+    s({trig = "view", docstring = "Print utf8_view to std format string"}, {
+        i(1, "view"),
+        f(function(values)
+            local name = values[1][1]
+            return ".len, " .. name .. ".data + " .. name .. ".off"
+        end, {1}),
+    }),
 }, { key = "OpenDarkBASIC-cpp" })
