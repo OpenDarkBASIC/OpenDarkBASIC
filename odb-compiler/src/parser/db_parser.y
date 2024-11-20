@@ -540,15 +540,15 @@ maybe_scope
   |                                         { $$ = SCOPE_LOCAL; }
   ;
 as_type
-  : AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_BOOL), @$); }
-  | AS BYTE                                 { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U8), @$); }
-  | AS WORD                                 { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U16), @$); }
-  | AS INTEGER                              { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_I32), @$); }
-  | AS DWORD                                { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U32), @$); }
-  | AS DOUBLE INTEGER                       { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_I64), @$); }
-  | AS FLOAT                                { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_F32), @$); }
-  | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_F64), @$); }
-  | AS STRING                               { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_STRING), @$); }
+  : AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_BOOL), @$); }
+  | AS BYTE                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U8), @$); }
+  | AS WORD                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U16), @$); }
+  | AS INTEGER                              { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_I32), @$); }
+  | AS DWORD                                { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U32), @$); }
+  | AS DOUBLE INTEGER                       { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_I64), @$); }
+  | AS FLOAT                                { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_F32), @$); }
+  | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_F64), @$); }
+  | AS STRING                               { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_STRING), @$); }
   | AS TYPE '(' expr ')'                    { $$ = ast_as_expr(ctx->astp, $4, @$); }
   | AS IDENTIFIER                           { $$ = ast_as_udt(ctx->astp, $2, @$); }
   ;
