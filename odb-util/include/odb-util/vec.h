@@ -192,6 +192,7 @@
      */                                                                        \
     static inline T* prefix##_pop(struct prefix* v)                            \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(v->count > 0, (void)0);                           \
         return &v->data[--(v->count)];                                         \
     }                                                                          \
                                                                                \
@@ -236,6 +237,15 @@
         struct prefix* v,                                                      \
         int (*on_element)(T * elem, void* user),                               \
         void* user);                                                           \
+                                                                               \
+    /*!                                                                        \
+     * @brief Reverses the values in a section of the vector.                  \
+     * @param[in] v Pointer to a vector of type VEC(T,B)                       \
+     * @param[in] start The index of the first element to reverse (inclusive). \
+     * @param[in] end The index of the last element to reverse (exclusive).    \
+     */                                                                        \
+    API void prefix##_reverse_range(                                           \
+        struct prefix* v, int##bits##_t start, int##bits##_t end);             \
                                                                                \
     static inline int##bits##_t prefix##_count(const struct prefix* v)         \
     {                                                                          \
@@ -373,6 +383,15 @@
             }                                                                  \
         }                                                                      \
         return 0;                                                              \
+    }                                                                          \
+    void prefix##_reverse_range(                                               \
+        struct prefix* v, int##bits##_t start, int##bits##_t end)              \
+    {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(                                                  \
+            start >= 0 && start < end && end <= prefix##_count(v),             \
+            log_err("start: %d, end: %d, count: %d\n", start, end, v->count)); \
+        while (start < --end)                                                  \
+            prefix##_swap_values(v, start++, end);                             \
     }
 
 #define vec_data(v)    ((v)->data)

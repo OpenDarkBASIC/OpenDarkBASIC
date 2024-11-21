@@ -64,8 +64,10 @@ ast_export_fp(
     }
     else
     {
+        /* list has utf8_span structures stored at the end of the buffer, so we
+         * have to write the capacity, not the count */
         utf8_idx header_size = offsetof(struct utf8_list, data);
-        utf8_idx bytes = header_size + cmd_names->count;
+        utf8_idx bytes = header_size + cmd_names->capacity;
         if (fwrite(&bytes, sizeof(bytes), 1, fp) != 1)
             goto error;
         if (fwrite(cmd_names, bytes, 1, fp) != 1)

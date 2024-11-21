@@ -126,6 +126,14 @@ static void
 write_type_info(
     FILE* fp, union type t, const struct ast* ast, const char* source)
 {
+    if (type_is_valid(t))
+    {
+        struct utf8_view name = type_name(t, ast, source);
+        fprintf(fp, "%.*s", name.len, name.data + name.off);
+        return;
+    }
+
+    fprintf(fp, "<font color=\"#ff0000\">(INVALID TYPE)</font>");
 }
 
 static const struct node_style*
@@ -198,7 +206,7 @@ write_node_style(FILE* fp, enum ast_type node_type, const struct style* style)
     const struct node_style* ns = get_node_style(node_type, style);
     fprintf(
         fp,
-        "color=\"%s\", fontcolor=\"%s\", shape=\"%s\"\n",
+        "color=\"%s\", fontcolor=\"%s\", shape=\"%s\"",
         ns->color,
         ns->fontcolor,
         ns->shape);
@@ -220,65 +228,66 @@ write_node(
 
     write_node_style(fp, ast_node_type(ast, n), style);
 
-    fprintf(fp, ", xlabel=\"\n");
+    fprintf(fp, ", xlabel=<");
     if (cfg->with_scopes)
-        fprintf(fp, "%d\n", ast_scope(ast, n));
+        fprintf(fp, "%d", ast_scope(ast, n));
     if (cfg->with_types)
     {
         if (cfg->with_scopes)
-            fprintf(fp, ", \n");
+            fprintf(fp, ", ");
         write_type_info(fp, ast_type_info(ast, n), ast, source);
     }
+    fprintf(fp, ">, label=<");
 
     switch (ast_node_type(ast, n))
     {
-        case AST_GC: fprintf(fp, "label=<gc>\n"); break;
-        case AST_BLOCK: fprintf(fp, "label=<block>\n"); break;
-        case AST_END: fprintf(fp, "label=<end>\n"); break;
-        case AST_ARGLIST: fprintf(fp, "label=<arglist>\n"); break;
-        case AST_PARAMLIST: fprintf(fp, "label=<paramlist>\n"); break;
+        case AST_GC: fprintf(fp, "gc"); break;
+        case AST_BLOCK: fprintf(fp, "block"); break;
+        case AST_END: fprintf(fp, "end"); break;
+        case AST_ARGLIST: fprintf(fp, "arglist"); break;
+        case AST_PARAMLIST: fprintf(fp, "paramlist"); break;
         case AST_COMMAND: {
             struct utf8_span cmd_name
                 = utf8_list_span(cmds, ast->nodes[n].cmd.id);
             fprintf(
                 fp,
-                "label=<%d %.*s>",
+                "%d %.*s",
                 ast->nodes[n].cmd.id,
                 cmd_name.len,
                 cmds->data + cmd_name.off);
             break;
         }
-        case AST_ASSIGNMENT: fprintf(fp, "label=<=>\n"); break;
+        case AST_ASSIGNMENT: fprintf(fp, "="); break;
         case AST_VAR_DECL1:
             fprintf(
                 fp,
-                "label=<<font color=\"%s\">%s</font> var_decl1>",
+                "<font color=\"%s\">%s</font> var_decl1",
                 style->keyword.color,
                 ast_scope(ast, n) == SCOPE_GLOBAL ? "GLOBAL" : "LOCAL");
             break;
-        case AST_VAR_DECL2: fprintf(fp, "label=<var_decl2>"); break;
-        case AST_VAR_READ: fprintf(fp, "label=<var_read>"); break;
-        case AST_VAR_WRITE: fprintf(fp, "label=<var_write>"); break;
-        case AST_UDT_DECL: fprintf(fp, "label=<udt_decl>"); break;
+        case AST_VAR_DECL2: fprintf(fp, "var_decl2"); break;
+        case AST_VAR_READ: fprintf(fp, "var_read"); break;
+        case AST_VAR_WRITE: fprintf(fp, "var_write"); break;
+        case AST_UDT_DECL: fprintf(fp, "udt_decl"); break;
         case AST_UDT_INIT:
             fprintf(
                 fp,
-                "label=<udt_init <font color=\"%s\">%.*s</font>()>",
+                "udt_init <font color=\"%s\">%.*s</font>()",
                 style->identifier.color,
                 ast->nodes[n].udt_init.type_name.len,
                 source + ast->nodes[n].udt_init.type_name.off);
             break;
         case AST_UDT_READ:
-            fprintf(fp, "label=<udt_read(%d)>", ast->nodes[n].udt_read.index);
+            fprintf(fp, "udt_read(%d)", ast->nodes[n].udt_read.index);
             break;
         case AST_UDT_WRITE:
-            fprintf(fp, "label=<udt_write(%d)>", ast->nodes[n].udt_write.index);
+            fprintf(fp, "udt_write(%d)", ast->nodes[n].udt_write.index);
             break;
-        case AST_PARAM: fprintf(fp, "label=<param>"); break;
+        case AST_PARAM: fprintf(fp, "param"); break;
         case AST_IDENTIFIER:
             fprintf(
                 fp,
-                "label=\"%.*s\"",
+                "\"%.*s\"",
                 ast->nodes[n].identifier.name.len,
                 source + ast->nodes[n].identifier.name.off);
             break;
@@ -286,7 +295,7 @@ write_node(
             switch (ast->nodes[n].binop.op)
             {
 #define X(op, tok)                                                             \
-    case BINOP_##op: fprintf(fp, "label=<%s>", tok); break;
+    case BINOP_##op: fprintf(fp, "%s", tok); break;
                 BINOP_LIST
 #undef X
             }
@@ -295,18 +304,18 @@ write_node(
             switch (ast->nodes[n].unop.op)
             {
 #define X(op, tok)                                                             \
-    case UNOP_##op: fprintf(fp, "label=<%s>", tok); break;
+    case UNOP_##op: fprintf(fp, "%s", tok); break;
                 UNOP_LIST
 #undef X
             }
             break;
-        case AST_COND: fprintf(fp, "label=<if>"); break;
-        case AST_COND_BRANCHES: fprintf(fp, "label=<branches>"); break;
+        case AST_COND: fprintf(fp, "if"); break;
+        case AST_COND_BRANCHES: fprintf(fp, "branches"); break;
         case AST_LOOP1:
             if (ast->nodes[n].loop1.name.len)
                 fprintf(
                     fp,
-                    "label=<%.*s: loop1 \\\"%.*s\\\">",
+                    "%.*s: loop1 \\\"%.*s\\\"",
                     ast->nodes[n].loop1.name.len,
                     source + ast->nodes[n].loop1.name.off,
                     ast->nodes[n].loop1.implicit_name.len,
@@ -314,103 +323,99 @@ write_node(
             else
                 fprintf(
                     fp,
-                    "label=<loop1 \\\"%.*s\\\">",
+                    "loop1 \\\"%.*s\\\"",
                     ast->nodes[n].loop1.implicit_name.len,
                     source + ast->nodes[n].loop1.implicit_name.off);
             break;
-        case AST_LOOP2: fprintf(fp, "label=<loop2>"); break;
+        case AST_LOOP2: fprintf(fp, "loop2"); break;
         case AST_LOOP_FOR1:
         case AST_LOOP_FOR2:
         case AST_LOOP_FOR3:
             fprintf(
-                fp,
-                "label=<loop_for%d>",
-                ast_node_type(ast, n) - AST_LOOP_FOR1 + 1);
+                fp, "loop_for%d", ast_node_type(ast, n) - AST_LOOP_FOR1 + 1);
             break;
         case AST_LOOP_CONT:
             fprintf(
                 fp,
-                "label=<continue %.*s>",
+                "continue %.*s",
                 ast->nodes[n].cont.name.len,
                 source + ast->nodes[n].cont.name.off);
             break;
         case AST_LOOP_EXIT:
             fprintf(
                 fp,
-                "label=<exit %.*s>",
+                "exit %.*s",
                 ast->nodes[n].loop_exit.name.len,
                 source + ast->nodes[n].loop_exit.name.off);
             break;
-        case AST_FUNC_POLY: fprintf(fp, "label=<func poly>"); break;
+        case AST_FUNC_POLY: fprintf(fp, "func poly"); break;
         case AST_FUNC1:
         case AST_FUNC2:
         case AST_FUNC3:
         case AST_FUNC4:
-            fprintf(
-                fp, "label=<func%d>", ast_node_type(ast, n) - AST_FUNC1 + 1);
+            fprintf(fp, "func%d", ast_node_type(ast, n) - AST_FUNC1 + 1);
             break;
-        case AST_FUNC_EXIT: fprintf(fp, "label=<exitfunction>"); break;
-        case AST_FUNC_CALL: fprintf(fp, "label=<call>"); break;
+        case AST_FUNC_EXIT: fprintf(fp, "exitfunction"); break;
+        case AST_FUNC_CALL: fprintf(fp, "call"); break;
         case AST_FUNC_CALL_OR_CONTAINER_READ:
-            fprintf(fp, "label=<call (unresolved)>");
+            fprintf(fp, "call (unresolved)");
             break;
-        case AST_CONTAINER_WRITE: fprintf(fp, "label=<container_write>"); break;
+        case AST_CONTAINER_WRITE: fprintf(fp, "container_write"); break;
         case AST_BOOLEAN_LITERAL:
             fprintf(
                 fp,
-                "label=<%s>",
+                "%s",
                 ast->nodes[n].boolean_literal.is_true ? "true" : "false");
             break;
         case AST_BYTE_LITERAL:
-            fprintf(fp, "label=<%d>", (int)ast->nodes[n].byte_literal.value);
+            fprintf(fp, "%d", (int)ast->nodes[n].byte_literal.value);
             break;
         case AST_WORD_LITERAL:
-            fprintf(fp, "label=<%d>", (int)ast->nodes[n].word_literal.value);
+            fprintf(fp, "%d", (int)ast->nodes[n].word_literal.value);
             break;
         case AST_INTEGER_LITERAL:
-            fprintf(fp, "label=<%d>", ast->nodes[n].integer_literal.value);
+            fprintf(fp, "%d", ast->nodes[n].integer_literal.value);
             break;
         case AST_DWORD_LITERAL:
-            fprintf(fp, "label=<%u>", ast->nodes[n].dword_literal.value);
+            fprintf(fp, "%u", ast->nodes[n].dword_literal.value);
             break;
         case AST_DOUBLE_INTEGER_LITERAL:
             fprintf(
-                fp,
-                "label=<%" PRId64 ">",
-                ast->nodes[n].double_integer_literal.value);
+                fp, "%" PRId64 "", ast->nodes[n].double_integer_literal.value);
             break;
         case AST_FLOAT_LITERAL:
-            fprintf(
-                fp, "label=<%ff>", (double)ast->nodes[n].float_literal.value);
+            fprintf(fp, "%ff", (double)ast->nodes[n].float_literal.value);
             break;
         case AST_DOUBLE_LITERAL:
-            fprintf(fp, "label=<%f>", ast->nodes[n].double_literal.value);
+            fprintf(fp, "%f", ast->nodes[n].double_literal.value);
             break;
         case AST_STRING_LITERAL:
             fprintf(
                 fp,
-                "label=<\\\"%.*s\\\">",
+                "\\\"%.*s\\\"",
                 ast->nodes[n].string_literal.str.len,
                 source + ast->nodes[n].string_literal.str.off);
             break;
-        case AST_CAST: fprintf(fp, "label=\"cast\""); break;
+        case AST_CAST: fprintf(fp, "cast"); break;
         case AST_AS_TYPE: {
             struct utf8_view tname
                 = type_name(ast->nodes[n].as_type.type, ast, source);
-            fprintf(fp, "label=\"%.*s\"", tname.len, tname.data + tname.off);
+            fprintf(fp, "%.*s", tname.len, tname.data + tname.off);
             break;
         }
-        case AST_AS_EXPR: fprintf(fp, "label=\"AS TYPE()\""); break;
+        case AST_AS_EXPR: fprintf(fp, "AS TYPE()"); break;
         case AST_AS_UDT:
             fprintf(
                 fp,
-                "label=<AS <font color=\"%s\">%.*s</font>>",
+                "AS <font color=\"%s\">%.*s</font>",
                 style->identifier.color,
                 ast->nodes[n].as_udt.type_name.len,
                 source + ast->nodes[n].as_udt.type_name.off);
             break;
-        case AST_AS_AUTO: fprintf(fp, "label=\"AS AUTO\""); break;
+        case AST_AS_AUTO: fprintf(fp, "AS AUTO"); break;
     }
+
+    fprintf(fp, ">];\n");
 }
 
 static void
