@@ -339,11 +339,8 @@ type_to_llvm(
     ast_id           type_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
     struct utf8_span name_span = ast->nodes[type_ident].identifier.name;
     struct utf8_view name = utf8_span_view(source, name_span);
-    return llvm::StructType::create(
-        *ctx,
-        llvm::ArrayRef<llvm::Type*>(Members),
-        llvm::StringRef(name.data + name.off, name.len),
-        /*isPacked=*/false);
+    llvm::StringRef  Name(name.data + name.off, name.len);
+    return llvm::StructType::create(*ctx, Members, Name, /*isPacked=*/false);
 }
 
 static int
@@ -702,33 +699,33 @@ process_command(
 {
     struct stack_entry* entry = vec_last(*stack);
     ast_id              cmd = entry->node;
-    int                 num_results = entry->num_results;
+    int                 num_args = entry->num_results;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cmd) == AST_COMMAND,
         log_err("type: %d\n", ast_node_type(ast, cmd)));
 
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
-    if (arglist > -1 && num_results == 0)
+    if (arglist > -1 && num_args == 0)
     {
-        /* Arguments will be processed in reverse order, which shouldn't be a
-         * problem. This is good because the results will be pushed onto the
-         * results-stack in reverse-reverse order (i.e. correct order) again */
         for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
         {
             ast_id expr = ast->nodes[arglist].arglist.expr;
             if (stack_push_node(stack, expr) != 0)
                 return -1;
-            num_results++;
+            num_args++;
         }
 
-        entry->num_results = num_results;
+        stack_reverse_range(
+            *stack, stack_count(*stack) - num_args, stack_count(*stack));
+
+        entry->num_results = num_args;
         return 0;
     }
 
     stack_pop(*stack);
     llvm::ArrayRef<llvm::Value*> Args(
-        results_pop_by(*results, num_results), num_results);
+        results_pop_by(*results, num_args), num_args);
 
     /* Function table for commands should be generated at this
      * point. Look up the command's symbol in the command list and
@@ -745,10 +742,18 @@ process_command(
         = b.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), CmdFuncPtr);
     llvm::Value* RetVal = b.CreateCall(FT, CmdFuncAddr, Args);
 
-    /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
-    if (sdk_type == SDK_DBPRO)
-        if (ast_type_info(ast, cmd).primitive == TYPE_F32)
+    if (cmds->return_types->data[cmd_id] != TYPE_VOID)
+    {
+        /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
+        if (sdk_type == SDK_DBPRO
+            && ast_type_info(ast, cmd).primitive == TYPE_F32)
+        {
             RetVal = b.CreateBitCast(RetVal, llvm::Type::getFloatTy(ir->ctx));
+        }
+
+        if (results_push(results, RetVal) != 0)
+            return -1;
+    }
 
     return 0;
 }
@@ -854,8 +859,11 @@ process_var_decl(
     if (num_results == 0)
     {
         if (!type_is_primitive(type))
+        {
             if (results_push(results, *Ap) != 0)
                 return -1;
+            log_dbg("var_decl: results_push(%p)\n", (void*)*Ap);
+        }
 
         if (stack_push_node(stack, init_expr) != 0)
             return -1;
@@ -960,10 +968,10 @@ process_udt_init(
     const struct typemap* udt_table,
     struct allocamap**    allocamap)
 {
-    int                 index, num_primitives, num_results;
+    int                 struct_idx, prim_idx;
     ast_id              members, udt_init;
     struct stack_entry* entry = vec_last(*stack);
-    num_results = entry->num_results;
+    int                 num_primitives = entry->num_results;
     udt_init = entry->node;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -973,51 +981,26 @@ process_udt_init(
     members = ast->nodes[udt_init].udt_init.arglist;
     ODBUTIL_DEBUG_ASSERT(members > -1, (void)0);
 
-    if (num_results == 0)
+    if (num_primitives == 0)
     {
-        /* Note: Arguments will be processed in reverse order */
+        /* Note: primitives will be processed in reverse order from stack */
         for (; members > -1; members = ast->nodes[members].arglist.next)
         {
             ast_id     member = ast->nodes[members].arglist.expr;
             union type member_type = ast_type_info(ast, member);
-
-            /* udt_init expects the parent node to allocate the space for its
-             * members. This is because returning UDTs from e.g. functions can't
-             * be done through registers (generally). Instead, it must be
-             * returned through an out-parameter. In this case, we don't need to
-             * create a new alloca, but instead we calculate an offset into our
-             * parent's alloca, which becomes the base pointer of the nested
-             * structure. */
             if (!type_is_primitive(member_type))
-            {
-                ast_id udt_decl = type_udt_decl(member_type);
-                ODBUTIL_DEBUG_ASSERT(
-                    ast_node_type(ast, udt_decl) == AST_UDT_DECL,
-                    log_err("type: %d\n", ast_node_type(ast, udt_decl)));
-
-                ast_id udt_ident
-                    = ast->nodes[udt_decl].udt_decl.type_identifier;
-                struct utf8_span type_span
-                    = ast->nodes[udt_ident].identifier.name;
-                struct utf8_view  type_name = utf8_span_view(source, type_span);
-                struct view_scope key = {type_name, ast_scope(ast, udt_decl)};
-                llvm::StructType** StructTy = typemap_find(udt_table, key);
-                ODBUTIL_DEBUG_ASSERT(StructTy, (void)0);
-
-                llvm::Value* StructPtr = *vec_last(*results);
-                llvm::Value* MemberPtr
-                    = b.CreateStructGEP(*StructTy, StructPtr, num_results);
-                if (results_push(results, MemberPtr) != 0)
-                    return -1;
-            }
+                continue;
 
             if (stack_push_node(stack, member) != 0)
                 return -1;
-            num_results++;
+            num_primitives++;
         }
 
-        entry->num_results = num_results;
-        return 0;
+        if (num_primitives > 0)
+        {
+            entry->num_results = num_primitives;
+            return 0;
+        }
     }
 
     /* Get parent struct type */
@@ -1032,40 +1015,49 @@ process_udt_init(
     llvm::StructType** StructTy = typemap_find(udt_table, key);
     ODBUTIL_DEBUG_ASSERT(StructTy, (void)0);
 
-    /* We need access to the parent struct's alloca before we can start
-     * writing to its members. Make it the first thing to pop off the stack.
-     * The members are also reversed, so we need to reverse them back to
-     * their original order */
-    for (num_primitives = 0; members > -1;
-         members = ast->nodes[members].arglist.next)
-    {
-        ast_id member = ast->nodes[members].arglist.expr;
-        if (type_is_primitive(ast_type_info(ast, member)))
-            num_primitives++;
-    }
-    results_reverse_range(
-        *results,
-        results_count(*results) - num_primitives - 1,
-        results_count(*results));
-
-    /* Get parent alloca -- caller must ensure it allocates the space for us */
+    llvm::ArrayRef<llvm::Value*> PrimitiveMembers(
+        results_pop_by(*results, num_primitives), num_primitives);
     llvm::Value* StructPtr = *results_pop(*results);
+    stack_pop(*stack);
 
-    /* Write members to parent struct */
-    for (members = ast->nodes[udt_init].udt_init.arglist, index = 0;
-         members > -1;
-         members = ast->nodes[members].arglist.next, ++index)
+    for (prim_idx = 0, struct_idx = 0; members > -1;
+         members = ast->nodes[members].arglist.next, ++struct_idx)
     {
-        ast_id member = ast->nodes[members].arglist.expr;
-        if (!type_is_primitive(ast_type_info(ast, member)))
+        ast_id     member = ast->nodes[members].arglist.expr;
+        union type member_type = ast_type_info(ast, member);
+        if (!type_is_primitive(member_type))
             continue;
 
-        llvm::Value* MemberPtr = b.CreateStructGEP(*StructTy, StructPtr, index);
-        llvm::Value* InitValue = *results_pop(*results);
+        llvm::Value* MemberPtr
+            = b.CreateStructGEP(*StructTy, StructPtr, struct_idx);
+        llvm::Value* InitValue = PrimitiveMembers[prim_idx++];
         b.CreateStore(InitValue, MemberPtr);
     }
 
-    stack_pop(*stack);
+    for (struct_idx = 0, members = ast->nodes[udt_init].udt_init.arglist;
+         members > -1;
+         members = ast->nodes[members].arglist.next, ++struct_idx)
+    {
+        ast_id     member = ast->nodes[members].arglist.expr;
+        union type member_type = ast_type_info(ast, member);
+        if (type_is_primitive(member_type))
+            continue;
+
+        /* udt_init expects the parent node to allocate the space for
+         * its members. This is because returning UDTs from e.g.
+         * functions can't be done through registers (generally).
+         * Instead, it must be returned through an out-parameter. In
+         * this case, we don't need to create a new alloca, but instead
+         * we calculate an offset into our parent's alloca, which
+         * becomes the base pointer of the nested structure. */
+        llvm::Value* MemberPtr
+            = b.CreateStructGEP(*StructTy, StructPtr, struct_idx);
+        if (results_push(results, MemberPtr) != 0)
+            return -1;
+        if (stack_push_node(stack, member) != 0)
+            return -1;
+    }
+
     return 0;
 }
 
@@ -1494,7 +1486,7 @@ process_cond(
     const struct ast*  ast)
 {
     struct stack_entry* entry = vec_last(*stack);
-    int                 num_results = entry->num_results;
+    int                 stage = entry->num_results;
     ast_id              cond = entry->node;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1506,7 +1498,7 @@ process_cond(
     ast_id yes = ast->nodes[branches].cond_branches.yes;
     ast_id no = ast->nodes[branches].cond_branches.no;
 
-    switch (num_results)
+    switch (stage)
     {
         case 0: {
             if (stack_push_node(stack, expr) != 0)
