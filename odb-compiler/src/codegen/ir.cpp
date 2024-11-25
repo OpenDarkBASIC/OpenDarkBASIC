@@ -470,14 +470,15 @@ type_to_char(union type type)
     return 'E';
 }
 
-int
+llvm::SmallString<128>
 func_name_from_paramlist(
-    llvm::SmallString<128>& func_name,
-    const struct ast*       ast,
-    ast_id                  identifier,
-    ast_id                  paramlist,
-    const char*             source)
+    const struct ast* ast,
+    ast_id            identifier,
+    ast_id            paramlist,
+    const char*       source)
 {
+    llvm::SmallString<128> FuncName;
+
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
@@ -486,24 +487,25 @@ func_name_from_paramlist(
         log_err("type: %d\n", ast_node_type(ast, paramlist)));
 
     struct utf8_span ident_name = ast->nodes[identifier].identifier.name;
-    func_name.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
+    FuncName.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
     for (; paramlist > -1; paramlist = ast->nodes[paramlist].paramlist.next)
     {
         ast_id param = ast->nodes[paramlist].paramlist.param;
-        func_name += type_to_char(ast_type_info(ast, param));
+        FuncName += type_to_char(ast_type_info(ast, param));
     }
 
-    return 0;
+    return FuncName;
 }
 
-int
+llvm::SmallString<128>
 func_name_from_arglist(
-    llvm::SmallString<128>& func_name,
-    const struct ast*       ast,
-    ast_id                  identifier,
-    ast_id                  arglist,
-    const char*             source)
+    const struct ast* ast,
+    ast_id            identifier,
+    ast_id            arglist,
+    const char*       source)
 {
+    llvm::SmallString<128> FuncName;
+
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
@@ -512,24 +514,24 @@ func_name_from_arglist(
         log_err("type: %d\n", ast_node_type(ast, arglist)));
 
     struct utf8_span ident_name = ast->nodes[identifier].identifier.name;
-    func_name.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
+    FuncName.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
     for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
     {
         ast_id arg = ast->nodes[arglist].arglist.expr;
-        func_name += type_to_char(ast_type_info(ast, arg));
+        FuncName += type_to_char(ast_type_info(ast, arg));
     }
 
-    return 0;
+    return FuncName;
 }
 
 static int
 create_db_func_table(
     struct ir_module*                 ir,
-    llvm::StringMap<llvm::Function*>* db_func_table,
     const struct ast*                 ast,
-    const char*                       source)
+    const char*                       source,
+    llvm::StringMap<llvm::Function*>* db_func_table)
 {
-    llvm::SmallString<128> func_name;
+    llvm::SmallString<128> FuncName;
     for (ast_id n = 0; n != ast_count(ast); ++n)
     {
         if (ast_node_type(ast, n) != AST_FUNC1)
@@ -562,12 +564,8 @@ create_db_func_table(
 
         /* Because polymorphic functions exist, we append type information to
          * the function name so it is unique */
-        func_name_from_paramlist(
-            func_name,
-            ast,
-            ast_identifier,
-            ast->nodes[f3].func3.paramlist,
-            source);
+        FuncName = func_name_from_paramlist(
+            ast, ast_identifier, ast->nodes[f3].func3.paramlist, source);
 
         llvm::Function::LinkageTypes llvm_linkage
             = ast->nodes[n].func1.scope == SCOPE_GLOBAL
@@ -580,13 +578,12 @@ create_db_func_table(
                 param_types,
                 /* isVarArg */ false),
             llvm_linkage,
-            func_name,
+            FuncName,
             &ir->mod);
-        bool result = db_func_table->insert({func_name, F}).second;
+        bool result = db_func_table->insert({FuncName, F}).second;
         ODBUTIL_DEBUG_ASSERT(
             result,
-            log_err(
-                "Function {quote:%s} already exists!\n", func_name.c_str()));
+            log_err("Function {quote:%s} already exists!\n", FuncName.c_str()));
         (void)result;
     }
 
@@ -705,7 +702,7 @@ process_command(
         log_err("type: %d\n", ast_node_type(ast, cmd)));
 
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
-    if (arglist > -1 && num_args == 0)
+    if (num_args == 0 && arglist > -1)
     {
         for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
         {
@@ -726,14 +723,16 @@ process_command(
     if (sdk_type == SDK_DBPRO)
     {
         int i = results_count(*results) - num_args;
-        for (arglist = ast->nodes[cmd].cmd.arglist; arglist > -1; arglist = ast->nodes[arglist].arglist.next, ++i)
+        for (arglist = ast->nodes[cmd].cmd.arglist; arglist > -1;
+             arglist = ast->nodes[arglist].arglist.next, ++i)
         {
             ast_id expr = ast->nodes[arglist].arglist.expr;
             if (ast_type_info(ast, expr).primitive == TYPE_F32)
-                *vec_get(*results, i) = b.CreateBitCast(*vec_get(*results, i), llvm::Type::getInt32Ty(ir->ctx));
+                *vec_get(*results, i) = b.CreateBitCast(
+                    *vec_get(*results, i), llvm::Type::getInt32Ty(ir->ctx));
         }
     }
-    
+
     stack_pop(*stack);
     llvm::ArrayRef<llvm::Value*> Args(
         results_pop_by(*results, num_args), num_args);
@@ -1775,181 +1774,193 @@ process_loop_exit(
 }
 
 static int
-process_func()
+process_func(
+    struct stack**                          stack,
+    struct results**                        results,
+    struct ir_module*                       ir,
+    llvm::IRBuilder<>&                      b,
+    const struct ast*                       ast,
+    const char*                             source,
+    struct allocamap**                      allocamap,
+    const llvm::StringMap<llvm::Function*>* db_func_table)
 {
-#if 0
-    llvm::SmallString<128> func_name;
+    struct stack_entry* entry = vec_last(*stack);
+    ast_id              f1 = entry->node;
+    int                 num_results = entry->num_results;
 
-    ast_id f2 = ast->nodes[stmt].func1.func2;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, f1) == AST_FUNC1,
+        log_err("type: %d\n", ast_node_type(ast, f1)));
+
+    ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
     ast_id f4 = ast->nodes[f3].func3.func4;
-    ast_id ast_retval = ast->nodes[f4].func4.retval;
-    ast_id ast_body = ast->nodes[f4].func4.body;
-    ast_id ast_paramlist = ast->nodes[f3].func3.paramlist;
-    ast_id ast_identifier = ast->nodes[stmt].func1.identifier;
+    ast_id retval = ast->nodes[f4].func4.retval;
+    ast_id body = ast->nodes[f4].func4.body;
+    ast_id paramlist = ast->nodes[f3].func3.paramlist;
+    ast_id identifier = ast->nodes[f1].func1.identifier;
 
-    func_name_from_paramlist(
-        func_name, ast, ast_identifier, ast_paramlist, source);
-    const auto result = db_func_table->find(func_name);
-    ODBUTIL_DEBUG_ASSERT(
-        result != db_func_table->end(),
-        log_err(
-            "Function {quote:%s} not found in function table\n",
-            func_name.data()));
-
-    llvm::Function*   F = result->getValue();
-    llvm::BasicBlock* BB
-        = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("entry"), F);
-    llvm::IRBuilder<> func_builder(BB);
-
-    int param_idx = 0;
-    for (ast_id pl_node = ast_paramlist; pl_node > -1;
-         pl_node = ast->nodes[pl_node].paramlist.next, ++param_idx)
+    if (num_results == 0)
     {
-        ast_id    ast_param = ast->nodes[pl_node].paramlist.param;
-        ast_id    ast_identifier = ast->nodes[ast_param].param.identifier;
-        enum type param_type = ast_type_info(ast, ast_param);
-        struct utf8_view name = utf8_span_view(
-            source, ast->nodes[ast_identifier].identifier.name);
-        struct view_scope name_scope
-            = {name, ast->nodes[ast_identifier].info.scope_id};
-        llvm::AllocaInst** A;
-        switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
+        llvm::SmallString<128> FuncName;
+        FuncName = func_name_from_paramlist(ast, identifier, paramlist, source);
+        const auto result = db_func_table->find(FuncName);
+        ODBUTIL_DEBUG_ASSERT(
+            result != db_func_table->end(),
+            log_err(
+                "Function {quote:%s} not found in function table\n",
+                FuncName.data()));
+        llvm::Function* F = result->getValue();
+
+        llvm::BasicBlock* BB
+            = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("entry"), F);
+        b.SetInsertPoint(BB);
+
+        int param_idx = 0;
+        for (ast_id pl_node = paramlist; pl_node > -1;
+             pl_node = ast->nodes[pl_node].paramlist.next, ++param_idx)
         {
-            case HM_OOM: return -1;
-            case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case HM_NEW:
-                *A = func_builder.CreateAlloca(
-                    type_to_llvm(param_type, &ir->ctx),
-                    NULL,
-                    llvm::StringRef(name.data + name.off, name.len));
-                func_builder.CreateStore(F->getArg(param_idx), *A);
-                break;
+            ast_id           param = ast->nodes[pl_node].paramlist.param;
+            ast_id           ident = ast->nodes[param].param.identifier;
+            union type       param_type = ast_type_info(ast, param);
+            struct utf8_view name
+                = utf8_span_view(source, ast->nodes[ident].identifier.name);
+            struct view_scope name_scope
+                = {name, ast->nodes[ident].info.scope_id};
+            llvm::AllocaInst** A;
+            A = allocamap_emplace_new(allocamap, name_scope);
+            *A = b.CreateAlloca(
+                type_to_llvm(param_type, ast, source, &ir->ctx),
+                nullptr,
+                llvm::StringRef(name.data + name.off, name.len));
+            b.CreateStore(F->getArg(param_idx), *A);
         }
+
+        if (retval > -1)
+            if (stack_push_node(stack, retval) != 0)
+                return -1;
+        if (body > -1)
+            if (stack_push_node(stack, body) != 0)
+                return -1;
+
+        entry->num_results = 1;
+        return 0;
     }
 
-    if (ast_body > -1)
-        gen_block(
-            ir,
-            func_builder,
-            ast,
-            ast_body,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap);
-
-    if (ast_retval > -1)
-        func_builder.CreateRet(gen_expr(
-            ir,
-            func_builder,
-            ast,
-            ast_retval,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap));
+    if (retval > -1)
+        b.CreateRet(*results_pop(*results));
     else
-        func_builder.CreateRetVoid();
+        b.CreateRetVoid();
+
 #if defined(ODBCOMPILER_IR_SANITY_CHECK)
-    llvm::verifyFunction(*F);
+    {
+        llvm::SmallString<128> FuncName;
+        FuncName = func_name_from_paramlist(ast, identifier, paramlist, source);
+        const auto result = db_func_table->find(FuncName);
+        ODBUTIL_DEBUG_ASSERT(
+            result != db_func_table->end(),
+            log_err(
+                "Function {quote:%s} not found in function table\n",
+                FuncName.data()));
+        llvm::Function* F = result->getValue();
+        llvm::verifyFunction(*F);
+    }
 #endif
-#endif
-    log_err("TODO\n");
-    return -1;
+
+    stack_pop(*stack);
+    return 0;
 }
 
 static int
-process_func_exit()
+process_func_exit(
+    struct stack**     stack,
+    struct results**   results,
+    llvm::IRBuilder<>& b,
+    const struct ast*  ast)
 {
-#if 0
-    ast_id ast_ret = ast->nodes[stmt].func_exit.retval;
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              func_exit = entry->node;
 
-    if (ast_ret > -1)
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, func_exit) == AST_FUNC_EXIT,
+        log_err("type: %d\n", ast_node_type(ast, func_exit)));
+
+    ast_id ret = ast->nodes[func_exit].func_exit.retval;
+    if (ret > -1 && num_results == 0)
     {
-        builder.CreateRet(gen_expr(
-            ir,
-            builder,
-            ast,
-            ast_ret,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap));
+        if (stack_push_node(stack, ret) != 0)
+            return -1;
+
+        entry->num_results = 1;
+        return 0;
     }
+
+    if (ret > -1)
+        b.CreateRet(*results_pop(*results));
     else
-        builder.CreateRetVoid();
+        b.CreateRetVoid();
 
-#endif
-    log_err("TODO\n");
-    return -1;
+    stack_pop(*stack);
+    return 0;
 }
 
 static int
-process_func_call()
+process_func_call(
+    struct stack**                    stack,
+    struct results**                  results,
+    llvm::IRBuilder<>&                b,
+    const struct ast*                 ast,
+    const char*                       source,
+    llvm::StringMap<llvm::Function*>* db_func_table)
 {
-#if 0
-    llvm::SmallString<128>             func_name;
-    llvm::SmallVector<llvm::Value*, 8> llvm_args;
-    for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
-         ast_arglist > -1;
-         ast_arglist = ast->nodes[ast_arglist].arglist.next)
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_args = entry->num_results;
+    ast_id              call = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, call) == AST_FUNC_CALL,
+        log_err("type: %d\n", ast_node_type(ast, call)));
+
+    ast_id arglist = ast->nodes[call].func_call.arglist;
+    ast_id ident = ast->nodes[call].func_call.identifier;
+
+    if (num_args == 0 && arglist > -1)
     {
-        llvm::Value* llvm_arg = gen_expr(
-            ir,
-            builder,
-            ast,
-            ast->nodes[ast_arglist].arglist.expr,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap);
-        llvm_args.push_back(llvm_arg);
+        for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
+        {
+            ast_id expr = ast->nodes[arglist].arglist.expr;
+            if (stack_push_node(stack, expr) != 0)
+                return -1;
+            num_args++;
+        }
+
+        stack_reverse_range(
+            *stack, stack_count(*stack) - num_args, stack_count(*stack));
+
+        entry->num_results = num_args;
+        return 0;
     }
 
-    func_name_from_arglist(
-        func_name,
+    stack_pop(*stack);
+    llvm::ArrayRef<llvm::Value*> Args(
+        results_pop_by(*results, num_args), num_args);
+
+    llvm::SmallString<128> FuncName = func_name_from_arglist(
         ast,
-        ast->nodes[stmt].func_call.identifier,
-        ast->nodes[stmt].func_call.arglist,
+        ast->nodes[call].func_call.identifier,
+        ast->nodes[call].func_call.arglist,
         source);
-    const auto result = db_func_table->find(func_name);
+    const auto result = db_func_table->find(FuncName);
     ODBUTIL_DEBUG_ASSERT(
         result != db_func_table->end(),
         log_err(
             "Function {quote:%s} not found in function table\n",
-            func_name.data()));
-
+            FuncName.data()));
     llvm::Function* F = result->getValue();
-    builder.CreateCall(F, llvm_args);
 
-#endif
-    log_err("TODO\n");
-    return -1;
+    b.CreateCall(F, Args);
+    return 0;
 }
 
 static int
@@ -2080,6 +2091,7 @@ process_node(
     const struct typemap*                         udt_table,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const llvm::StringMap<llvm::Function*>*       db_func_table,
     struct loop_stack**                           loop_stack,
     struct allocamap**                            allocamap)
 
@@ -2152,7 +2164,9 @@ process_node(
             /* Skip over polymorphic function templates, they do nothing */
             stack_pop(*stack);
             return 0;
-        case AST_FUNC1: return process_func();
+        case AST_FUNC1:
+            return process_func(
+                stack, results, ir, b, ast, source, allocamap, db_func_table);
         case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -2322,6 +2336,7 @@ ir_translate_ast(
                 udt_table,
                 &string_table,
                 &cmd_func_table,
+                &db_func_table,
                 &loop_stack,
                 &allocamap)
             != 0)

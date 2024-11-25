@@ -118,17 +118,21 @@ ast_export(
     struct db_source       source,
     const struct cmd_list* cmds)
 {
-    FILE* fp;
+    FILE*        fp;
     struct utf16 utf16 = empty_utf16();
 
     if (ast == NULL)
         return 0;
 
+#if defined(ODBCOMPILER_PLATFORM_WINDOWS)
     if (utf8_to_utf16(&utf16, ospathc_view(filepath)) != 0)
         return -1;
-
     fp = _wfopen(utf16_cstr(utf16), L"wb");
     utf16_deinit(utf16);
+#else
+    fp = fopen(ospathc_cstr(filepath), "wb");
+    (void)utf16;
+#endif
     if (fp == NULL)
     {
         return log_err(
