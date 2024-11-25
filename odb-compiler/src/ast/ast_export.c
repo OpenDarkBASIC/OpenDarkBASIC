@@ -119,10 +119,16 @@ ast_export(
     const struct cmd_list* cmds)
 {
     FILE* fp;
+    struct utf16 utf16 = empty_utf16();
+
     if (ast == NULL)
         return 0;
 
-    fp = fopen(ospathc_cstr(filepath), "w");
+    if (utf8_to_utf16(&utf16, ospathc_view(filepath)) != 0)
+        return -1;
+
+    fp = _wfopen(utf16_cstr(utf16), L"wb");
+    utf16_deinit(utf16);
     if (fp == NULL)
     {
         return log_err(

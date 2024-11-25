@@ -672,17 +672,16 @@ get_cmd_func_signature(
 
     /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
     enum primitive_type ret_type = cmds->return_types->data[cmd_id];
-    if (sdk_type == SDK_DBPRO)
-        if (ret_type == TYPE_F32)
-            return llvm::FunctionType::get(
-                llvm::Type::getInt32Ty(ir->ctx),
-                ParamTypes,
-                /* isVarArg */ false);
+    if (sdk_type == SDK_DBPRO && ret_type == TYPE_F32)
+        return llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(ir->ctx),
+            ParamTypes,
+            /*isVarArg=*/false);
 
     return llvm::FunctionType::get(
         type_to_llvm(type_primitive(ret_type), ast, source, &ir->ctx),
         ParamTypes,
-        /* isVarArg */ false);
+        /*isVarArg=*/false);
 }
 
 static int
@@ -723,6 +722,18 @@ process_command(
         return 0;
     }
 
+    /* DarkBASIC Pro passes floast as reinterpreted DWORDs */
+    if (sdk_type == SDK_DBPRO)
+    {
+        int i = results_count(*results) - num_args;
+        for (arglist = ast->nodes[cmd].cmd.arglist; arglist > -1; arglist = ast->nodes[arglist].arglist.next, ++i)
+        {
+            ast_id expr = ast->nodes[arglist].arglist.expr;
+            if (ast_type_info(ast, expr).primitive == TYPE_F32)
+                *vec_get(*results, i) = b.CreateBitCast(*vec_get(*results, i), llvm::Type::getInt32Ty(ir->ctx));
+        }
+    }
+    
     stack_pop(*stack);
     llvm::ArrayRef<llvm::Value*> Args(
         results_pop_by(*results, num_args), num_args);

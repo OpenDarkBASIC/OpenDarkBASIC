@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.28)
+cmake_minimum_required (VERSION 3.26)
 
 # Make CMake shut the hell up about DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24) 

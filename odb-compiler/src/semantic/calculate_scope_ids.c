@@ -162,8 +162,8 @@ process_node(
                 process_node(ast, left, current_scope, scope_counter);
             if (right > -1)
                 process_node(ast, right, current_scope, scope_counter);
+            break;
         }
-        break;
     }
 }
 

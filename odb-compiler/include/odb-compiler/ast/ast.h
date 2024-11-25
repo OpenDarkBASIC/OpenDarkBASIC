@@ -132,7 +132,7 @@ union ast_node
         struct utf8_span location;
         union type type_info;
         int32_t scope_id;
-        enum ast_type node_type : 6;
+        enum ast_type node_type;
     } info;
 
     struct base{
@@ -243,7 +243,7 @@ union ast_node
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span name;
-        enum type_annotation annotation : 7;
+        enum type_annotation annotation;
     } identifier;
 
     struct {
@@ -251,7 +251,7 @@ union ast_node
         ast_id left;
         ast_id right;
         struct utf8_span op_location;
-        enum binop_type op : 5;
+        enum binop_type op;
     } binop;
 
     struct 
@@ -259,7 +259,7 @@ union ast_node
         struct info info;
         ast_id expr;
         ast_id _pad;
-        enum unop_type op : 3;
+        enum unop_type op;
     } unop;
 
     struct {

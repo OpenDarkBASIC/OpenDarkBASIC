@@ -22,8 +22,8 @@ update matrix 1
 do
    if leftkey() then dec a#, 2
    if rightkey() then inc a#, 2
-   if upkey() then speed# = curvevalue(0.2, speed#, 5)
-   if downkey() then speed# = curvevalue(-0.1, speed#, 5)
+   if upkey() then speed# = curvevalue(0.3, speed#, 5)
+   if downkey() then speed# = curvevalue(-0.15, speed#, 5)
    if controlkey() then speed# = 2
    if spacekey() and g# = -10 then g# = 0.3
 

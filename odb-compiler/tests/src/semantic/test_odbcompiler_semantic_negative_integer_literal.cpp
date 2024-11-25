@@ -25,7 +25,7 @@ TEST_F(NAME, negative_zero_is_just_zero)
     int ass = ast->nodes[ast->root].block.stmt;
     int lit = ast->nodes[ass].assignment.expr;
     EXPECT_THAT(ast_node_type(ast, lit), Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[lit].byte_literal.value, Eq(0u));
+    EXPECT_THAT(ast->nodes[lit].integer_literal.value, Eq(0));
 }
 
 TEST_F(NAME, negative_byte_literal_is_converted_to_integer)

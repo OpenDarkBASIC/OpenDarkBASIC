@@ -141,7 +141,7 @@ process_blob(const struct cfg* cfg, struct mstream ms, FILE* fp)
 
     if (mstream_bytes_left(&ms) < (int)sizeof(utf8_idx))
         return -1;
-    cmds_bytes = *(utf8_idx*)mstream_read(&ms, sizeof(utf8_idx));
+    cmds_bytes = mstream_read_li32(&ms);
     if (cmds_bytes > 0)
     {
         if (mstream_bytes_left(&ms) < (int)cmds_bytes)
@@ -154,7 +154,8 @@ process_blob(const struct cfg* cfg, struct mstream ms, FILE* fp)
     source_len = *(utf8_idx*)mstream_read(&ms, sizeof(utf8_idx));
     source = mstream_read(&ms, source_len);
 
-    mstream_read(&ms, 4);
+    if (memcmp(mstream_read(&ms, 4), "0TSA", 4) != 0)
+        return log_err("Invalid end marker\n");
 
     switch (cfg->export_type)
     {
