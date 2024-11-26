@@ -346,7 +346,7 @@ type_to_llvm(
 static int
 create_cmd_func_table(
     struct ir_module*                       ir,
-    llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    llvm::StringMap<llvm::GlobalVariable*>* CmdFuncTable,
     const struct ast*                       ast,
     const struct cmd_list*                  cmds,
     const char*                             source_text)
@@ -360,7 +360,7 @@ create_cmd_func_table(
         struct utf8_view c_sym = utf8_list_view(cmds->c_symbols, cmd_id);
         llvm::StringRef  c_sym_ref(c_sym.data + c_sym.off, c_sym.len);
 
-        auto result = cmd_func_table->try_emplace(c_sym_ref, nullptr);
+        auto result = CmdFuncTable->try_emplace(c_sym_ref, nullptr);
         if (result.second == false) // Command already in table
             continue;
 
@@ -527,9 +527,9 @@ func_name_from_arglist(
 static int
 create_db_func_table(
     struct ir_module*                 ir,
+    llvm::StringMap<llvm::Function*>* DbFuncTable,
     const struct ast*                 ast,
-    const char*                       source,
-    llvm::StringMap<llvm::Function*>* db_func_table)
+    const char*                       source)
 {
     llvm::SmallString<128> FuncName;
     for (ast_id n = 0; n != ast_count(ast); ++n)
@@ -580,7 +580,7 @@ create_db_func_table(
             llvm_linkage,
             FuncName,
             &ir->mod);
-        bool result = db_func_table->insert({FuncName, F}).second;
+        bool result = DbFuncTable->insert({FuncName, F}).second;
         ODBUTIL_DEBUG_ASSERT(
             result,
             log_err("Function {quote:%s} already exists!\n", FuncName.c_str()));
@@ -691,7 +691,7 @@ process_command(
     const char*                                   source,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
-    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table)
+    const llvm::StringMap<llvm::GlobalVariable*>& CmdFuncTable)
 {
     struct stack_entry* entry = vec_last(*stack);
     ast_id              cmd = entry->node;
@@ -743,8 +743,7 @@ process_command(
     cmd_id                cmd_id = ast->nodes[cmd].cmd.id;
     struct utf8_view      cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
     llvm::StringRef       CmdSymbol(cmd_sym.data + cmd_sym.off, cmd_sym.len);
-    llvm::GlobalVariable* CmdFuncPtr
-        = cmd_func_table->find(CmdSymbol)->getValue();
+    llvm::GlobalVariable* CmdFuncPtr = CmdFuncTable.find(CmdSymbol)->getValue();
 
     llvm::FunctionType* FT
         = get_cmd_func_signature(ir, ast, source, cmd, sdk_type, cmds);
@@ -993,7 +992,6 @@ process_udt_init(
 
     if (num_primitives == 0)
     {
-        /* Note: primitives will be processed in reverse order from stack */
         for (; members > -1; members = ast->nodes[members].arglist.next)
         {
             ast_id     member = ast->nodes[members].arglist.expr;
@@ -1008,6 +1006,10 @@ process_udt_init(
 
         if (num_primitives > 0)
         {
+            stack_reverse_range(
+                *stack,
+                stack_count(*stack) - num_primitives,
+                stack_count(*stack));
             entry->num_results = num_primitives;
             return 0;
         }
@@ -1782,7 +1784,7 @@ process_func(
     const struct ast*                       ast,
     const char*                             source,
     struct allocamap**                      allocamap,
-    const llvm::StringMap<llvm::Function*>* db_func_table)
+    const llvm::StringMap<llvm::Function*>& DbFuncTable)
 {
     struct stack_entry* entry = vec_last(*stack);
     ast_id              f1 = entry->node;
@@ -1804,16 +1806,20 @@ process_func(
     {
         llvm::SmallString<128> FuncName;
         FuncName = func_name_from_paramlist(ast, identifier, paramlist, source);
-        const auto result = db_func_table->find(FuncName);
+        const auto result = DbFuncTable.find(FuncName);
         ODBUTIL_DEBUG_ASSERT(
-            result != db_func_table->end(),
+            result != DbFuncTable.end(),
             log_err(
                 "Function {quote:%s} not found in function table\n",
                 FuncName.data()));
         llvm::Function* F = result->getValue();
 
-        llvm::BasicBlock* BB
-            = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("entry"), F);
+        // Save outer countext
+        llvm::BasicBlock* BB = b.GetInsertBlock();
+        if (results_push(results, BB) != 0)
+            return -1;
+
+        BB = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("entry"), F);
         b.SetInsertPoint(BB);
 
         int param_idx = 0;
@@ -1852,13 +1858,16 @@ process_func(
     else
         b.CreateRetVoid();
 
+    // Restore outer context
+    b.SetInsertPoint(llvm::cast<llvm::BasicBlock>(*results_pop(*results)));
+
 #if defined(ODBCOMPILER_IR_SANITY_CHECK)
     {
         llvm::SmallString<128> FuncName;
         FuncName = func_name_from_paramlist(ast, identifier, paramlist, source);
-        const auto result = db_func_table->find(FuncName);
+        const auto result = DbFuncTable.find(FuncName);
         ODBUTIL_DEBUG_ASSERT(
-            result != db_func_table->end(),
+            result != DbFuncTable.end(),
             log_err(
                 "Function {quote:%s} not found in function table\n",
                 FuncName.data()));
@@ -1907,12 +1916,12 @@ process_func_exit(
 
 static int
 process_func_call(
-    struct stack**                    stack,
-    struct results**                  results,
-    llvm::IRBuilder<>&                b,
-    const struct ast*                 ast,
-    const char*                       source,
-    llvm::StringMap<llvm::Function*>* db_func_table)
+    struct stack**                          stack,
+    struct results**                        results,
+    llvm::IRBuilder<>&                      b,
+    const struct ast*                       ast,
+    const char*                             source,
+    const llvm::StringMap<llvm::Function*>& DbFuncTable)
 {
     struct stack_entry* entry = vec_last(*stack);
     int                 num_args = entry->num_results;
@@ -1946,20 +1955,20 @@ process_func_call(
     llvm::ArrayRef<llvm::Value*> Args(
         results_pop_by(*results, num_args), num_args);
 
-    llvm::SmallString<128> FuncName = func_name_from_arglist(
-        ast,
-        ast->nodes[call].func_call.identifier,
-        ast->nodes[call].func_call.arglist,
-        source);
-    const auto result = db_func_table->find(FuncName);
+    llvm::SmallString<128> FuncName
+        = func_name_from_arglist(ast, ident, arglist, source);
+    const auto result = DbFuncTable.find(FuncName);
     ODBUTIL_DEBUG_ASSERT(
-        result != db_func_table->end(),
+        result != DbFuncTable.end(),
         log_err(
             "Function {quote:%s} not found in function table\n",
             FuncName.data()));
     llvm::Function* F = result->getValue();
 
-    b.CreateCall(F, Args);
+    llvm::Value* RetVal = b.CreateCall(F, Args);
+    if (ast->nodes[call].func_call.is_expr)
+        return results_push(results, RetVal);
+
     return 0;
 }
 
@@ -1998,8 +2007,13 @@ process_cast(
         log_err("from: %d, to: %d\n", from.id, to.id));
     switch (to.primitive)
     {
-        case TYPE_INVALID:
-        case TYPE_VOID: break;
+        case TYPE_INVALID: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case TYPE_VOID:
+            /* NOTE: This is the only cast that will NOT push anything to the
+             * results stack, but still pop an item from it. This is necessary
+             * to facilitate calling functions or commands that have a return
+             * value, but the return value is ignored. */
+            return 0;
 
         case TYPE_I64:
         case TYPE_U32:
@@ -2089,9 +2103,9 @@ process_node(
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const struct typemap*                         udt_table,
-    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    const llvm::StringMap<llvm::Function*>*       db_func_table,
+    const llvm::StringMap<llvm::GlobalVariable*>& StringTable,
+    const llvm::StringMap<llvm::GlobalVariable*>& CmdFuncTable,
+    const llvm::StringMap<llvm::Function*>&       DbFuncTable,
     struct loop_stack**                           loop_stack,
     struct allocamap**                            allocamap)
 
@@ -2116,7 +2130,7 @@ process_node(
                 source,
                 sdk_type,
                 cmds,
-                cmd_func_table);
+                CmdFuncTable);
         case AST_ASSIGNMENT:
             return process_assignment(
                 stack, *results, ir, b, ast, source, allocamap);
@@ -2166,12 +2180,14 @@ process_node(
             return 0;
         case AST_FUNC1:
             return process_func(
-                stack, results, ir, b, ast, source, allocamap, db_func_table);
+                stack, results, ir, b, ast, source, allocamap, DbFuncTable);
         case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-        case AST_FUNC_EXIT: return process_func_exit();
-        case AST_FUNC_CALL: return process_func_call();
+        case AST_FUNC_EXIT: return process_func_exit(stack, results, b, ast);
+        case AST_FUNC_CALL:
+            return process_func_call(
+                stack, results, b, ast, source, DbFuncTable);
         case AST_FUNC_CALL_OR_CONTAINER_READ:
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return -1;
@@ -2250,7 +2266,7 @@ process_node(
             ast_id           lit = stack_pop(*stack)->node;
             struct utf8_span span = ast->nodes[lit].string_literal.str;
             llvm::StringRef  Str(source + span.off, span.len);
-            return results_push(results, string_table->find(Str)->getValue());
+            return results_push(results, StringTable.find(Str)->getValue());
         }
         case AST_CAST: return process_cast(stack, results, ir, b, ast, source);
         case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -2278,18 +2294,18 @@ ir_translate_ast(
     const char*            filename,
     const char*            source)
 {
-    llvm::StringMap<llvm::GlobalVariable*> string_table;
-    llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
-    llvm::StringMap<llvm::Function*>       db_func_table;
+    llvm::StringMap<llvm::GlobalVariable*> StringTable;
+    llvm::StringMap<llvm::GlobalVariable*> CmdFuncTable;
+    llvm::StringMap<llvm::Function*>       DbFuncTable;
     struct stack*                          stack;
     struct results*                        results;
-    struct typemap*                        udt_table;
+    struct typemap*                        UdtTable;
     struct allocamap*                      allocamap;
     struct loop_stack*                     loop_stack;
 
     stack_init(&stack);
     results_init(&results);
-    typemap_init(&udt_table);
+    typemap_init(&UdtTable);
     allocamap_init(&allocamap);
     loop_stack_init(&loop_stack);
 
@@ -2307,13 +2323,13 @@ ir_translate_ast(
     llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
     llvm::IRBuilder<> builder(BB);
 
-    if (create_string_table(ir, &string_table, ast, source) != 0)
+    if (create_string_table(ir, &StringTable, ast, source) != 0)
         goto create_string_table_failed;
-    if (create_cmd_func_table(ir, &cmd_func_table, ast, cmds, source) != 0)
+    if (create_cmd_func_table(ir, &CmdFuncTable, ast, cmds, source) != 0)
         goto create_cmd_func_table_failed;
-    if (create_db_func_table(ir, &db_func_table, ast, source) != 0)
+    if (create_db_func_table(ir, &DbFuncTable, ast, source) != 0)
         goto create_db_func_table_failed;
-    if (create_udt_table(&ir->ctx, &udt_table, ast, source) != 0)
+    if (create_udt_table(&ir->ctx, &UdtTable, ast, source) != 0)
         goto create_udt_table_failed;
 
     if (ast_count(ast) == 0)
@@ -2333,10 +2349,10 @@ ir_translate_ast(
                 source,
                 sdk_type,
                 cmds,
-                udt_table,
-                &string_table,
-                &cmd_func_table,
-                &db_func_table,
+                UdtTable,
+                StringTable,
+                CmdFuncTable,
+                DbFuncTable,
                 &loop_stack,
                 &allocamap)
             != 0)
@@ -2390,7 +2406,7 @@ ir_translate_ast(
 
     loop_stack_deinit(loop_stack);
     allocamap_deinit(allocamap);
-    typemap_deinit(udt_table);
+    typemap_deinit(UdtTable);
     results_deinit(results);
     stack_deinit(stack);
 
@@ -2399,7 +2415,7 @@ ir_translate_ast(
 translation_failure:
     loop_stack_deinit(loop_stack);
     allocamap_deinit(allocamap);
-    typemap_deinit(udt_table);
+    typemap_deinit(UdtTable);
     results_deinit(results);
     stack_deinit(stack);
 create_udt_table_failed:

@@ -14,7 +14,7 @@ help_insert_explicit_cast(
     utf8_idx         loc_end = identifier_loc.off + identifier_loc.len;
     struct log_highlight hl[]
         = {{ins1, ann, {loc_end, ins1.len}, LOG_INSERT, "^~~", 0},
-           {ins2, ann, {loc_end + ins1.len, ins2.len}, LOG_INSERT, "~~<", 0},
+           {ins2, ann, {loc_end, ins2.len}, LOG_INSERT, "~~<", 0},
            LOG_HIGHLIGHT_SENTINAL};
 
     log_help("Insert an explicit cast to silence this warning:\n");
@@ -1197,6 +1197,33 @@ warn_boolean_implicit_evaluation(
 }
 
 void
+warn_cmd_return_value_ignored(
+    const struct ast* ast, ast_id cmd, const char* filename, const char* source)
+{
+    struct utf8_view ins = cstr_utf8_view(" AS VOID");
+    struct utf8_view ann = empty_utf8_view();
+    struct utf8_span loc = ast_loc(ast, cmd);
+    union type       type = ast_type_info(ast, cmd);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, cmd) == AST_COMMAND,
+        log_err("type: %d\n", ast_node_type(ast, cmd)));
+
+    struct log_highlight hl[]
+        = {{ins, ann, {loc.off + loc.len, ins.len}, LOG_INSERT, LOG_MARKERS, 0},
+           LOG_HIGHLIGHT_SENTINAL};
+
+    log_flc(filename, source, loc);
+    log_warn("Return value of command is ignored.\n");
+    log_excerpt_1(source, loc, type_name(type, ast, source), 0);
+
+    log_help(
+        "If this was intended, you can cast the return value to VOID to "
+        "silence this warning:\n");
+    log_excerpt(source, hl);
+}
+
+void
 warn_func_call_implicit_conversion(
     const struct ast* ast,
     ast_id            arg,
@@ -1249,6 +1276,36 @@ warn_func_call_implicit_conversion(
     if (type_is_primitive(ast_type_info(ast, param)))
         help_insert_explicit_cast(
             source, ast_loc(ast, arg), ast_type_info(ast, param).primitive);
+}
+
+void
+warn_func_call_return_value_ignored(
+    const struct ast* ast,
+    ast_id            func,
+    const char*       filename,
+    const char*       source)
+{
+    struct utf8_view ins = cstr_utf8_view(" AS VOID");
+    struct utf8_view ann = empty_utf8_view();
+    struct utf8_span loc = ast_loc(ast, func);
+    union type       type = ast_type_info(ast, func);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, func) == AST_FUNC_CALL,
+        log_err("type: %d\n", ast_node_type(ast, func)));
+
+    struct log_highlight hl[]
+        = {{ins, ann, {loc.off + loc.len, ins.len}, LOG_INSERT, LOG_MARKERS, 0},
+           LOG_HIGHLIGHT_SENTINAL};
+
+    log_flc(filename, source, loc);
+    log_warn("Return value of function call is ignored.\n");
+    log_excerpt_1(source, loc, type_name(type, ast, source), 0);
+
+    log_help(
+        "If this was intended, you can cast the return value to VOID to "
+        "silence this warning:\n");
+    log_excerpt(source, hl);
 }
 
 void

@@ -230,6 +230,21 @@ ls.add_snippets("cpp", {
             end, { 1, 2, 3 }),
         })
     ),
+    s({ trig = "log", docstring = "Logging function" }, {
+        c(1, { i(1, "log_err"), i(2, "log_warn"), i(3, "log_dbg"), i(4, "log_info") }),
+        t('("'), i(2, ""), t('\\n"'),
+        d(3, function(values)
+            local fmt_string = values[1][1]
+            local nodes = {}
+            for _ in fmt_string:gmatch("%%[^%%]") do
+                local idx = #nodes / 2 + 1
+                table.insert(nodes, t(", "))
+                table.insert(nodes, r(idx, "arg" .. idx, i(nil, "arg" .. idx)))
+            end
+            return sn(1, nodes)
+        end, { 2 }),
+        t(");"),
+    }),
     s({trig = "view", docstring = "Print utf8_view to std format string"}, {
         i(1, "view"),
         f(function(values)

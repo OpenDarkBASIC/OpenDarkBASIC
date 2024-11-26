@@ -27,6 +27,7 @@ struct db_keyword
 global,             TOK_GLOBAL
 local,              TOK_LOCAL
 as,                 TOK_AS
+void,               TOK_VOID
 boolean,            TOK_BOOLEAN
 byte,               TOK_BYTE
 word,               TOK_WORD

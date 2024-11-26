@@ -46,7 +46,7 @@ static ODBUTIL_PRINTF_FORMAT(2, 3) enum token
 }
 
 static int
-ci_memcmp(const char* a, const char* b, utf8_idx len)
+case_insensitive_memcmp(const char* a, const char* b, utf8_idx len)
 {
     for (utf8_idx i = 0; i != len; ++i)
         if (tolower(a[i]) != tolower(b[i]))
@@ -61,10 +61,13 @@ scan_for_preprocessor_directive(struct parser* p)
     while (p->head != p->end)
     {
 #define SKIP_COMMENT(open, close)                                              \
-    if (ci_memcmp(p->source + p->head, open, sizeof(open) - 1) == 0)           \
+    if (case_insensitive_memcmp(p->source + p->head, open, sizeof(open) - 1)   \
+        == 0)                                                                  \
     {                                                                          \
         for (p->head += sizeof(open) - 1; p->head != p->end; p->head++)        \
-            if (ci_memcmp(p->source + p->head, close, sizeof(close) - 1) == 0) \
+            if (case_insensitive_memcmp(                                       \
+                    p->source + p->head, close, sizeof(close) - 1)             \
+                == 0)                                                          \
             {                                                                  \
                 p->head += sizeof(close) - 1;                                  \
                 break;                                                         \
@@ -80,7 +83,9 @@ scan_for_preprocessor_directive(struct parser* p)
 #undef SKIP_COMMENT
 
 #define SCAN_STRING(string, tok_name)                                          \
-    if (ci_memcmp(p->source + p->head, string, sizeof(string) - 1) == 0)       \
+    if (case_insensitive_memcmp(                                               \
+            p->source + p->head, string, sizeof(string) - 1)                   \
+        == 0)                                                                  \
     {                                                                          \
         p->head += sizeof(string) - 1;                                         \
         return tok_name;                                                       \
@@ -101,7 +106,9 @@ scan_next(struct parser* p)
     while (p->head != p->end)
     {
 #define SCAN_TYPE(string, type_name)                                           \
-    if (ci_memcmp(p->source + p->head, string, sizeof(string) - 1) == 0)       \
+    if (case_insensitive_memcmp(                                               \
+            p->source + p->head, string, sizeof(string) - 1)                   \
+        == 0)                                                                  \
     {                                                                          \
         p->head += sizeof(string) - 1;                                         \
         p->value.type = type_name;                                             \

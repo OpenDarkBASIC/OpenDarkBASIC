@@ -157,7 +157,7 @@ log_excerpt_2(
     struct utf8_view ins = empty_utf8_view();
     struct log_highlight hl[] = {
         {ins, annotation1, loc1, LOG_HIGHLIGHT, LOG_MARKERS, group1},
-        {ins, annotation2, loc2, LOG_INSERT, LOG_MARKERS, group2},
+        {ins, annotation2, loc2, LOG_HIGHLIGHT, LOG_MARKERS, group2},
         LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, hl);
@@ -172,7 +172,7 @@ log_excerpt_binop(
     struct utf8_view ins = empty_utf8_view();
     struct log_highlight hl[] = {
         {ins, lhs_text,          lhs, LOG_HIGHLIGHT, {'>', '~', '~'}, 0},
-        {ins, empty_utf8_view(), op, LOG_HIGHLIGHT,  {'^', '^', '^'}, 2},
+        {ins, empty_utf8_view(), op,  LOG_HIGHLIGHT, {'^', '^', '^'}, 2},
         {ins, rhs_text,          rhs, LOG_HIGHLIGHT, {'~', '~', '<'}, 1},
         LOG_HIGHLIGHT_SENTINAL
     };

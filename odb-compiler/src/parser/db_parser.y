@@ -245,7 +245,7 @@
 %type<node_value> expr maybe_expr
 %type<node_value> arglist maybe_arglist paramlist maybe_paramlist
 %type<node_value> inc dec
-%type<node_value> command_stmt command_expr
+%type<node_value> command_stmt command_stmt_ command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_for_init loop_next loop_cont loop_exit
@@ -258,7 +258,8 @@
 %type<node_value> lvalue rvalue
 %type<node_value> var_decl var_read var_write
 %type<node_value> udt_decl udt_members udt_member_decl
-%type<node_value> func func_exit func_call_or_container_read container_write
+%type<node_value> func func_exit func_call_or_container_read_stmt func_call_or_container_read_expr
+%type<node_value> container_write
 
 %start program
 
@@ -302,7 +303,7 @@ istmt
   | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
   | func_exit                               { $$ = $1; }
-  | func_call_or_container_read             { $$ = $1; }
+  | func_call_or_container_read_stmt        { $$ = $1; }
   ;
 expr
   : '(' expr ')'                            { $$ = $2; @$ = @2; }
@@ -369,13 +370,17 @@ param
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.
 command_stmt
-  : COMMAND maybe_arglist                   { $$ = ast_command(ctx->astp, $1, $2, @$); }
-  | COMMAND '(' ')'                         { $$ = ast_command(ctx->astp, $1, -1, @$); }
-//| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->astp, $1, $3, @$); }
+  : command_stmt_ AS VOID                   { $$ = ast_cast_to_primitive_type(ctx->astp, $1, TYPE_VOID, utf8_span_union(@2, @3)); }
+  | command_stmt_                           { $$ = $1; }
+  ;
+command_stmt_
+  : COMMAND maybe_arglist                   { $$ = ast_command(ctx->astp, $1, $2, 0, @$); }
+  | COMMAND '(' ')'                         { $$ = ast_command(ctx->astp, $1, -1, 0, @$); }
+//| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->astp, $1, $3, 0, @$); }
   ;
 // Commands appearing as expressions must be called with arguments in brackets
 command_expr
-  : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, @$); }
+  : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, 1, @$); }
   ;
 lvalue
   : lvalue '.' lvalue                       { $$ = ast_udt_write(ctx->astp, $1, $3, @$); }
@@ -385,7 +390,7 @@ lvalue
 rvalue
   : rvalue '.' rvalue                       { $$ = ast_udt_read(ctx->astp, $1, $3, @$); }
   | var_read                                { $$ = $1; }
-  | func_call_or_container_read             { $$ = $1; }
+  | func_call_or_container_read_expr        { $$ = $1; }
   ;
 // Assignments and variable declarations with initializers are syntactically ambiguous,
 // and need to be resolved during type checking. They're held apart here because variable
@@ -509,8 +514,11 @@ func
 func_exit
   : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }
   ;
-func_call_or_container_read
-  : identifier '(' maybe_arglist ')'        { $$ = ast_func_call_or_container_read(ctx->astp, $1, $3, @$); }
+func_call_or_container_read_stmt
+  : identifier '(' maybe_arglist ')'        { $$ = ast_func_call_or_container_read(ctx->astp, $1, $3, 0, @$); }
+  ;
+func_call_or_container_read_expr
+  : identifier '(' maybe_arglist ')'        { $$ = ast_func_call_or_container_read(ctx->astp, $1, $3, 1, @$); }
   ;
 container_write
   : identifier '(' maybe_arglist ')'        { $$ = ast_container_write(ctx->astp, $1, $3, @$); }
@@ -540,7 +548,8 @@ maybe_scope
   |                                         { $$ = SCOPE_LOCAL; }
   ;
 as_type
-  : AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_BOOL), @$); }
+  : AS VOID                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_VOID), @$); }
+  | AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_BOOL), @$); }
   | AS BYTE                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U8), @$); }
   | AS WORD                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U16), @$); }
   | AS INTEGER                              { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_I32), @$); }

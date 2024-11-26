@@ -248,11 +248,23 @@ warn_boolean_implicit_evaluation(
     const char*       filename,
     const char*       source);
 void
+warn_cmd_return_value_ignored(
+    const struct ast* ast,
+    ast_id            cmd,
+    const char*       filename,
+    const char*       source);
+void
 warn_func_call_implicit_conversion(
     const struct ast* ast,
     ast_id            arg,
     ast_id            param,
     int               arg_num,
+    const char*       filename,
+    const char*       source);
+void
+warn_func_call_return_value_ignored(
+    const struct ast* ast,
+    ast_id            cmd,
     const char*       filename,
     const char*       source);
 void
