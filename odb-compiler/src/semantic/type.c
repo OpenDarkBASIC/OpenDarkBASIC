@@ -58,15 +58,15 @@ annotation_to_type(enum type_annotation annotation)
     switch (annotation)
     {
         case TA_NONE: break;
-        case TA_BOOL: return type_primitive(TYPE_BOOL);
-        case TA_I64: return type_primitive(TYPE_I64);
-        case TA_U16: return type_primitive(TYPE_U16);
-        case TA_F64: return type_primitive(TYPE_F64);
-        case TA_F32: return type_primitive(TYPE_F32);
-        case TA_STRING: return type_primitive(TYPE_STRING);
+        case TA_BOOL: return primitive_type(TYPE_BOOL);
+        case TA_I64: return primitive_type(TYPE_I64);
+        case TA_U16: return primitive_type(TYPE_U16);
+        case TA_F64: return primitive_type(TYPE_F64);
+        case TA_F32: return primitive_type(TYPE_F32);
+        case TA_STRING: return primitive_type(TYPE_STRING);
     }
 
-    return type_primitive(TYPE_I32);
+    return primitive_type(TYPE_I32);
 }
 
 const char*

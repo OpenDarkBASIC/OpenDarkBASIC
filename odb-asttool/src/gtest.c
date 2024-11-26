@@ -39,11 +39,7 @@
     X(AST_FUNC4, "f4_", "func4", "body", "retval")                             \
     X(AST_FUNC_EXIT, "exit", "func_exit", "retval", "")                        \
     X(AST_FUNC_CALL, "call", "func_call", "identifier", "arglist")             \
-    X(AST_FUNC_CALL_OR_CONTAINER_READ,                                         \
-      "func_call_or_container_read",                                           \
-      "func_call_or_container_read",                                           \
-      "identifier",                                                            \
-      "arglist")                                                               \
+    X(AST_CALL_LIKE, "call_like", "call_like", "identifier", "arglist")        \
     X(AST_CONTAINER_WRITE,                                                     \
       "container_write",                                                       \
       "container_write",                                                       \
@@ -475,7 +471,7 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
         case AST_FUNC4: break;
         case AST_FUNC_EXIT: break;
         case AST_FUNC_CALL: break;
-        case AST_FUNC_CALL_OR_CONTAINER_READ: break;
+        case AST_CALL_LIKE: break;
         case AST_CONTAINER_WRITE: break;
         case AST_BOOLEAN_LITERAL: break;
         case AST_BYTE_LITERAL:

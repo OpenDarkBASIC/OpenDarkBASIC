@@ -10,20 +10,20 @@
 #include "llvm/Transforms/Utils/Mem2Reg.h"
 
 int
-ir_optimize(struct ir_module* ir)
+ir_optimize_old(struct ir_module* ir)
 {
     // Create the analysis managers.
     // These must be declared in this order so that they are destroyed in the
     // correct order due to inter-analysis-manager references.
-    llvm::LoopAnalysisManager LAM;
-    llvm::FunctionPassManager FPM;
+    llvm::LoopAnalysisManager     LAM;
+    llvm::FunctionPassManager     FPM;
     llvm::FunctionAnalysisManager FAM;
-    llvm::CGSCCAnalysisManager CGAM;
-    llvm::ModuleAnalysisManager MAM;
-    llvm::ModulePassManager MPM;
+    llvm::CGSCCAnalysisManager    CGAM;
+    llvm::ModuleAnalysisManager   MAM;
+    llvm::ModulePassManager       MPM;
 
     llvm::PassInstrumentationCallbacks PIC;
-    llvm::StandardInstrumentations SI(ir->ctx, /*DebugLogging*/ true);
+    llvm::StandardInstrumentations     SI(ir->ctx, /*DebugLogging*/ true);
     SI.registerCallbacks(PIC, &MAM);
 
     // Add transform passes.
@@ -47,6 +47,35 @@ ir_optimize(struct ir_module* ir)
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
     MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
+    MPM.run(ir->mod, MAM);
+
+    return 0;
+}
+
+int
+ir_optimize(struct ir_module* ir)
+{
+    // Create the analysis managers.
+    // These must be declared in this order so that they are destroyed in the
+    // correct order due to inter-analysis-manager references.
+    llvm::LoopAnalysisManager     LAM;
+    llvm::FunctionPassManager     FPM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager    CGAM;
+    llvm::ModuleAnalysisManager   MAM;
+    llvm::ModulePassManager       MPM;
+
+    // Register all the basic analyses with the managers.
+    llvm::PassBuilder PB;
+    PB.registerModuleAnalyses(MAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    MPM = PB.buildModuleOptimizationPipeline(
+        llvm::OptimizationLevel::O3, llvm::ThinOrFullLTOPhase::FullLTOPostLink);
+
     MPM.run(ir->mod, MAM);
 
     return 0;

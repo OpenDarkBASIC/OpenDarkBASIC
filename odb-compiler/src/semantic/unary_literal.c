@@ -49,7 +49,7 @@ child_changed:
         case AST_FUNC4: return -1;
         case AST_FUNC_EXIT: return -1;
         case AST_FUNC_CALL: return -1;
-        case AST_FUNC_CALL_OR_CONTAINER_READ: return -1;
+        case AST_CALL_LIKE: return -1;
         case AST_CONTAINER_WRITE: return -1;
 
         case AST_BOOLEAN_LITERAL:

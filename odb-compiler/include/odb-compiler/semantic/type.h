@@ -93,7 +93,7 @@ enum type_conversion_result
 };
 
 static inline union type
-type_primitive(enum primitive_type primitive)
+primitive_type(enum primitive_type primitive)
 {
     union type t;
     t.primitive = primitive;
@@ -103,7 +103,7 @@ type_primitive(enum primitive_type primitive)
 static inline union type
 type_invalid(void)
 {
-    return type_primitive(TYPE_INVALID);
+    return primitive_type(TYPE_INVALID);
 }
 
 ODBCOMPILER_PUBLIC_API union type

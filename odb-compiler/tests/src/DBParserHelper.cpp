@@ -121,7 +121,7 @@ DBParserHelper::semantic(const struct semantic_check* check)
 
 int
 DBParserHelper::addCommand(
-    primitive_type                             return_type,
+    enum primitive_type                        return_type,
     const char*                                name,
     std::initializer_list<enum primitive_type> param_types)
 {

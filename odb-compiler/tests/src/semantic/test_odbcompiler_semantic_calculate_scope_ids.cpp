@@ -192,36 +192,36 @@ TEST_F(NAME, instantiated_functions)
     ast_id ident44 = ast->nodes[var_read45].var_read.identifier;
     ast_id var_write43 = ast->nodes[ass49].assignment.lvalue;
     ast_id ident42 = ast->nodes[var_write43].var_write.identifier;
-    ast_id func_call_or_container_read30 = ast->nodes[block31].block.stmt;
-    ast_id arglist25 = ast->nodes[func_call_or_container_read30]
-                           .func_call_or_container_read.arglist;
+    ast_id call_like30 = ast->nodes[block31].block.stmt;
+    ast_id arglist25 = ast->nodes[call_like30]
+                           .call_like.arglist;
     ast_id arglist27 = ast->nodes[arglist25].arglist.next;
     ast_id arglist29 = ast->nodes[arglist27].arglist.next;
     ast_id lit28 = ast->nodes[arglist29].arglist.expr;
     ast_id lit26 = ast->nodes[arglist27].arglist.expr;
     ast_id lit24 = ast->nodes[arglist25].arglist.expr;
-    ast_id ident23 = ast->nodes[func_call_or_container_read30]
-                         .func_call_or_container_read.identifier;
-    ast_id func_call_or_container_read21 = ast->nodes[block22].block.stmt;
-    ast_id arglist16 = ast->nodes[func_call_or_container_read21]
-                           .func_call_or_container_read.arglist;
+    ast_id ident23 = ast->nodes[call_like30]
+                         .call_like.identifier;
+    ast_id call_like21 = ast->nodes[block22].block.stmt;
+    ast_id arglist16 = ast->nodes[call_like21]
+                           .call_like.arglist;
     ast_id arglist18 = ast->nodes[arglist16].arglist.next;
     ast_id arglist20 = ast->nodes[arglist18].arglist.next;
     ast_id lit19 = ast->nodes[arglist20].arglist.expr;
     ast_id lit17 = ast->nodes[arglist18].arglist.expr;
     ast_id lit15 = ast->nodes[arglist16].arglist.expr;
-    ast_id ident14 = ast->nodes[func_call_or_container_read21]
-                         .func_call_or_container_read.identifier;
-    ast_id func_call_or_container_read12 = ast->nodes[block13].block.stmt;
-    ast_id arglist7 = ast->nodes[func_call_or_container_read12]
-                          .func_call_or_container_read.arglist;
+    ast_id ident14 = ast->nodes[call_like21]
+                         .call_like.identifier;
+    ast_id call_like12 = ast->nodes[block13].block.stmt;
+    ast_id arglist7 = ast->nodes[call_like12]
+                          .call_like.arglist;
     ast_id arglist9 = ast->nodes[arglist7].arglist.next;
     ast_id arglist11 = ast->nodes[arglist9].arglist.next;
     ast_id lit10 = ast->nodes[arglist11].arglist.expr;
     ast_id lit8 = ast->nodes[arglist9].arglist.expr;
     ast_id lit6 = ast->nodes[arglist7].arglist.expr;
-    ast_id ident5 = ast->nodes[func_call_or_container_read12]
-                        .func_call_or_container_read.identifier;
+    ast_id ident5 = ast->nodes[call_like12]
+                        .call_like.identifier;
     ast_id decl12 = ast->nodes[block4].block.stmt;
     ast_id decl23 = ast->nodes[decl12].var_decl1.var_decl2;
     ast_id as_type1 = ast->nodes[decl23].var_decl2.as;
@@ -307,7 +307,7 @@ TEST_F(NAME, instantiated_functions)
     ASSERT_THAT(ast->nodes[arglist9].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[lit10].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[arglist11].info.scope_id, Eq(0));
-    ASSERT_THAT(ast->nodes[func_call_or_container_read12].info.scope_id, Eq(0));
+    ASSERT_THAT(ast->nodes[call_like12].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[block13].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[ident14].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[lit15].info.scope_id, Eq(0));
@@ -316,7 +316,7 @@ TEST_F(NAME, instantiated_functions)
     ASSERT_THAT(ast->nodes[arglist18].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[lit19].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[arglist20].info.scope_id, Eq(0));
-    ASSERT_THAT(ast->nodes[func_call_or_container_read21].info.scope_id, Eq(0));
+    ASSERT_THAT(ast->nodes[call_like21].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[block22].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[ident23].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[lit24].info.scope_id, Eq(0));
@@ -325,7 +325,7 @@ TEST_F(NAME, instantiated_functions)
     ASSERT_THAT(ast->nodes[arglist27].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[lit28].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[arglist29].info.scope_id, Eq(0));
-    ASSERT_THAT(ast->nodes[func_call_or_container_read30].info.scope_id, Eq(0));
+    ASSERT_THAT(ast->nodes[call_like30].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[block31].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[ident32].info.scope_id, Eq(0));
     ASSERT_THAT(ast->nodes[ident33].info.scope_id, Eq(1));

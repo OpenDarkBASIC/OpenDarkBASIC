@@ -99,7 +99,7 @@ eliminate_candidates(cmd_id* cmd_id, void* user)
          ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
         ast_id     expr = ctx->ast->nodes[arglist].arglist.expr;
-        union type param = type_primitive(params->data[i].primitive);
+        union type param = primitive_type(params->data[i].primitive);
         union type arg = ast_type_info(ctx->ast, expr);
 
         if (!ctx->is_conversion_valid(arg, param))
@@ -208,10 +208,10 @@ report_ambiguous_overloads(
     {
         ast_id     expr = ast->nodes[arg].arglist.expr;
         union type arg_type
-            = type_primitive(ast_type_info(ast, expr).primitive);
+            = primitive_type(ast_type_info(ast, expr).primitive);
         vec_for_each(candidates, cmdp)
         {
-            union type param_type = type_primitive(
+            union type param_type = primitive_type(
                 cmds->param_types->data[*cmdp]->data[arg_idx].primitive);
 
             if (narrowing_rules[rule_idx](arg_type, param_type))
@@ -444,7 +444,7 @@ typecheck_warnings(
             log_err("type: %d\n", ast_node_type(ast, arglist)));
         ast_id           arg = ast->nodes[arglist].arglist.expr;
         union type       arg_type = ast_type_info(ast, arg);
-        union type       param_type = type_primitive(params->data[i].primitive);
+        union type       param_type = primitive_type(params->data[i].primitive);
         struct utf8_view arg_tname = type_name(arg_type, ast, source);
         struct utf8_view param_tname = type_name(param_type, ast, source);
 

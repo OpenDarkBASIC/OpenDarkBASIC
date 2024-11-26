@@ -662,7 +662,7 @@ get_cmd_func_signature(
         else
         {
             llvm::Type* Ty = type_to_llvm(
-                type_primitive(param->primitive), ast, source, &ir->ctx);
+                primitive_type(param->primitive), ast, source, &ir->ctx);
             ParamTypes.push_back(Ty);
         }
     }
@@ -676,7 +676,7 @@ get_cmd_func_signature(
             /*isVarArg=*/false);
 
     return llvm::FunctionType::get(
-        type_to_llvm(type_primitive(ret_type), ast, source, &ir->ctx),
+        type_to_llvm(primitive_type(ret_type), ast, source, &ir->ctx),
         ParamTypes,
         /*isVarArg=*/false);
 }
@@ -760,8 +760,11 @@ process_command(
             RetVal = b.CreateBitCast(RetVal, llvm::Type::getFloatTy(ir->ctx));
         }
 
-        if (results_push(results, RetVal) != 0)
-            return -1;
+        /* If the command is used as a statement, then nothing will pop the
+         * result off of the stack. Avoid pushing it in this case */
+        if (ast->nodes[cmd].cmd.is_expr)
+            if (results_push(results, RetVal) != 0)
+                return -1;
     }
 
     return 0;
@@ -1965,6 +1968,8 @@ process_func_call(
             FuncName.data()));
     llvm::Function* F = result->getValue();
 
+    /* If the function is used as a statement, then nothing will pop the result
+     * off of the stack. Avoid pushing it in this case */
     llvm::Value* RetVal = b.CreateCall(F, Args);
     if (ast->nodes[call].func_call.is_expr)
         return results_push(results, RetVal);
@@ -2188,9 +2193,7 @@ process_node(
         case AST_FUNC_CALL:
             return process_func_call(
                 stack, results, b, ast, source, DbFuncTable);
-        case AST_FUNC_CALL_OR_CONTAINER_READ:
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return -1;
+        case AST_CALL_LIKE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_CONTAINER_WRITE: /* TODO */ break;
         case AST_BOOLEAN_LITERAL: {
             ast_id lit = stack_pop(*stack)->node;

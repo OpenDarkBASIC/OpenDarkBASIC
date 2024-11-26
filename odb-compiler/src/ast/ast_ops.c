@@ -314,7 +314,7 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         case AST_FUNC4: break;
         case AST_FUNC_EXIT: break;
         case AST_FUNC_CALL: break;
-        case AST_FUNC_CALL_OR_CONTAINER_READ: break;
+        case AST_CALL_LIKE: break;
         case AST_CONTAINER_WRITE: break;
         case AST_BOOLEAN_LITERAL:
             if (ast->nodes[n1].boolean_literal.is_true

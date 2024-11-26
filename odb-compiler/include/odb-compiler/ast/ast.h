@@ -100,7 +100,7 @@ enum ast_type
     AST_FUNC4,
     AST_FUNC_EXIT,
     AST_FUNC_CALL,
-    AST_FUNC_CALL_OR_CONTAINER_READ,
+    AST_CALL_LIKE,
     AST_CONTAINER_WRITE,
     /*! Boolean literal, either "true" or "false" */
     AST_BOOLEAN_LITERAL,
@@ -373,7 +373,7 @@ union ast_node
         ast_id identifier;
         ast_id arglist;
         unsigned is_expr : 1;
-    } func_call_or_container_read;
+    } call_like;
 
     struct {
         struct info info;
@@ -593,7 +593,7 @@ ast_id ast_func(
     struct utf8_span endfunction_location,
     struct utf8_span location);
 ast_id ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location);
-ast_id ast_func_call_or_container_read(struct ast** astp, ast_id identifier, ast_id arglist, char is_expr, struct utf8_span location);
+ast_id ast_call_like(struct ast** astp, ast_id identifier, ast_id arglist, char is_expr, struct utf8_span location);
 ast_id ast_container_write(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location);
 ODBCOMPILER_PUBLIC_API ast_id ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location);

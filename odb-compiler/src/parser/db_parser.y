@@ -126,30 +126,31 @@
 %token CONSTANT "constant"
 /* Keywords */
 %token END
-%token INC "increment"
-%token DEC "decrement"
-%token GLOBAL LOCAL BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
+%token INC
+%token DEC
+%token GLOBAL LOCAL
+%token VOID BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
 %token TYPE ENDTYPE
 /* Control flow */
-%token IF "IF"
-%token THEN "THEN"
-%token ELSE "ELSE"
-%token ELSEIF "ELSEIF"
+%token IF
+%token THEN
+%token ELSE
+%token ELSEIF
 %token NO_ELSE
-%token ENDIF "ENDIF"
+%token ENDIF
 /* Loops */
-%token WHILE "WHILE"
-%token ENDWHILE "ENDWHILE"
-%token REPEAT "REPEAT"
-%token UNTIL "UNTIL"
-%token DO "DO"
-%token LOOP "LOOP"
-%token FOR "FOR"
-%token TO "TO"
-%token STEP "STEP"
-%token NEXT "NEXT"
-%token CONTINUE "CONTINUE"
-%token EXIT "EXIT"
+%token WHILE
+%token ENDWHILE
+%token REPEAT
+%token UNTIL
+%token DO
+%token LOOP
+%token FOR
+%token TO
+%token STEP
+%token NEXT
+%token CONTINUE
+%token EXIT
 /* Functions */
 %token FUNCTION
 %token EXITFUNCTION
@@ -161,38 +162,37 @@
 %token<float_value> FLOAT_LITERAL "float literal"
 %token<double_value> DOUBLE_LITERAL "double literal"
 %token<string_value> STRING_LITERAL "string literal"
-%token VOID "void"
 
 /* Operators */
-%token '(' "open bracket"
-%token ')' "close bracket"
+%token '('
+%token ')'
 /* Arithmetic operators */
-%token '+' "`+`"
-%token '-' "`-`"
-%token '*' "`*`"
-%token '/' "`/`"
-%token '^' "`^`"
+%token '+'
+%token '-'
+%token '*'
+%token '/'
+%token '^'
 %token MOD "mod"
 /* Logical binops */
-%token ',' "comma"
-%token '<' "`<`"
-%token '>' "`>`"
-%token LE "`<=`"
-%token GE "`>=`"
-%token NE "`<>`"
-%token '=' "`=`"
+%token ','
+%token '<'
+%token '>'
+%token LE "<="
+%token GE ">="
+%token NE "<>"
+%token '='
 /* Logical boolean binops */
 %token LOR "or"
 %token LAND "and"
 %token LNOT "not"
 %token LXOR "xor"
 /* Bitwise binops */
-%token BOR "bitwise or"
-%token BAND "bitwise and"
-%token BXOR "bitwise xor"
-%token BNOT "bitwise not"
-%token BSHL "left shift"
-%token BSHR "right shift"
+%token BOR "||"
+%token BAND "&&"
+%token BXOR "~~"
+%token BNOT ".."
+%token BSHL "<<"
+%token BSHR ">>"
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -245,7 +245,7 @@
 %type<node_value> expr maybe_expr
 %type<node_value> arglist maybe_arglist paramlist maybe_paramlist
 %type<node_value> inc dec
-%type<node_value> command_stmt command_stmt_ command_expr
+%type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_for_init loop_next loop_cont loop_exit
@@ -258,7 +258,7 @@
 %type<node_value> lvalue rvalue
 %type<node_value> var_decl var_read var_write
 %type<node_value> udt_decl udt_members udt_member_decl
-%type<node_value> func func_exit func_call_or_container_read_stmt func_call_or_container_read_expr
+%type<node_value> func func_exit call_like_stmt call_like_expr
 %type<node_value> container_write
 
 %start program
@@ -303,7 +303,7 @@ istmt
   | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
   | func_exit                               { $$ = $1; }
-  | func_call_or_container_read_stmt        { $$ = $1; }
+  | call_like_stmt                          { $$ = $1; }
   ;
 expr
   : '(' expr ')'                            { $$ = $2; @$ = @2; }
@@ -368,15 +368,14 @@ param
   | identifier                              { $$ = ast_param(ctx->astp, $1, -1, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
-// brackets, but it is valid to call a command with brackets as a stement.
+// brackets, but it is valid to call a command with brackets as a stement. This
+// whole thing is ugly as hell, but '(' expr ')' causes conflicts so we have to
+// handle all of the other cases.
 command_stmt
-  : command_stmt_ AS VOID                   { $$ = ast_cast_to_primitive_type(ctx->astp, $1, TYPE_VOID, utf8_span_union(@2, @3)); }
-  | command_stmt_                           { $$ = $1; }
-  ;
-command_stmt_
   : COMMAND maybe_arglist                   { $$ = ast_command(ctx->astp, $1, $2, 0, @$); }
   | COMMAND '(' ')'                         { $$ = ast_command(ctx->astp, $1, -1, 0, @$); }
-//| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->astp, $1, $3, 0, @$); }
+  | COMMAND '(' arglist ',' expr ')'        { ast_arglist_append_expr(ctx->astp, $3, $5, utf8_span_union(@3, @5));
+                                              $$ = ast_command(ctx->astp, $1, $3, 0, @$); }
   ;
 // Commands appearing as expressions must be called with arguments in brackets
 command_expr
@@ -390,7 +389,7 @@ lvalue
 rvalue
   : rvalue '.' rvalue                       { $$ = ast_udt_read(ctx->astp, $1, $3, @$); }
   | var_read                                { $$ = $1; }
-  | func_call_or_container_read_expr        { $$ = $1; }
+  | call_like_expr                          { $$ = $1; }
   ;
 // Assignments and variable declarations with initializers are syntactically ambiguous,
 // and need to be resolved during type checking. They're held apart here because variable
@@ -514,11 +513,11 @@ func
 func_exit
   : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }
   ;
-func_call_or_container_read_stmt
-  : identifier '(' maybe_arglist ')'        { $$ = ast_func_call_or_container_read(ctx->astp, $1, $3, 0, @$); }
+call_like_stmt
+  : identifier '(' maybe_arglist ')'        { $$ = ast_call_like(ctx->astp, $1, $3, 0, @$); }
   ;
-func_call_or_container_read_expr
-  : identifier '(' maybe_arglist ')'        { $$ = ast_func_call_or_container_read(ctx->astp, $1, $3, 1, @$); }
+call_like_expr
+  : identifier '(' maybe_arglist ')'        { $$ = ast_call_like(ctx->astp, $1, $3, 1, @$); }
   ;
 container_write
   : identifier '(' maybe_arglist ')'        { $$ = ast_container_write(ctx->astp, $1, $3, @$); }
@@ -548,16 +547,15 @@ maybe_scope
   |                                         { $$ = SCOPE_LOCAL; }
   ;
 as_type
-  : AS VOID                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_VOID), @$); }
-  | AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_BOOL), @$); }
-  | AS BYTE                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U8), @$); }
-  | AS WORD                                 { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U16), @$); }
-  | AS INTEGER                              { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_I32), @$); }
-  | AS DWORD                                { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_U32), @$); }
-  | AS DOUBLE INTEGER                       { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_I64), @$); }
-  | AS FLOAT                                { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_F32), @$); }
-  | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_F64), @$); }
-  | AS STRING                               { $$ = ast_as_type(ctx->astp, type_primitive(TYPE_STRING), @$); }
+  : AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_BOOL), @$); }
+  | AS BYTE                                 { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U8), @$); }
+  | AS WORD                                 { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U16), @$); }
+  | AS INTEGER                              { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_I32), @$); }
+  | AS DWORD                                { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U32), @$); }
+  | AS DOUBLE INTEGER                       { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_I64), @$); }
+  | AS FLOAT                                { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_F32), @$); }
+  | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_F64), @$); }
+  | AS STRING                               { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_STRING), @$); }
   | AS TYPE '(' expr ')'                    { $$ = ast_as_expr(ctx->astp, $4, @$); }
   | AS IDENTIFIER                           { $$ = ast_as_udt(ctx->astp, $2, @$); }
   ;

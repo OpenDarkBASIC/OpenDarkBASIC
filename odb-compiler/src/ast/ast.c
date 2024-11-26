@@ -43,7 +43,7 @@ new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
     ast->nodes[n].info.location = location;
     ast->nodes[n].info.scope_id = -1;
     ast->nodes[n].info.node_type = type;
-    ast->nodes[n].info.type_info = type_primitive(TYPE_INVALID);
+    ast->nodes[n].info.type_info = primitive_type(TYPE_INVALID);
     ast->nodes[n].base.left = -1;
     ast->nodes[n].base.right = -1;
 
@@ -469,12 +469,12 @@ ast_udt_read(
     ODBUTIL_DEBUG_ASSERT(next > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, member) == AST_VAR_READ
-            || ast_node_type(*astp, member) == AST_FUNC_CALL_OR_CONTAINER_READ,
+            || ast_node_type(*astp, member) == AST_CALL_LIKE,
         log_err("type: %d\n", ast_node_type(*astp, member)));
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, member) == AST_UDT_READ
             || ast_node_type(*astp, member) == AST_VAR_READ
-            || ast_node_type(*astp, member) == AST_FUNC_CALL_OR_CONTAINER_READ,
+            || ast_node_type(*astp, member) == AST_CALL_LIKE,
         log_err("type: %d\n", ast_node_type(*astp, next)));
 
     (*astp)->nodes[n].udt_read.member = member;
@@ -974,14 +974,14 @@ ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location)
 }
 
 ast_id
-ast_func_call_or_container_read(
+ast_call_like(
     struct ast**     astp,
     ast_id           identifier,
     ast_id           arglist,
     char             is_expr,
     struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_FUNC_CALL_OR_CONTAINER_READ, location);
+    ast_id      n = new_node(astp, AST_CALL_LIKE, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
@@ -994,9 +994,9 @@ ast_func_call_or_container_read(
         arglist == -1 || ast_node_type(ast, arglist) == AST_ARGLIST,
         log_err("type: %d\n", ast_node_type(ast, arglist)));
 
-    ast->nodes[n].func_call_or_container_read.identifier = identifier;
-    ast->nodes[n].func_call_or_container_read.arglist = arglist;
-    ast->nodes[n].func_call_or_container_read.is_expr = !!is_expr;
+    ast->nodes[n].call_like.identifier = identifier;
+    ast->nodes[n].call_like.arglist = arglist;
+    ast->nodes[n].call_like.is_expr = !!is_expr;
 
     return n;
 }
@@ -1191,7 +1191,7 @@ ast_cast_to_primitive_type(
     enum primitive_type target_type,
     struct utf8_span    location)
 {
-    ast_id as = ast_as_type(astp, type_primitive(target_type), location);
+    ast_id as = ast_as_type(astp, primitive_type(target_type), location);
     if (as < 0)
         return -1;
 

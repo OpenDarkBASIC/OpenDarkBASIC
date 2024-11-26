@@ -319,7 +319,7 @@ cast_expr_to_boolean(
     const char*  filename,
     const char*  source)
 {
-    union type target_type = type_primitive(TYPE_BOOL);
+    union type target_type = primitive_type(TYPE_BOOL);
     if (types_equal(ast_type_info(*astp, n), target_type))
         return 0;
 
@@ -407,7 +407,7 @@ balanced_type_conversion(const struct ast* ast, ast_id lhs, ast_id rhs)
         return make_balanced_conversion_result(rhs_type, l2r, lhs, rhs);
 
     return make_balanced_conversion_result(
-        type_primitive(TYPE_INVALID), TC_DISALLOW, -1, -1);
+        primitive_type(TYPE_INVALID), TC_DISALLOW, -1, -1);
 }
 
 enum process_result
@@ -455,7 +455,7 @@ process_block(struct stack** stack, struct ast* ast, ast_id block)
         return DEP_ADDED_CHILDREN;
 
     /* Blocks (statements) are not expressions -- set the entire list to VOID */
-    ast->nodes[block].info.type_info = type_primitive(TYPE_VOID);
+    ast->nodes[block].info.type_info = primitive_type(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -485,7 +485,7 @@ process_arglist(struct stack** stack, struct ast* ast, ast_id arglist)
         return DEP_ADDED_CHILDREN;
 
     /* Arglists are not expressions, so set the entire list to VOID */
-    ast->nodes[arglist].info.type_info = type_primitive(TYPE_VOID);
+    ast->nodes[arglist].info.type_info = primitive_type(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -518,7 +518,7 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
         return DEP_ADDED_CHILDREN;
 
     /* Paramlists are not expressions, so set the entire list to VOID */
-    ast->nodes[paramlist].info.type_info = type_primitive(TYPE_VOID);
+    ast->nodes[paramlist].info.type_info = primitive_type(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -556,7 +556,7 @@ process_param(
     switch (declare_local(locals, source, name, scope_id, &local))
     {
         case HM_NEW:
-            init_local(local, identifier, param, type_primitive(TYPE_INVALID));
+            init_local(local, identifier, param, primitive_type(TYPE_INVALID));
             break;
 
         case HM_EXISTS:
@@ -608,8 +608,9 @@ process_command(
     const char*            source,
     const struct cmd_list* cmds)
 {
-    ast_id arglist;
-    cmd_id cmd_id;
+    ast_id              arglist;
+    cmd_id              cmd_id;
+    enum primitive_type return_type;
 
     ODBUTIL_DEBUG_ASSERT(cmd > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -625,12 +626,11 @@ process_command(
         return DEP_ADDED_CHILDREN;
     }
 
-    (*astp)->nodes[cmd].info.type_info
-        = type_primitive(cmds->return_types->data[cmd_id]);
+    return_type = cmds->return_types->data[cmd_id];
+    (*astp)->nodes[cmd].info.type_info = primitive_type(return_type);
 
     /* Check if the command has a return value that is being ignored */
-    if (ast_type_info(*astp, cmd).primitive != TYPE_VOID
-        && (*astp)->nodes[cmd].cmd.is_expr)
+    if (return_type != TYPE_VOID && !(*astp)->nodes[cmd].cmd.is_expr)
     {
         ast_id parent = ast_find_parent(*astp, cmd);
         ODBUTIL_DEBUG_ASSERT(parent > -1, (void)0);
@@ -859,7 +859,7 @@ process_assignment(
 
     /* Assignments are not expressions, thus they do not evaluate to a
      * type */
-    (*astp)->nodes[ass].info.type_info = type_primitive(TYPE_VOID);
+    (*astp)->nodes[ass].info.type_info = primitive_type(TYPE_VOID);
     stack_pop(*stack);
     return DEP_SOLVED;
 }
@@ -953,7 +953,7 @@ create_default_initializer_udt(
             if (arglist_entry < 0)
                 return -1;
             (*astp)->nodes[arglist_entry].info.type_info
-                = type_primitive(TYPE_VOID);
+                = primitive_type(TYPE_VOID);
         }
         else if (ast_node_type(*astp, member) == AST_UDT_DECL)
         {
@@ -1017,7 +1017,7 @@ process_var_decl(
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
             init_local(
-                local, identifier, var_decl, type_primitive(TYPE_INVALID));
+                local, identifier, var_decl, primitive_type(TYPE_INVALID));
             break;
         }
         case HM_EXISTS: {
@@ -1769,7 +1769,7 @@ process_var_read(
              * parent into the block list, and it's possible that adjacent nodes
              * are still unexplored. */
             (*astp)->nodes[init_block].info.type_info
-                = type_primitive(TYPE_INVALID);
+                = primitive_type(TYPE_INVALID);
 
             /* Insert into beginning of current scope's block list */
             for (scope_start = var_read,
@@ -1933,12 +1933,12 @@ process_binop(
              *   pow(f64, f64)
              */
             union type base_target_type = base_type.primitive == TYPE_F64
-                                              ? type_primitive(TYPE_F64)
-                                              : type_primitive(TYPE_F32);
+                                              ? primitive_type(TYPE_F64)
+                                              : primitive_type(TYPE_F32);
             union type exp_target_type
-                = exp_type.primitive == TYPE_F64   ? type_primitive(TYPE_F64)
-                  : exp_type.primitive == TYPE_F32 ? type_primitive(TYPE_F32)
-                                                   : type_primitive(TYPE_I32);
+                = exp_type.primitive == TYPE_F64   ? primitive_type(TYPE_F64)
+                  : exp_type.primitive == TYPE_F32 ? primitive_type(TYPE_F32)
+                                                   : primitive_type(TYPE_I32);
             /*
              * It makes sense to prioritize the LHS type higher than the
              * RHS type. For example, if the LHS is a f32, but the RHS
@@ -2104,7 +2104,7 @@ process_binop(
                     (*astp)->nodes[binop].binop.right = cast;
             }
 
-            (*astp)->nodes[binop].info.type_info = type_primitive(TYPE_BOOL);
+            (*astp)->nodes[binop].info.type_info = primitive_type(TYPE_BOOL);
 
             stack_pop(*stack);
             return DEP_SOLVED;
@@ -2118,7 +2118,7 @@ process_binop(
             if (cast_expr_to_boolean(astp, rhs, binop, filename, source) != 0)
                 return DEP_ERROR;
 
-            (*astp)->nodes[binop].info.type_info = type_primitive(TYPE_BOOL);
+            (*astp)->nodes[binop].info.type_info = primitive_type(TYPE_BOOL);
             stack_pop(*stack);
             return DEP_SOLVED;
         }
@@ -2192,8 +2192,8 @@ process_cond(
     if (cast_expr_to_boolean(astp, expr, cond, filename, source) != 0)
         return DEP_ERROR;
 
-    (*astp)->nodes[branches].info.type_info = type_primitive(TYPE_VOID);
-    (*astp)->nodes[cond].info.type_info = type_primitive(TYPE_VOID);
+    (*astp)->nodes[branches].info.type_info = primitive_type(TYPE_VOID);
+    (*astp)->nodes[cond].info.type_info = primitive_type(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2234,8 +2234,8 @@ process_loop(
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
 
-    (*astp)->nodes[loop].info.type_info = type_primitive(TYPE_VOID);
-    (*astp)->nodes[loop_body].info.type_info = type_primitive(TYPE_VOID);
+    (*astp)->nodes[loop].info.type_info = primitive_type(TYPE_VOID);
+    (*astp)->nodes[loop_body].info.type_info = primitive_type(TYPE_VOID);
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2258,7 +2258,7 @@ process_loop_cont(struct stack** stack, struct ast* ast, ast_id cont)
         return DEP_ADDED_CHILDREN;
     }
 
-    ast->nodes[cont].info.type_info = type_primitive(TYPE_VOID);
+    ast->nodes[cont].info.type_info = primitive_type(TYPE_VOID);
     stack_pop(*stack);
     return DEP_SOLVED;
 }
@@ -2324,7 +2324,7 @@ process_func_return(
     }
 
     target_ret_type = retval > -1 ? ast_type_info(*astp, retval)
-                                  : type_primitive(TYPE_VOID);
+                                  : primitive_type(TYPE_VOID);
     current_ret_type = set_or_get_return_type(*astp, func, target_ret_type);
 
     if (retval > -1 && !types_equal(current_ret_type, target_ret_type))
@@ -2408,7 +2408,7 @@ process_func_exit(
 
     /* The exitfunction statement itself is not an expression, so it
      * "returns" VOID */
-    (*astp)->nodes[exit].info.type_info = type_primitive(TYPE_VOID);
+    (*astp)->nodes[exit].info.type_info = primitive_type(TYPE_VOID);
     stack_pop(*stack);
     return DEP_SOLVED;
 }
@@ -2466,7 +2466,7 @@ process_func(
 
     /* If no exitfunction statement existed, and no return value exists, and
      * no explicit type was used, then we default to VOID */
-    set_or_get_return_type(*astp, func, type_primitive(TYPE_VOID));
+    set_or_get_return_type(*astp, func, primitive_type(TYPE_VOID));
 
     /* TODO: Type check identifier's return type with explicit_type */
 
@@ -2479,6 +2479,17 @@ process_func(
 
     stack_pop(*stack);
     return DEP_SOLVED;
+}
+
+static enum process_result
+process_func_call(
+    struct stack** stack,
+    struct ast*    ast,
+    ast_id         n,
+    const char*    filename,
+    const char*    source)
+{
+    return DEP_ERROR;
 }
 
 static int32_t
@@ -2717,7 +2728,7 @@ find_func_instantiation(
 }
 
 static enum process_result
-process_func_or_container_ref(
+process_call_like(
     struct stack**          stack,
     struct ast**            tus,
     int                     tu_id,
@@ -2727,7 +2738,7 @@ process_func_or_container_ref(
     const struct db_source* sources,
     const struct globals*   globals)
 {
-    ast_id identifier, arglist;
+    ast_id ident, arglist;
 
     struct utf8_view     key;
     const struct global* global;
@@ -2736,39 +2747,36 @@ process_func_or_container_ref(
     const char*  filename = utf8_cstr(filenames[tu_id]);
     const char*  source = sources[tu_id].text.data;
 
-    /* NOTE: The function has an identifier, but the type of it is set when
-     * the return type is known. */
-    arglist = (*astp)->nodes[n].func_call_or_container_read.arglist;
+    /* NOTE: The function has an identifier, but the type of it is set only
+     * after the return type is known (if it is a function). */
+    arglist = (*astp)->nodes[n].call_like.arglist;
     if (arglist > -1 && type_is_invalid(ast_type_info(*astp, arglist)))
     {
         stack_push_entry(stack, n, arglist);
         return DEP_ADDED_CHILDREN;
     }
 
-    identifier = (*astp)->nodes[n].func_call_or_container_read.identifier;
-    key = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
+    ident = (*astp)->nodes[n].call_like.identifier;
+    key = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
     global = globals_find(globals, key);
     if (global == NULL)
     {
-        log_flc(filename, source, ast_loc(*astp, identifier));
-        log_err("Command or function not found.\n");
+        log_flc(filename, source, ast_loc(*astp, ident));
+        log_err(
+            "Command, function, container or User-Defined Type not found.\n");
         log_excerpt_1(source, ast_loc(*astp, n), empty_utf8_view(), 0);
         return -1;
     }
 
     if (global->tu_id == tu_id)
     {
-        /* The function definition exists in our own AST. */
+        /* The definition exists in our own AST. */
 
         ast_id f1;
         if (ast_node_type((*astp), global->ast_node) == AST_FUNC_POLY)
         {
             ast_id poly_block = ast_find_parent(*astp, global->ast_node);
-            f1 = find_func_instantiation(
-                *astp,
-                poly_block,
-                *astp,
-                (*astp)->nodes[n].func_call_or_container_read.arglist);
+            f1 = find_func_instantiation(*astp, poly_block, *astp, arglist);
             if (f1 < 0)
             {
                 f1 = instantiate_func(
@@ -2777,7 +2785,7 @@ process_func_or_container_ref(
                     filename,
                     source,
                     astp,
-                    (*astp)->nodes[n].func_call_or_container_read.arglist,
+                    (*astp)->nodes[n].call_like.arglist,
                     ast_loc(*astp, n),
                     filename,
                     source);
@@ -2787,6 +2795,20 @@ process_func_or_container_ref(
                 stack_push_entry(stack, n, f1);
                 return DEP_ADDED_CHILDREN;
             }
+        }
+        else if (ast_node_type(*astp, global->ast_node) == AST_UDT_DECL)
+        {
+            /* Convert node into a udt_init and return */
+            union ast_node node = (*astp)->nodes[n];
+            node.info.node_type = AST_UDT_INIT;
+            node.udt_init.arglist = (*astp)->nodes[n].call_like.arglist;
+            node.udt_init._pad = -1;
+            node.udt_init.type_name = (*astp)->nodes[ident].identifier.name;
+            (*astp)->nodes[n] = node;
+
+            ast_delete_node(*astp, ident);
+
+            return DEP_ADDED_CHILDREN;
         }
         else
         {
@@ -2803,8 +2825,7 @@ process_func_or_container_ref(
 
             (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
             (*astp)->nodes[n].info.type_info = ast_type_info(*astp, f1);
-            (*astp)->nodes[identifier].info.type_info
-                = ast_type_info(*astp, f1);
+            (*astp)->nodes[ident].info.type_info = ast_type_info(*astp, f1);
 
             /* May need to insert casts for the arguments */
             f2 = (*astp)->nodes[f1].func1.func2;
@@ -2857,7 +2878,7 @@ process_func_or_container_ref(
 
             /* Check if the function has a return value that is being ignored */
             if (ast_type_info(*astp, n).primitive != TYPE_VOID
-                && (*astp)->nodes[n].func_call.is_expr)
+                && !(*astp)->nodes[n].func_call.is_expr)
             {
                 ast_id parent = ast_find_parent(*astp, n);
                 ODBUTIL_DEBUG_ASSERT(parent > -1, (void)0);
@@ -3089,7 +3110,7 @@ process_node(
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_BLOCK: return process_block(stack, *astp, n);
         case AST_END:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_VOID);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_VOID);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_ARGLIST: return process_arglist(stack, *astp, n);
@@ -3148,7 +3169,7 @@ process_node(
         case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP_CONT: return process_loop_cont(stack, *astp, n);
         case AST_LOOP_EXIT:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_VOID);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_VOID);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_FUNC_EXIT:
@@ -3163,48 +3184,45 @@ process_node(
             return DEP_ERROR;
         case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC_CALL:
-            /* This value is already set by AST_FUNC_OR_CONTAINER_REF --
-             * nothing to do here */
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return DEP_ERROR;
-        case AST_FUNC_CALL_OR_CONTAINER_READ:
-            return process_func_or_container_ref(
+            return process_func_call(stack, *astp, n, filename, source);
+        case AST_CALL_LIKE:
+            return process_call_like(
                 stack, tus, tu_id, tu_mutexes, n, filenames, sources, globals);
 
         case AST_BOOLEAN_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_BOOL);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_BOOL);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_BYTE_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_U8);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_U8);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_WORD_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_U16);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_U16);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_INTEGER_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_I32);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_I32);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_DWORD_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_U32);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_U32);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_DOUBLE_INTEGER_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_I64);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_I64);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_FLOAT_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_F32);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_F32);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_DOUBLE_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_F64);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_F64);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_STRING_LITERAL:
-            (*astp)->nodes[n].info.type_info = type_primitive(TYPE_STRING);
+            (*astp)->nodes[n].info.type_info = primitive_type(TYPE_STRING);
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_CAST: return process_cast(stack, *astp, n, filename, source);

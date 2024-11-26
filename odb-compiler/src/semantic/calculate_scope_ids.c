@@ -137,7 +137,7 @@ process_node(
         case AST_LOOP_EXIT:
         case AST_FUNC_EXIT:
         case AST_FUNC_CALL:
-        case AST_FUNC_CALL_OR_CONTAINER_READ:
+        case AST_CALL_LIKE:
         case AST_CONTAINER_WRITE:
         case AST_BOOLEAN_LITERAL:
         case AST_BYTE_LITERAL:

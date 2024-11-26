@@ -179,7 +179,7 @@ get_node_style(enum ast_type node_type, const struct style* style)
         case AST_FUNC4: return &style->keyword;
         case AST_FUNC_EXIT: return &style->keyword;
         case AST_FUNC_CALL: return &style->func;
-        case AST_FUNC_CALL_OR_CONTAINER_READ: return &style->keyword;
+        case AST_CALL_LIKE: return &style->keyword;
         case AST_CONTAINER_WRITE: return &style->identifier;
         case AST_BOOLEAN_LITERAL: return &style->numeric;
         case AST_BYTE_LITERAL: return &style->numeric;
@@ -295,7 +295,20 @@ write_node(
             switch (ast->nodes[n].binop.op)
             {
 #define X(op, tok)                                                             \
-    case BINOP_##op: fprintf(fp, "%s", tok); break;
+    case BINOP_##op: {                                                         \
+        const char* p = tok;                                                   \
+        while (*p)                                                             \
+        {                                                                      \
+            if (*p == '<')                                                     \
+                fprintf(fp, "&lt;");                                           \
+            else if (*p == '>')                                                \
+                fprintf(fp, "&gt;");                                           \
+            else                                                               \
+                fprintf(fp, "%c", *p);                                         \
+            p++;                                                               \
+        }                                                                      \
+        break;                                                                 \
+    }
                 BINOP_LIST
 #undef X
             }
@@ -357,7 +370,7 @@ write_node(
             break;
         case AST_FUNC_EXIT: fprintf(fp, "exitfunction"); break;
         case AST_FUNC_CALL: fprintf(fp, "call"); break;
-        case AST_FUNC_CALL_OR_CONTAINER_READ:
+        case AST_CALL_LIKE:
             fprintf(fp, "call (unresolved)");
             break;
         case AST_CONTAINER_WRITE: fprintf(fp, "container_write"); break;
@@ -499,7 +512,7 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_FUNC4: NAMES("body", "retval")
         case AST_FUNC_EXIT: NAMES("retval", "")
         case AST_FUNC_CALL: NAMES("identifier", "arglist")
-        case AST_FUNC_CALL_OR_CONTAINER_READ: NAMES("identifier", "arglist")
+        case AST_CALL_LIKE: NAMES("identifier", "arglist")
         case AST_CONTAINER_WRITE: NAMES("identifier", "arglist")
         case AST_BOOLEAN_LITERAL: break;
         case AST_BYTE_LITERAL: break;
