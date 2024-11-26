@@ -74,7 +74,7 @@ ir_optimize(struct ir_module* ir)
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
     MPM = PB.buildModuleOptimizationPipeline(
-        llvm::OptimizationLevel::O3, llvm::ThinOrFullLTOPhase::FullLTOPostLink);
+        llvm::OptimizationLevel::O3, llvm::ThinOrFullLTOPhase::None);
 
     MPM.run(ir->mod, MAM);
 

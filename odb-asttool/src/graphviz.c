@@ -328,7 +328,7 @@ write_node(
             if (ast->nodes[n].loop1.name.len)
                 fprintf(
                     fp,
-                    "%.*s: loop1 \\\"%.*s\\\"",
+                    "%.*s: loop1 \"%.*s\"",
                     ast->nodes[n].loop1.name.len,
                     source + ast->nodes[n].loop1.name.off,
                     ast->nodes[n].loop1.implicit_name.len,
@@ -336,7 +336,7 @@ write_node(
             else
                 fprintf(
                     fp,
-                    "loop1 \\\"%.*s\\\"",
+                    "loop1 \"%.*s\"",
                     ast->nodes[n].loop1.implicit_name.len,
                     source + ast->nodes[n].loop1.implicit_name.off);
             break;
@@ -405,7 +405,7 @@ write_node(
         case AST_STRING_LITERAL:
             fprintf(
                 fp,
-                "\\\"%.*s\\\"",
+                "\"%.*s\"",
                 ast->nodes[n].string_literal.str.len,
                 source + ast->nodes[n].string_literal.str.off);
             break;
