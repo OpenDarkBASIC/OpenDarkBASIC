@@ -37,3 +37,7 @@ target_arch_to_name(enum target_arch arch);
 
 ODBCOMPILER_PUBLIC_API const char*
 target_platform_to_name(enum target_platform platform);
+
+ODBCOMPILER_PUBLIC_API const char*
+target_arch_platform_to_triplet(
+    enum target_arch arch, enum target_platform platform);

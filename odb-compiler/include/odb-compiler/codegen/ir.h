@@ -9,11 +9,20 @@ struct cmd_ids;
 struct cmd_list;
 struct ir_module;
 
-ODBCOMPILER_PUBLIC_API struct ir_module*
-ir_alloc(const char* module_name);
+ODBCOMPILER_PUBLIC_API int
+ir_global_init(void);
 
 ODBCOMPILER_PUBLIC_API void
-ir_free(struct ir_module* ir);
+ir_global_deinit(void);
+
+ODBCOMPILER_PUBLIC_API struct ir_module*
+ir_alloc_module(
+    const char*          module_name,
+    enum target_arch     arch,
+    enum target_platform platform);
+
+ODBCOMPILER_PUBLIC_API void
+ir_free_module(struct ir_module* ir);
 
 ODBCOMPILER_PUBLIC_API int
 ir_translate_ast(
@@ -44,8 +53,5 @@ ODBCOMPILER_PUBLIC_API int
 ir_dump(const struct ir_module* ir);
 
 ODBCOMPILER_PUBLIC_API int
-ir_compile(
-    struct ir_module*    mod,
-    const char*          output_filepath,
-    enum target_arch     arch,
-    enum target_platform platform);
+ir_emit(struct ir_module* mod, const char* output_filepath);
+

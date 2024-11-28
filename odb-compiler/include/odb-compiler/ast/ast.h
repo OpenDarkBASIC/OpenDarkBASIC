@@ -222,15 +222,15 @@ union ast_node
     
     struct {
         struct info info;
-        ast_id member;
-        ast_id next;
+        ast_id left;
+        ast_id right;
         int index;
     } udt_read;
 
     struct {
         struct info info;
-        ast_id member;
-        ast_id next;
+        ast_id left;
+        ast_id right;
         int index;
     } udt_write;
 

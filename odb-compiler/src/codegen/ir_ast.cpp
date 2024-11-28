@@ -20,6 +20,7 @@ extern "C" {
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Target/TargetMachine.h"
 
 struct span_scope
 {
@@ -365,8 +366,8 @@ create_cmd_func_table(
             continue;
 
         result.first->setValue(new llvm::GlobalVariable(
-            ir->mod,
-            llvm::PointerType::getUnqual(ir->ctx),
+            ir->Mod,
+            llvm::PointerType::getUnqual(ir->Ctx),
             /*isConstant=*/true,
             llvm::GlobalVariable::ExternalLinkage,
             /*Initializer=*/nullptr,
@@ -396,11 +397,11 @@ create_string_table(
             continue; // String already exists
 
         llvm::Constant* S = llvm::ConstantDataArray::getString(
-            ir->ctx,
+            ir->Ctx,
             str_ref,
             /* Add NULL */ true);
         result.first->setValue(new llvm::GlobalVariable(
-            ir->mod,
+            ir->Mod,
             S->getType(),
             /*isConstant*/ true,
             llvm::GlobalValue::PrivateLinkage,
@@ -551,7 +552,7 @@ create_db_func_table(
         {
             ast_id      ast_param = ast->nodes[ast_paramlist].paramlist.param;
             union type  param_type = ast_type_info(ast, ast_param);
-            llvm::Type* Ty = type_to_llvm(param_type, ast, source, &ir->ctx);
+            llvm::Type* Ty = type_to_llvm(param_type, ast, source, &ir->Ctx);
             param_types.push_back(Ty);
         }
 
@@ -559,8 +560,8 @@ create_db_func_table(
         llvm::Type* llvm_retval
             = ast_retval > -1
                   ? type_to_llvm(
-                        ast_type_info(ast, ast_retval), ast, source, &ir->ctx)
-                  : llvm::Type::getVoidTy(ir->ctx);
+                        ast_type_info(ast, ast_retval), ast, source, &ir->Ctx)
+                  : llvm::Type::getVoidTy(ir->Ctx);
 
         /* Because polymorphic functions exist, we append type information to
          * the function name so it is unique */
@@ -579,7 +580,7 @@ create_db_func_table(
                 /* isVarArg */ false),
             llvm_linkage,
             FuncName,
-            &ir->mod);
+            &ir->Mod);
         bool result = DbFuncTable->insert({FuncName, F}).second;
         ODBUTIL_DEBUG_ASSERT(
             result,
@@ -626,10 +627,10 @@ process_end(
 
     // TODO: This function is created every time an END is encountered
     llvm::Function* FSDKDeInit = llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->Ctx), {}, false),
         llvm::Function::ExternalLinkage,
         "odbrt_exit",
-        ir->mod);
+        ir->Mod);
     FSDKDeInit->setDoesNotReturn();
     builder.CreateCall(FSDKDeInit, {});
 
@@ -658,11 +659,11 @@ get_cmd_func_signature(
     vec_for_each(param_types, param)
     {
         if (sdk_type == SDK_DBPRO && param->primitive == TYPE_F32)
-            ParamTypes.push_back(llvm::Type::getInt32Ty(ir->ctx));
+            ParamTypes.push_back(llvm::Type::getInt32Ty(ir->Ctx));
         else
         {
             llvm::Type* Ty = type_to_llvm(
-                primitive_type(param->primitive), ast, source, &ir->ctx);
+                primitive_type(param->primitive), ast, source, &ir->Ctx);
             ParamTypes.push_back(Ty);
         }
     }
@@ -671,12 +672,12 @@ get_cmd_func_signature(
     enum primitive_type ret_type = cmds->return_types->data[cmd_id];
     if (sdk_type == SDK_DBPRO && ret_type == TYPE_F32)
         return llvm::FunctionType::get(
-            llvm::Type::getInt32Ty(ir->ctx),
+            llvm::Type::getInt32Ty(ir->Ctx),
             ParamTypes,
             /*isVarArg=*/false);
 
     return llvm::FunctionType::get(
-        type_to_llvm(primitive_type(ret_type), ast, source, &ir->ctx),
+        type_to_llvm(primitive_type(ret_type), ast, source, &ir->Ctx),
         ParamTypes,
         /*isVarArg=*/false);
 }
@@ -729,7 +730,7 @@ process_command(
             ast_id expr = ast->nodes[arglist].arglist.expr;
             if (ast_type_info(ast, expr).primitive == TYPE_F32)
                 *vec_get(*results, i) = b.CreateBitCast(
-                    *vec_get(*results, i), llvm::Type::getInt32Ty(ir->ctx));
+                    *vec_get(*results, i), llvm::Type::getInt32Ty(ir->Ctx));
         }
     }
 
@@ -748,7 +749,7 @@ process_command(
     llvm::FunctionType* FT
         = get_cmd_func_signature(ir, ast, source, cmd, sdk_type, cmds);
     llvm::Value* CmdFuncAddr
-        = b.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), CmdFuncPtr);
+        = b.CreateLoad(llvm::PointerType::getUnqual(ir->Ctx), CmdFuncPtr);
     llvm::Value* RetVal = b.CreateCall(FT, CmdFuncAddr, Args);
 
     if (cmds->return_types->data[cmd_id] != TYPE_VOID)
@@ -757,7 +758,7 @@ process_command(
         if (sdk_type == SDK_DBPRO
             && ast_type_info(ast, cmd).primitive == TYPE_F32)
         {
-            RetVal = b.CreateBitCast(RetVal, llvm::Type::getFloatTy(ir->ctx));
+            RetVal = b.CreateBitCast(RetVal, llvm::Type::getFloatTy(ir->Ctx));
         }
 
         /* If the command is used as a statement, then nothing will pop the
@@ -785,10 +786,14 @@ process_assignment(
     ast_id              lvalue = ast->nodes[ass].assignment.lvalue;
     ast_id              expr = ast->nodes[ass].assignment.expr;
 
-    /* Evaluate rvalue */
-    if (stack_push_node(stack, lvalue) != 0)
-        return -1;
+    /* The convention we use is: The lvalue is responsible for allocating the
+     * storage space (CreateAlloca) and pushing that alloca to the results
+     * stack. The rvalue pops the alloca from the stack and stores its result
+     * into it. That's why the lvalue must be evaluated first */
+
     if (stack_push_node(stack, expr) != 0)
+        return -1;
+    if (stack_push_node(stack, lvalue) != 0)
         return -1;
 
     return 0;
@@ -839,7 +844,7 @@ process_var_decl(
             if (type_is_primitive(type))
             {
                 *Ap = builder.CreateAlloca(
-                    type_to_llvm(type, ast, source, &ir->ctx),
+                    type_to_llvm(type, ast, source, &ir->Ctx),
                     nullptr,
                     llvm::StringRef(name.data + name.off, name.len));
             }
@@ -871,11 +876,8 @@ process_var_decl(
     if (num_results == 0)
     {
         if (!type_is_primitive(type))
-        {
             if (results_push(results, *Ap) != 0)
                 return -1;
-            log_dbg("var_decl: results_push(%p)\n", (void*)*Ap);
-        }
 
         if (stack_push_node(stack, init_expr) != 0)
             return -1;
@@ -928,7 +930,8 @@ process_var_read(
         (*A)->getAllocatedType(),
         *A,
         llvm::StringRef(name.data + name.off, name.len));
-    return results_push(results, Read);
+    b.CreateStore(Read, *results_pop(*results));
+    return 0;
 }
 
 static int
@@ -960,13 +963,14 @@ process_var_write(
         case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap != NULL, (void)0); break;
         case HM_NEW:
             *Ap = builder.CreateAlloca(
-                type_to_llvm(type, ast, source, &ir->ctx),
+                type_to_llvm(type, ast, source, &ir->Ctx),
                 NULL,
                 llvm::StringRef(name.data + name.off, name.len));
             break;
     }
 
-    builder.CreateStore(*results_pop(*results), *Ap);
+    if (results_push(results, *Ap) != 0)
+        return -1;
     return 0;
 }
 
@@ -1076,18 +1080,20 @@ process_udt_init(
     return 0;
 }
 
-static llvm::Value*
+static int
 udt_read_deref(
+    struct results**      results,
+    struct ir_module*     ir,
     llvm::IRBuilder<>&    b,
     const struct ast*     ast,
-    ast_id                member,
+    ast_id                parent,
     const char*           source,
     const struct typemap* udt_table,
     llvm::Value*          StructPtr)
 {
-    if (ast_node_type(ast, member) == AST_UDT_READ)
+    if (ast_node_type(ast, parent) == AST_UDT_READ)
     {
-        ast_id left = ast->nodes[member].udt_read.member;
+        ast_id left = ast->nodes[parent].udt_read.left;
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, left) == AST_VAR_READ,
             log_err("type: %d\n", ast_node_type(ast, left)));
@@ -1103,30 +1109,55 @@ udt_read_deref(
         ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
 
         llvm::Value* MemberPtr = b.CreateStructGEP(
-            *StructTy, StructPtr, ast->nodes[member].udt_read.index);
+            *StructTy, StructPtr, ast->nodes[parent].udt_read.index);
         return udt_read_deref(
+            results,
+            ir,
             b,
             ast,
-            ast->nodes[member].udt_read.next,
+            ast->nodes[parent].udt_read.right,
             source,
             udt_table,
             MemberPtr);
     }
-    else if (ast_node_type(ast, member) == AST_VAR_READ)
-    {
-        llvm::Type* Ty = type_to_llvm(
-            ast_type_info(ast, member), ast, source, &b.getContext());
-        return b.CreateLoad(Ty, StructPtr);
-    }
 
-    ODBUTIL_DEBUG_ASSERT(0, (void)0);
-    return nullptr;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, parent) == AST_VAR_READ,
+        log_err("type: %d\n", ast_node_type(ast, parent)));
+
+    if (type_is_primitive(ast_type_info(ast, parent)))
+    {
+        union type   type = ast_type_info(ast, parent);
+        llvm::Type*  Ty = type_to_llvm(type, ast, source, &ir->Ctx);
+        llvm::Value* Read = b.CreateLoad(Ty, StructPtr);
+        b.CreateStore(Read, *results_pop(*results));
+        return 0;
+    }
+    else
+    {
+        union type         type = ast_type_info(ast, parent);
+        ast_id             udt_decl = type_udt_decl(type);
+        struct utf8_view   name = type_name(type, ast, source);
+        struct view_scope  key = {name, ast_scope(ast, udt_decl)};
+        llvm::StructType** StructTy = typemap_find(udt_table, key);
+        ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
+
+        const llvm::DataLayout& DL = ir->Mod.getDataLayout();
+        llvm::TypeSize          StructTySize = DL.getTypeAllocSize(*StructTy);
+        llvm::Type*             I32Ty = llvm::Type::getInt32Ty(ir->Ctx);
+        llvm::Value* Bytes = llvm::ConstantInt::get(I32Ty, StructTySize);
+        llvm::Align  Align = DL.getPrefTypeAlign(*StructTy);
+        b.CreateMemCpy(*results_pop(*results), Align, StructPtr, Align, Bytes);
+
+        return 0;
+    }
 }
 
 static int
 process_udt_read(
     struct stack**        stack,
     struct results**      results,
+    struct ir_module*     ir,
     llvm::IRBuilder<>&    b,
     const struct ast*     ast,
     const char*           source,
@@ -1140,7 +1171,7 @@ process_udt_read(
         ast_node_type(ast, udt_read) == AST_UDT_READ,
         log_err("type: %d\n", ast_node_type(ast, udt_read)));
 
-    ast_id left = ast->nodes[udt_read].udt_read.member;
+    ast_id left = ast->nodes[udt_read].udt_read.left;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, left) == AST_VAR_READ,
         log_err("type: %d\n", ast_node_type(ast, left)));
@@ -1151,23 +1182,23 @@ process_udt_read(
     llvm::AllocaInst** A = allocamap_find(*allocamap, left_key);
     ODBUTIL_DEBUG_ASSERT(A != nullptr, (void)0);
 
-    llvm::Value* Read = udt_read_deref(b, ast, udt_read, source, udt_table, *A);
-    return results_push(results, Read);
+    return udt_read_deref(results, ir, b, ast, udt_read, source, udt_table, *A);
 }
 
-static void
+static llvm::Value*
 udt_write_deref(
     llvm::IRBuilder<>&    b,
     const struct ast*     ast,
-    ast_id                member,
+    ast_id                parent,
     const char*           source,
     const struct typemap* udt_table,
-    llvm::Value*          StructPtr,
-    llvm::Value*          Value)
+    llvm::Value*          StructPtr)
 {
-    if (ast_node_type(ast, member) == AST_UDT_WRITE)
+    if (ast_node_type(ast, parent) == AST_VAR_WRITE)
+        return StructPtr;
+    else if (ast_node_type(ast, parent) == AST_UDT_WRITE)
     {
-        ast_id left = ast->nodes[member].udt_write.member;
+        ast_id left = ast->nodes[parent].udt_write.left;
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, left) == AST_VAR_WRITE,
             log_err("type: %d\n", ast_node_type(ast, left)));
@@ -1183,18 +1214,13 @@ udt_write_deref(
         ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
 
         llvm::Value* MemberPtr = b.CreateStructGEP(
-            *StructTy, StructPtr, ast->nodes[member].udt_write.index);
-        ast_id next = ast->nodes[member].udt_write.next;
-        return udt_write_deref(
-            b, ast, next, source, udt_table, MemberPtr, Value);
-    }
-    else if (ast_node_type(ast, member) == AST_VAR_WRITE)
-    {
-        b.CreateStore(Value, StructPtr);
-        return;
+            *StructTy, StructPtr, ast->nodes[parent].udt_write.index);
+        ast_id right = ast->nodes[parent].udt_write.right;
+        return udt_write_deref(b, ast, right, source, udt_table, MemberPtr);
     }
 
     ODBUTIL_DEBUG_ASSERT(0, (void)0);
+    return nullptr;
 }
 
 static int
@@ -1214,7 +1240,7 @@ process_udt_write(
         ast_node_type(ast, udt_write) == AST_UDT_WRITE,
         log_err("type: %d\n", ast_node_type(ast, udt_write)));
 
-    ast_id left = ast->nodes[udt_write].udt_write.member;
+    ast_id left = ast->nodes[udt_write].udt_write.left;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, left) == AST_VAR_WRITE,
         log_err("type: %d\n", ast_node_type(ast, left)));
@@ -1225,9 +1251,8 @@ process_udt_write(
     llvm::AllocaInst** A = allocamap_find(*allocamap, left_key);
     ODBUTIL_DEBUG_ASSERT(A != nullptr, (void)0);
 
-    udt_write_deref(
-        b, ast, udt_write, source, udt_table, *A, *results_pop(*results));
-    return 0;
+    return results_push(
+        results, udt_write_deref(b, ast, udt_write, source, udt_table, *A));
 }
 
 static int
@@ -1359,10 +1384,10 @@ process_binop(
                 && rhs_type.primitive == TYPE_I32)
             {
                 llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
-                    &ir->mod,
+                    &ir->Mod,
                     llvm::Intrinsic::powi,
-                    {llvm::Type::getFloatTy(ir->ctx),
-                     llvm::Type::getInt32Ty(ir->ctx)});
+                    {llvm::Type::getFloatTy(ir->Ctx),
+                     llvm::Type::getInt32Ty(ir->Ctx)});
                 return results_push(results, b.CreateCall(FPowi, {LHS, RHS}));
             }
             else if (
@@ -1370,10 +1395,10 @@ process_binop(
                 && rhs_type.primitive == TYPE_I32)
             {
                 llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
-                    &ir->mod,
+                    &ir->Mod,
                     llvm::Intrinsic::powi,
-                    {llvm::Type::getDoubleTy(ir->ctx),
-                     llvm::Type::getInt32Ty(ir->ctx)});
+                    {llvm::Type::getDoubleTy(ir->Ctx),
+                     llvm::Type::getInt32Ty(ir->Ctx)});
                 return results_push(results, b.CreateCall(FPowi, {LHS, RHS}));
             }
             else if (
@@ -1381,10 +1406,10 @@ process_binop(
                 && rhs_type.primitive == TYPE_F32)
             {
                 llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
-                    &ir->mod,
+                    &ir->Mod,
                     llvm::Intrinsic::pow,
-                    {llvm::Type::getFloatTy(ir->ctx),
-                     llvm::Type::getFloatTy(ir->ctx)});
+                    {llvm::Type::getFloatTy(ir->Ctx),
+                     llvm::Type::getFloatTy(ir->Ctx)});
                 return results_push(results, b.CreateCall(FPow, {LHS, RHS}));
             }
             else if (
@@ -1393,10 +1418,10 @@ process_binop(
             {
 
                 llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
-                    &ir->mod,
+                    &ir->Mod,
                     llvm::Intrinsic::pow,
-                    {llvm::Type::getDoubleTy(ir->ctx),
-                     llvm::Type::getDoubleTy(ir->ctx)});
+                    {llvm::Type::getDoubleTy(ir->Ctx),
+                     llvm::Type::getDoubleTy(ir->Ctx)});
                 return results_push(results, b.CreateCall(FPow, {LHS, RHS}));
             }
             break;
@@ -1524,8 +1549,8 @@ process_cond(
 
         case 1: {
             llvm::Value*      Expr = *results_pop(*results);
-            llvm::BasicBlock* Yes = llvm::BasicBlock::Create(ir->ctx);
-            llvm::BasicBlock* No = llvm::BasicBlock::Create(ir->ctx);
+            llvm::BasicBlock* Yes = llvm::BasicBlock::Create(ir->Ctx);
+            llvm::BasicBlock* No = llvm::BasicBlock::Create(ir->Ctx);
             b.CreateCondBr(Expr, Yes, No);
 
             llvm::Function* F = b.GetInsertBlock()->getParent();
@@ -1547,7 +1572,7 @@ process_cond(
 
         case 2: {
             auto No = llvm::cast<llvm::BasicBlock>(*results_pop(*results));
-            llvm::BasicBlock* Merge = llvm::BasicBlock::Create(ir->ctx);
+            llvm::BasicBlock* Merge = llvm::BasicBlock::Create(ir->Ctx);
 
             /* The "Yes" block may have changed, for example, if a nested if
              * statement appended a new block. That's why we retrieve the
@@ -1635,8 +1660,8 @@ process_loop(
          *     reach the end of the loop's body. This may cause issues if "Exit"
          *     is inserted into. Currently, this doesn't happen. "Exit" is
          *     merely a target for breaking out of the loop. */
-        llvm::BasicBlock* Loop = llvm::BasicBlock::Create(ir->ctx);
-        llvm::BasicBlock* Exit = llvm::BasicBlock::Create(ir->ctx);
+        llvm::BasicBlock* Loop = llvm::BasicBlock::Create(ir->Ctx);
+        llvm::BasicBlock* Exit = llvm::BasicBlock::Create(ir->Ctx);
 
         llvm::Function* F = b.GetInsertBlock()->getParent();
         b.CreateBr(Loop);
@@ -1822,7 +1847,7 @@ process_func(
         if (results_push(results, BB) != 0)
             return -1;
 
-        BB = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("entry"), F);
+        BB = llvm::BasicBlock::Create(ir->Ctx, llvm::Twine("entry"), F);
         b.SetInsertPoint(BB);
 
         int param_idx = 0;
@@ -1839,7 +1864,7 @@ process_func(
             llvm::AllocaInst** A;
             A = allocamap_emplace_new(allocamap, name_scope);
             *A = b.CreateAlloca(
-                type_to_llvm(param_type, ast, source, &ir->ctx),
+                type_to_llvm(param_type, ast, source, &ir->Ctx),
                 nullptr,
                 llvm::StringRef(name.data + name.off, name.len));
             b.CreateStore(F->getArg(param_idx), *A);
@@ -2054,7 +2079,7 @@ process_cast(
             llvm::Value* Cast = builder.CreateCast(
                 llvm_cast_ops[from.primitive][to.primitive],
                 Expr,
-                type_to_llvm(to, ast, source, &ir->ctx));
+                type_to_llvm(to, ast, source, &ir->Ctx));
             return results_push(results, Cast);
         }
 
@@ -2073,7 +2098,7 @@ process_cast(
                     llvm::Value* Cast = builder.CreateICmpNE(
                         Expr,
                         llvm::ConstantInt::get(
-                            type_to_llvm(from, ast, source, &ir->ctx), 0));
+                            type_to_llvm(from, ast, source, &ir->Ctx), 0));
                     return results_push(results, Cast);
                 }
 
@@ -2081,7 +2106,7 @@ process_cast(
                 case TYPE_F64: {
                     llvm::Value* Cast = builder.CreateFCmpONE(
                         Expr,
-                        llvm::ConstantFP::get(ir->ctx, llvm::APFloat(0.0)));
+                        llvm::ConstantFP::get(ir->Ctx, llvm::APFloat(0.0)));
                     return results_push(results, Cast);
                 }
 
@@ -2157,7 +2182,7 @@ process_node(
                 stack, results, b, ast, source, udt_table, allocamap);
         case AST_UDT_READ:
             return process_udt_read(
-                stack, results, b, ast, source, udt_table, allocamap);
+                stack, results, ir, b, ast, source, udt_table, allocamap);
         case AST_UDT_WRITE:
             return process_udt_write(
                 stack, results, b, ast, source, udt_table, allocamap);
@@ -2200,7 +2225,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantInt::get(
-                    llvm::Type::getInt1Ty(ir->ctx),
+                    llvm::Type::getInt1Ty(ir->Ctx),
                     ast->nodes[lit].boolean_literal.is_true,
                     /*isSigned=*/false));
         }
@@ -2209,7 +2234,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantInt::get(
-                    llvm::Type::getInt8Ty(ir->ctx),
+                    llvm::Type::getInt8Ty(ir->Ctx),
                     ast->nodes[lit].byte_literal.value,
                     /*isSigned=*/false));
         }
@@ -2218,7 +2243,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantInt::get(
-                    llvm::Type::getInt16Ty(ir->ctx),
+                    llvm::Type::getInt16Ty(ir->Ctx),
                     ast->nodes[lit].word_literal.value,
                     /*isSigned=*/false));
         }
@@ -2227,7 +2252,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantInt::get(
-                    llvm::Type::getInt32Ty(ir->ctx),
+                    llvm::Type::getInt32Ty(ir->Ctx),
                     ast->nodes[lit].dword_literal.value,
                     /*isSigned=*/false));
         }
@@ -2236,7 +2261,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantInt::get(
-                    llvm::Type::getInt32Ty(ir->ctx),
+                    llvm::Type::getInt32Ty(ir->Ctx),
                     ast->nodes[lit].integer_literal.value,
                     /*isSigned=*/true));
         }
@@ -2245,7 +2270,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(ir->ctx),
+                    llvm::Type::getInt64Ty(ir->Ctx),
                     ast->nodes[lit].double_integer_literal.value,
                     /*isSigned=*/false));
         }
@@ -2254,7 +2279,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantFP::get(
-                    llvm::Type::getFloatTy(ir->ctx),
+                    llvm::Type::getFloatTy(ir->Ctx),
                     llvm::APFloat(ast->nodes[lit].float_literal.value)));
         }
         case AST_DOUBLE_LITERAL: {
@@ -2262,7 +2287,7 @@ process_node(
             return results_push(
                 results,
                 llvm::ConstantFP::get(
-                    llvm::Type::getDoubleTy(ir->ctx),
+                    llvm::Type::getDoubleTy(ir->Ctx),
                     llvm::APFloat(ast->nodes[lit].double_literal.value)));
         }
         case AST_STRING_LITERAL: {
@@ -2317,13 +2342,13 @@ ir_translate_ast(
      * index in the AST. Makes it easier to track down issues later on. */
     llvm::Function* F = llvm::Function::Create(
         llvm::FunctionType::get(
-            llvm::Type::getVoidTy(ir->ctx),
+            llvm::Type::getVoidTy(ir->Ctx),
             {},
             /* isVarArg */ false),
         llvm::Function::ExternalLinkage,
-        llvm::Twine("dba_") + ir->mod.getName(),
-        &ir->mod);
-    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
+        llvm::Twine("dba_") + ir->Mod.getName(),
+        &ir->Mod);
+    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->Ctx, "", F);
     llvm::IRBuilder<> builder(BB);
 
     if (create_string_table(ir, &StringTable, ast, source) != 0)
@@ -2332,7 +2357,7 @@ ir_translate_ast(
         goto create_cmd_func_table_failed;
     if (create_db_func_table(ir, &DbFuncTable, ast, source) != 0)
         goto create_db_func_table_failed;
-    if (create_udt_table(&ir->ctx, &UdtTable, ast, source) != 0)
+    if (create_udt_table(&ir->Ctx, &UdtTable, ast, source) != 0)
         goto create_udt_table_failed;
 
     if (ast_count(ast) == 0)
@@ -2375,11 +2400,11 @@ ir_translate_ast(
     if (platform == TARGET_WINDOWS && arch == TARGET_i386)
     {
         llvm::Constant* S = llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(ir->ctx),
+            llvm::Type::getInt32Ty(ir->Ctx),
             0,
             /* isSigned */ true);
         new llvm::GlobalVariable(
-            ir->mod,
+            ir->Mod,
             S->getType(),
             /*isConstant*/ false,
             llvm::GlobalValue::CommonLinkage,
@@ -2389,11 +2414,11 @@ ir_translate_ast(
     if (platform == TARGET_WINDOWS && arch == TARGET_x86_64)
     {
         llvm::Constant* S = llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(ir->ctx),
+            llvm::Type::getInt32Ty(ir->Ctx),
             0,
             /* isSigned */ true);
         new llvm::GlobalVariable(
-            ir->mod,
+            ir->Mod,
             S->getType(),
             /*isConstant*/ false,
             llvm::GlobalValue::CommonLinkage,
@@ -2431,21 +2456,6 @@ create_string_table_failed:
 int
 ir_dump(const struct ir_module* ir)
 {
-    ir->mod.print(llvm::outs(), nullptr);
+    ir->Mod.print(llvm::outs(), nullptr);
     return 0;
-}
-
-struct ir_module*
-ir_alloc(const char* module_name)
-{
-    struct ir_module* ir = new ir_module(module_name);
-    mem_track_allocation(ir);
-    return ir;
-}
-
-void
-ir_free(struct ir_module* ir)
-{
-    mem_track_deallocation(ir);
-    delete ir;
 }

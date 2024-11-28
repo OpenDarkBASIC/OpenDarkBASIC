@@ -655,9 +655,9 @@ find_lvalue_first_occurrence(
     struct local*     local;
 
     if (ast_node_type(ast, lvalue) == AST_UDT_READ)
-        lvalue = ast->nodes[lvalue].udt_read.member;
+        lvalue = ast->nodes[lvalue].udt_read.left;
     else if (ast_node_type(ast, lvalue) == AST_UDT_WRITE)
-        lvalue = ast->nodes[lvalue].udt_write.member;
+        lvalue = ast->nodes[lvalue].udt_write.left;
 
     if (ast_node_type(ast, lvalue) == AST_VAR_READ)
         identifier = ast->nodes[lvalue].var_read.identifier;
@@ -1412,7 +1412,7 @@ find_udt_read_type(
     struct ast* ast,
     ast_id      container,
     union type  container_type,
-    ast_id      member,
+    ast_id      parent,
     const char* filename,
     const char* source)
 {
@@ -1426,9 +1426,9 @@ find_udt_read_type(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
-    left = ast_node_type(ast, member) == AST_UDT_READ
-               ? ast->nodes[member].udt_read.member
-               : member;
+    left = ast_node_type(ast, parent) == AST_UDT_READ
+               ? ast->nodes[parent].udt_read.left
+               : parent;
 
     /* Get identifier of incoming member */
     if (ast_node_type(ast, left) == AST_VAR_READ)
@@ -1475,28 +1475,22 @@ find_udt_read_type(
     ast->nodes[left].info.type_info = udt_member_type;
     ast->nodes[left_identifier].info.type_info = udt_member_type;
 
-    /* Get type of UDT member -- If it is a nested UDT, then we have to look up
-     * the type name to get the nested udt_decl structure */
-    if (type_is_primitive(ast_type_info(ast, udt_member_decl)))
+    if (ast_node_type(ast, parent) == AST_VAR_READ)
         return udt_member_type;
-    else
+    else if (ast_node_type(ast, parent) == AST_UDT_READ)
     {
-        union type read_type;
-        ast_id     right;
-
-        ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(ast, member) == AST_UDT_READ,
-            log_err("type: %d\n", ast_node_type(ast, member)));
-        right = ast->nodes[member].udt_read.next;
-
-        read_type = find_udt_read_type(
-            ast, member, udt_member_type, right, filename, source);
+        ast_id     right = ast->nodes[parent].udt_read.right;
+        union type read_type = find_udt_read_type(
+            ast, parent, udt_member_type, right, filename, source);
         if (type_is_invalid(read_type))
             return type_invalid();
 
-        ast->nodes[member].info.type_info = read_type;
+        ast->nodes[parent].info.type_info = read_type;
         return read_type;
     }
+
+    ODBUTIL_DEBUG_ASSERT(0, log_err("type: %d\n", ast_node_type(ast, parent)));
+    return type_invalid();
 }
 
 static enum process_result
@@ -1518,8 +1512,8 @@ process_udt_read(
         ast_node_type(ast, udt_read) == AST_UDT_READ,
         log_err("type: %d\n", ast_node_type(ast, udt_read)));
 
-    left = ast->nodes[udt_read].udt_read.member;
-    right = ast->nodes[udt_read].udt_read.next;
+    left = ast->nodes[udt_read].udt_read.left;
+    right = ast->nodes[udt_read].udt_read.right;
 
     if (ast_node_type(ast, left) == AST_VAR_READ)
         left_identifier = ast->nodes[left].var_read.identifier;
@@ -1563,7 +1557,7 @@ find_udt_write_type(
     struct ast* ast,
     ast_id      container,
     union type  container_type,
-    ast_id      member,
+    ast_id      parent,
     const char* filename,
     const char* source)
 {
@@ -1577,9 +1571,9 @@ find_udt_write_type(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
-    left = ast_node_type(ast, member) == AST_UDT_WRITE
-               ? ast->nodes[member].udt_write.member
-               : member;
+    left = ast_node_type(ast, parent) == AST_UDT_WRITE
+               ? ast->nodes[parent].udt_write.left
+               : parent;
 
     /* Get identifier of incoming member */
     if (ast_node_type(ast, left) == AST_VAR_WRITE)
@@ -1626,28 +1620,22 @@ find_udt_write_type(
     ast->nodes[left].info.type_info = udt_member_type;
     ast->nodes[left_identifier].info.type_info = udt_member_type;
 
-    /* Get type of UDT member -- If it is a nested UDT, then we have to look up
-     * the type name to get the nested udt_decl structure */
-    if (type_is_primitive(ast_type_info(ast, udt_member_decl)))
+    if (ast_node_type(ast, parent) == AST_VAR_WRITE)
         return udt_member_type;
-    else
+    else if (ast_node_type(ast, parent) == AST_UDT_WRITE)
     {
-        union type write_type;
-        ast_id     right;
-
-        ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(ast, member) == AST_UDT_WRITE,
-            log_err("type: %d\n", ast_node_type(ast, member)));
-        right = ast->nodes[member].udt_write.next;
-
-        write_type = find_udt_write_type(
-            ast, member, udt_member_type, right, filename, source);
+        ast_id     right = ast->nodes[parent].udt_write.right;
+        union type write_type = find_udt_write_type(
+            ast, parent, udt_member_type, right, filename, source);
         if (type_is_invalid(write_type))
             return type_invalid();
 
-        ast->nodes[member].info.type_info = write_type;
+        ast->nodes[parent].info.type_info = write_type;
         return write_type;
     }
+
+    ODBUTIL_DEBUG_ASSERT(0, log_err("type: %d\n", ast_node_type(ast, parent)));
+    return type_invalid();
 }
 
 static enum process_result
@@ -1669,8 +1657,8 @@ process_udt_write(
         ast_node_type(ast, udt_write) == AST_UDT_WRITE,
         log_err("type: %d\n", ast_node_type(ast, udt_write)));
 
-    left = ast->nodes[udt_write].udt_write.member;
-    right = ast->nodes[udt_write].udt_write.next;
+    left = ast->nodes[udt_write].udt_write.left;
+    right = ast->nodes[udt_write].udt_write.right;
 
     if (ast_node_type(ast, left) == AST_VAR_WRITE)
         left_identifier = ast->nodes[left].var_write.identifier;

@@ -1,0 +1,82 @@
+#load command "init window", "libraylib.so", "InitWindow", void, integer, integer, string
+#load command "close window", "libraylib.so", "CloseWindow", void
+#load command "sync rate", "libraylib.so", "SetTargetFPS", void, integer
+#load command "window should close", "libraylib.so", "WindowShouldClose", integer
+#load command "begin draw", "libraylib.so", "BeginDrawing", void
+#load command "end draw", "libraylib.so", "EndDrawing", void
+#load command "cls", "libraylib.so", "ClearBackground", void, dword
+#load command "text", "libraylib.so", "DrawText", void, string, integer, integer, integer, dword
+#load command "keystate", "libraylib.so", "IsKeyDown", boolean, integer
+rem #load command "circle", "libraylib.so", "DrawCircleV", void, Vector2, float, dword
+
+KEY_RIGHT = 262
+KEY_LEFT = 263
+KEY_DOWN = 264
+KEY_UP = 265
+KEY_W = 87
+KEY_A = 65
+KEY_S = 83
+KEY_D = 68
+
+type Vector2
+    x# as float
+    y# as float
+endtype
+
+type Player
+    id as integer
+    pos as Vector2
+    health as integer
+    speed# as float
+endtype
+
+type Screen
+    width as integer
+    height as integer
+endtype
+
+rem screen as Screen = Screen(1920, 1280)
+screen as Screen = Screen(800, 600)
+player as Player = Player(1, Vector2(50, 50), 100, screen.width / 100)
+player.pos = Vector2(50, 50)
+
+init window screen.width, screen.height, "raylib hello world"
+sync rate 60
+
+window should close()
+incclamp(10, 5, 20)
+while window should close() = 0
+
+    rem move player with WASD or arrow keys
+    right = keystate(KEY_D) or keystate(KEY_RIGHT)
+    left = keystate(KEY_A) or keystate(KEY_LEFT)
+    down = keystate(KEY_S) or keystate(KEY_DOWN)
+    up = keystate(KEY_W) or keystate(KEY_UP)
+    if right then player.pos.x# = incclamp(player.pos.x#, player.speed#, screen.width - 200)
+    if left then player.pos.x# = decclamp(player.pos.x#, player.speed#, 0)
+    if down then player.pos.y# = incclamp(player.pos.y#, player.speed#, screen.height - 80)
+    if up then player.pos.y# = decclamp(player.pos.y#, player.speed#, 0)
+
+    begin draw
+        cls 0xFF502020
+        DrawText(player.pos.x#, player.pos.y#)
+    end draw
+endwhile
+
+close window
+
+function DrawText(x, y)
+    text "yeaaaah boiii", x, y, 20, 0xFFFFFFFF
+    text "oi ya cunt", x, y + 40, 40, 0xFFA0AA00
+endfunction
+
+function incclamp(x, amount, max)
+    x = x + amount
+    if x > max then x = max
+endfunction x
+
+function decclamp(x, amount, min)
+    x = x - amount
+    if x < min then x = min
+endfunction x
+

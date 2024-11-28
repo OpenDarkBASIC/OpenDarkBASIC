@@ -17,8 +17,8 @@
     X(AST_VAR_WRITE, "var_write", "var_write", "", "identifier")               \
     X(AST_UDT_DECL, "udt_decl", "udt_decl", "members", "type_identifier")      \
     X(AST_UDT_INIT, "udt_init", "udt_init", "arglist", "")                     \
-    X(AST_UDT_READ, "udt_read", "udt_read", "member", "next")                  \
-    X(AST_UDT_WRITE, "udt_write", "udt_write", "member", "next")               \
+    X(AST_UDT_READ, "udt_read", "udt_read", "left", "right")                   \
+    X(AST_UDT_WRITE, "udt_write", "udt_write", "left", "right")                \
     X(AST_PARAM, "param", "param", "identifier", "as")                         \
     X(AST_IDENTIFIER, "ident", "identifier", "", "")                           \
     X(AST_BINOP, "binop", "binop", "left", "right")                            \

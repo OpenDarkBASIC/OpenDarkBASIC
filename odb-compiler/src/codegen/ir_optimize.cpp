@@ -23,7 +23,7 @@ ir_optimize_old(struct ir_module* ir)
     llvm::ModulePassManager       MPM;
 
     llvm::PassInstrumentationCallbacks PIC;
-    llvm::StandardInstrumentations     SI(ir->ctx, /*DebugLogging*/ true);
+    llvm::StandardInstrumentations     SI(ir->Ctx, /*DebugLogging*/ true);
     SI.registerCallbacks(PIC, &MAM);
 
     // Add transform passes.
@@ -47,7 +47,7 @@ ir_optimize_old(struct ir_module* ir)
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
     MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
-    MPM.run(ir->mod, MAM);
+    MPM.run(ir->Mod, MAM);
 
     return 0;
 }
@@ -76,7 +76,7 @@ ir_optimize(struct ir_module* ir)
     MPM = PB.buildModuleOptimizationPipeline(
         llvm::OptimizationLevel::O3, llvm::ThinOrFullLTOPhase::None);
 
-    MPM.run(ir->mod, MAM);
+    MPM.run(ir->Mod, MAM);
 
     return 0;
 }

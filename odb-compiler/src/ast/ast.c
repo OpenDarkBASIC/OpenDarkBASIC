@@ -477,8 +477,8 @@ ast_udt_read(
             || ast_node_type(*astp, member) == AST_CALL_LIKE,
         log_err("type: %d\n", ast_node_type(*astp, next)));
 
-    (*astp)->nodes[n].udt_read.member = member;
-    (*astp)->nodes[n].udt_read.next = next;
+    (*astp)->nodes[n].udt_read.left = member;
+    (*astp)->nodes[n].udt_read.right = next;
     (*astp)->nodes[n].udt_read.index = -1;
 
     return n;
@@ -504,8 +504,8 @@ ast_udt_write(
             || ast_node_type(*astp, member) == AST_CONTAINER_WRITE,
         log_err("type: %d\n", ast_node_type(*astp, next)));
 
-    (*astp)->nodes[n].udt_write.member = member;
-    (*astp)->nodes[n].udt_write.next = next;
+    (*astp)->nodes[n].udt_write.left = member;
+    (*astp)->nodes[n].udt_write.right = next;
     (*astp)->nodes[n].udt_write.index = -1;
 
     return n;
@@ -588,13 +588,13 @@ convert_lvalue_to_rvalue(struct ast* ast, ast_id lvalue)
     {
         union ast_node node = ast->nodes[lvalue];
         node.info.node_type = AST_UDT_READ;
-        node.udt_write.member = ast->nodes[lvalue].udt_read.member;
-        node.udt_write.next = ast->nodes[lvalue].udt_read.next;
+        node.udt_write.left = ast->nodes[lvalue].udt_read.left;
+        node.udt_write.right = ast->nodes[lvalue].udt_read.right;
         node.udt_write.index = ast->nodes[lvalue].udt_read.index;
         ast->nodes[lvalue] = node;
 
-        convert_lvalue_to_rvalue(ast, ast->nodes[lvalue].udt_write.member);
-        convert_lvalue_to_rvalue(ast, ast->nodes[lvalue].udt_write.next);
+        convert_lvalue_to_rvalue(ast, ast->nodes[lvalue].udt_write.left);
+        convert_lvalue_to_rvalue(ast, ast->nodes[lvalue].udt_write.right);
     }
     else
     {

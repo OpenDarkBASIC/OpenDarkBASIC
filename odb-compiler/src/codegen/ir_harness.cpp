@@ -32,7 +32,7 @@ call_dlopen(
         case TARGET_LINUX:
         case TARGET_MACOS: {
             llvm::Constant* CRTLD_LAZY
-                = llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0x00001));
+                = llvm::ConstantInt::get(ir->Ctx, llvm::APInt(32, 0x00001));
             return b.CreateCall(FDLOpen, {filepath, CRTLD_LAZY});
         }
 
@@ -306,9 +306,9 @@ gen_cmd_loader(
         struct ospath   path = plugins->data[plugin_id].filepath;
         llvm::StringRef path_ref(path.str.data, path.str.len);
         llvm::Constant* PathConstant = llvm::ConstantDataArray::getString(
-            ir->ctx, path_ref, /*AddNull=*/true);
+            ir->Ctx, path_ref, /*AddNull=*/true);
         llvm::GlobalVariable* GVPath = new llvm::GlobalVariable(
-            ir->mod,
+            ir->Mod,
             PathConstant->getType(),
             /*isConstant=*/true,
             llvm::GlobalVariable::PrivateLinkage,
@@ -333,9 +333,9 @@ gen_cmd_loader(
                 c_sym_name.data + c_sym_name.off, c_sym_name.len);
             llvm::Constant* SymNameConstant
                 = llvm::ConstantDataArray::getString(
-                    ir->ctx, c_sym_name_ref, /*AddNull=*/true);
+                    ir->Ctx, c_sym_name_ref, /*AddNull=*/true);
             llvm::GlobalVariable* GVSymName = new llvm::GlobalVariable(
-                ir->mod,
+                ir->Mod,
                 SymNameConstant->getType(),
                 /*isConstant=*/true,
                 llvm::GlobalVariable::PrivateLinkage,
@@ -343,12 +343,12 @@ gen_cmd_loader(
                 llvm::Twine(".cmd") + llvm::Twine(*pcmd) + "_name");
 
             llvm::GlobalVariable* GVCommandPtr = new llvm::GlobalVariable(
-                ir->mod,
-                llvm::PointerType::getUnqual(ir->ctx),
+                ir->Mod,
+                llvm::PointerType::getUnqual(ir->Ctx),
                 /*isConstant=*/false,
                 llvm::GlobalVariable::ExternalLinkage,
                 llvm::ConstantPointerNull::get(
-                    llvm::PointerType::getUnqual(ir->ctx)),
+                    llvm::PointerType::getUnqual(ir->Ctx)),
                 c_sym_name_ref);
 
             llvm::Value* print_str_sym
@@ -370,23 +370,23 @@ get_dlopen(
         case TARGET_MACOS:
             return llvm::Function::Create(
                 llvm::FunctionType::get(
-                    llvm::PointerType::getUnqual(ir->ctx),
-                    {llvm::PointerType::getUnqual(ir->ctx),
-                     llvm::Type::getInt32Ty(ir->ctx)},
+                    llvm::PointerType::getUnqual(ir->Ctx),
+                    {llvm::PointerType::getUnqual(ir->Ctx),
+                     llvm::Type::getInt32Ty(ir->Ctx)},
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
                 "dlopen",
-                ir->mod);
+                ir->Mod);
 
         case TARGET_WINDOWS: {
             llvm::Function* F = llvm::Function::Create(
                 llvm::FunctionType::get(
-                    llvm::PointerType::getUnqual(ir->ctx),
-                    {llvm::PointerType::getUnqual(ir->ctx)},
+                    llvm::PointerType::getUnqual(ir->Ctx),
+                    {llvm::PointerType::getUnqual(ir->Ctx)},
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
                 arch == TARGET_i386 ? "LoadLibraryA@4" : "LoadLibraryA",
-                ir->mod);
+                ir->Mod);
             F->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
             return F;
         }
@@ -406,23 +406,23 @@ get_dlsym(
         case TARGET_MACOS:
             return llvm::Function::Create(
                 llvm::FunctionType::get(
-                    llvm::PointerType::getUnqual(ir->ctx),
-                    {llvm::PointerType::getUnqual(ir->ctx),
-                     llvm::PointerType::getUnqual(ir->ctx)},
+                    llvm::PointerType::getUnqual(ir->Ctx),
+                    {llvm::PointerType::getUnqual(ir->Ctx),
+                     llvm::PointerType::getUnqual(ir->Ctx)},
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
                 "dlsym",
-                ir->mod);
+                ir->Mod);
         case TARGET_WINDOWS:
             return llvm::Function::Create(
                 llvm::FunctionType::get(
-                    llvm::PointerType::getUnqual(ir->ctx),
-                    {llvm::PointerType::getUnqual(ir->ctx),
-                     llvm::PointerType::getUnqual(ir->ctx)},
+                    llvm::PointerType::getUnqual(ir->Ctx),
+                    {llvm::PointerType::getUnqual(ir->Ctx),
+                     llvm::PointerType::getUnqual(ir->Ctx)},
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
                 arch == TARGET_i386 ? "GetProcAddress@8" : "GetProcAddress",
-                ir->mod);
+                ir->Mod);
     }
 
     return nullptr;
@@ -441,20 +441,20 @@ ir_create_harness(
 {
     llvm::Function* F = llvm::Function::Create(
         llvm::FunctionType::get(
-            llvm::Type::getInt32Ty(ir->ctx),
-            {llvm::Type::getInt32Ty(ir->ctx),
+            llvm::Type::getInt32Ty(ir->Ctx),
+            {llvm::Type::getInt32Ty(ir->Ctx),
              llvm::PointerType::getUnqual(
-                 llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(ir->ctx)))},
+                 llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(ir->Ctx)))},
             /*isVarArg=*/false),
         llvm::Function::ExternalLinkage,
         "main",
-        ir->mod);
+        ir->Mod);
 
     /* Import DLL/shared lib functions */
     llvm::Function* FDLOpen = get_dlopen(ir, arch, platform);
     llvm::Function* FDLSym = get_dlsym(ir, arch, platform);
 
-    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
+    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->Ctx, "", F);
     llvm::IRBuilder<> b(BB);
 
     llvm::StringMap<llvm::Value*> plugin_handles;
@@ -476,28 +476,28 @@ ir_create_harness(
     }
 
     llvm::Function* FSDKInit = llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getInt32Ty(ir->ctx), {}, false),
+        llvm::FunctionType::get(llvm::Type::getInt32Ty(ir->Ctx), {}, false),
         llvm::Function::ExternalLinkage,
         "odbrt_init",
-        ir->mod);
+        ir->Mod);
     b.CreateCall(FSDKInit, {});
 
     llvm::Function* FMainDBA = llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->Ctx), {}, false),
         llvm::Function::ExternalLinkage,
         llvm::Twine("dba_") + main_dba_name,
-        ir->mod);
+        ir->Mod);
     b.CreateCall(FMainDBA, {});
 
     llvm::Function* FSDKDeInit = llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
+        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->Ctx), {}, false),
         llvm::Function::ExternalLinkage,
         "odbrt_exit",
-        ir->mod);
+        ir->Mod);
     FSDKDeInit->setDoesNotReturn();
     b.CreateCall(FSDKDeInit, {});
 
-    b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));
+    b.CreateRet(llvm::ConstantInt::get(ir->Ctx, llvm::APInt(32, 0)));
 
 #if defined(ODBCOMPILER_IR_SANITY_CHECK)
     llvm::verifyFunction(*F);

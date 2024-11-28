@@ -132,11 +132,13 @@ output(const std::vector<std::string>& args)
     ospath_remove_ext(&maindbaname);
     log_dbg("maindbaname: {quote:%s}\n", ospath_cstr(maindbaname));
 
+    ir_global_init();
+
     log_info("Generating harness\n");
     struct ospath harnessobj = empty_ospath();
     ospath_set(&harnessobj, ospathc(tmpdir));
     ospath_join_cstr(&harnessobj, "odbharness.o");
-    struct ir_module* ir = ir_alloc("odbharness");
+    struct ir_module* ir = ir_alloc_module("odbharness", arch_, platform_);
     ir_create_harness(
         ir,
         *getPluginList(),
@@ -146,10 +148,10 @@ output(const std::vector<std::string>& args)
         getSDKType(),
         arch_,
         platform_);
-    ir_compile(ir, ospath_cstr(harnessobj), arch_, platform_);
+    ir_emit(ir, ospath_cstr(harnessobj));
     if (dumpIR_)
         ir_dump(ir);
-    ir_free(ir);
+    ir_free_module(ir);
 
     cmd_ids_deinit(used_cmds_list);
 
@@ -159,7 +161,7 @@ output(const std::vector<std::string>& args)
     ospath_set(&objfilepath, ospathc(tmpdir));
     ospath_join(&objfilepath, srcfilename);
     utf8_append_cstr(&objfilepath.str, ".o");
-    ir = ir_alloc(ospath_cstr(maindbaname));
+    ir = ir_alloc_module(ospath_cstr(maindbaname), arch_, platform_);
     ir_translate_ast(
         ir,
         getAST(),
@@ -173,8 +175,8 @@ output(const std::vector<std::string>& args)
         ir_optimize(ir);
     if (dumpIR_)
         ir_dump(ir);
-    ir_compile(ir, ospath_cstr(objfilepath), arch_, platform_);
-    ir_free(ir);
+    ir_emit(ir, ospath_cstr(objfilepath));
+    ir_free_module(ir);
 
     struct ospath rtlib = empty_ospath();
     switch (getSDKType())
@@ -311,6 +313,8 @@ output(const std::vector<std::string>& args)
     ospath_deinit(outdir);
     ospath_deinit(tmpdir);
     ospath_deinit(apdir);
+
+    ir_global_deinit();
 
     return true;
 }

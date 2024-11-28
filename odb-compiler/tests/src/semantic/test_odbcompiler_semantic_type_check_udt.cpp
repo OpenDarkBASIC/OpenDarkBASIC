@@ -160,9 +160,9 @@ TEST_F(NAME, read_udt_field)
     ast_id block26 = ast->nodes[block17].block.next;
     ast_id decl125 = ast->nodes[block26].block.stmt;
     ast_id udt_read24 = ast->nodes[decl125].var_decl1.init_expr;
-    ast_id var_read23 = ast->nodes[udt_read24].udt_read.next;
+    ast_id var_read23 = ast->nodes[udt_read24].udt_read.right;
     ast_id ident22 = ast->nodes[var_read23].var_read.identifier;
-    ast_id var_read21 = ast->nodes[udt_read24].udt_read.member;
+    ast_id var_read21 = ast->nodes[udt_read24].udt_read.left;
     ast_id ident20 = ast->nodes[var_read21].var_read.identifier;
     ast_id decl219 = ast->nodes[decl125].var_decl1.var_decl2;
     ast_id ident18 = ast->nodes[decl219].var_decl2.identifier;
