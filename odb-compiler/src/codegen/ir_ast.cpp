@@ -684,9 +684,9 @@ get_cmd_func_signature(
 
 static int
 process_command(
+    struct ir_module*                             ir,
     struct stack**                                stack,
     struct results**                              results,
-    struct ir_module*                             ir,
     llvm::IRBuilder<>&                            b,
     const struct ast*                             ast,
     const char*                                   source,
@@ -773,9 +773,9 @@ process_command(
 
 static int
 process_assignment(
+    struct ir_module*  ir,
     struct stack**     stack,
     struct results*    results,
-    struct ir_module*  ir,
     llvm::IRBuilder<>& builder,
     const struct ast*  ast,
     const char*        source,
@@ -786,14 +786,9 @@ process_assignment(
     ast_id              lvalue = ast->nodes[ass].assignment.lvalue;
     ast_id              expr = ast->nodes[ass].assignment.expr;
 
-    /* The convention we use is: The lvalue is responsible for allocating the
-     * storage space (CreateAlloca) and pushing that alloca to the results
-     * stack. The rvalue pops the alloca from the stack and stores its result
-     * into it. That's why the lvalue must be evaluated first */
-
-    if (stack_push_node(stack, expr) != 0)
-        return -1;
     if (stack_push_node(stack, lvalue) != 0)
+        return -1;
+    if (stack_push_node(stack, expr) != 0)
         return -1;
 
     return 0;
@@ -801,10 +796,10 @@ process_assignment(
 
 static int
 process_var_decl(
+    struct ir_module*     ir,
     struct stack**        stack,
     struct results**      results,
-    struct ir_module*     ir,
-    llvm::IRBuilder<>&    builder,
+    llvm::IRBuilder<>&    b,
     const char*           source,
     const struct ast*     ast,
     const struct typemap* udt_table,
@@ -827,10 +822,6 @@ process_var_decl(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
 
-    /* udt_init expects the parent node to allocate the space for its members.
-     * This is because returning UDTs from e.g. functions can't be done through
-     * registers (generally). Instead, it must be returned through an
-     * out-parameter. */
     llvm::AllocaInst** Ap;
     union type         type = ast_type_info(ast, identifier);
     struct utf8_span   span = ast->nodes[identifier].identifier.name;
@@ -843,7 +834,7 @@ process_var_decl(
         case HM_NEW: {
             if (type_is_primitive(type))
             {
-                *Ap = builder.CreateAlloca(
+                *Ap = b.CreateAlloca(
                     type_to_llvm(type, ast, source, &ir->Ctx),
                     nullptr,
                     llvm::StringRef(name.data + name.off, name.len));
@@ -866,7 +857,7 @@ process_var_decl(
 
                 llvm::StringRef TypeName(
                     type_name.data + type_name.off, type_name.len);
-                *Ap = builder.CreateAlloca(*StructTy, nullptr, TypeName);
+                *Ap = b.CreateAlloca(*StructTy, nullptr, TypeName);
             }
             break;
         }
@@ -875,10 +866,6 @@ process_var_decl(
     /* Evaluate init expression */
     if (num_results == 0)
     {
-        if (!type_is_primitive(type))
-            if (results_push(results, *Ap) != 0)
-                return -1;
-
         if (stack_push_node(stack, init_expr) != 0)
             return -1;
 
@@ -886,14 +873,23 @@ process_var_decl(
         return 0;
     }
 
-    /* If the variable is a primitive type, then it will have been pushed to the
-     * results-stack. if it is a complex type, then the child node will have
-     * already written to the alloca because it is handled as an out-parameter
-     */
+    llvm::Value* InitExpr = *results_pop(*results);
     if (type_is_primitive(type))
+        b.CreateStore(InitExpr, *Ap);
+    else
     {
-        llvm::Value* InitExpr = *results_pop(*results);
-        builder.CreateStore(InitExpr, *Ap);
+        ast_id             udt_decl = type_udt_decl(type);
+        struct utf8_view   name = type_name(type, ast, source);
+        struct view_scope  key = {name, ast_scope(ast, udt_decl)};
+        llvm::StructType** StructTy = typemap_find(udt_table, key);
+        ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
+
+        const llvm::DataLayout& DL = ir->Mod.getDataLayout();
+        llvm::TypeSize          StructTySize = DL.getTypeAllocSize(*StructTy);
+        llvm::Type*             I32Ty = llvm::Type::getInt32Ty(ir->Ctx);
+        llvm::Value* NumBytes = llvm::ConstantInt::get(I32Ty, StructTySize);
+        llvm::Align  Align = DL.getPrefTypeAlign(*StructTy);
+        b.CreateMemCpy(*Ap, Align, InitExpr, Align, NumBytes);
     }
 
     stack_pop(*stack);
@@ -930,16 +926,15 @@ process_var_read(
         (*A)->getAllocatedType(),
         *A,
         llvm::StringRef(name.data + name.off, name.len));
-    b.CreateStore(Read, *results_pop(*results));
-    return 0;
+    return results_push(results, Read);
 }
 
 static int
 process_var_write(
+    struct ir_module*  ir,
     struct stack**     stack,
     struct results**   results,
-    struct ir_module*  ir,
-    llvm::IRBuilder<>& builder,
+    llvm::IRBuilder<>& b,
     const struct ast*  ast,
     const char*        source,
     struct allocamap** allocamap)
@@ -961,21 +956,21 @@ process_var_write(
     {
         case HM_OOM: return -1;
         case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap != NULL, (void)0); break;
-        case HM_NEW:
-            *Ap = builder.CreateAlloca(
-                type_to_llvm(type, ast, source, &ir->Ctx),
-                NULL,
-                llvm::StringRef(name.data + name.off, name.len));
+        case HM_NEW: {
+            llvm::StringRef Name(name.data + name.off, name.len);
+            llvm::Type*     Ty = type_to_llvm(type, ast, source, &ir->Ctx);
+            *Ap = b.CreateAlloca(Ty, nullptr, Name);
             break;
+        }
     }
 
-    if (results_push(results, *Ap) != 0)
-        return -1;
+    b.CreateStore(*results_pop(*results), *Ap);
     return 0;
 }
 
 static int
 process_udt_init(
+    struct ir_module*     ir,
     struct stack**        stack,
     struct results**      results,
     llvm::IRBuilder<>&    b,
@@ -984,10 +979,10 @@ process_udt_init(
     const struct typemap* udt_table,
     struct allocamap**    allocamap)
 {
-    int                 struct_idx, prim_idx;
+    int                 struct_idx;
     ast_id              members, udt_init;
     struct stack_entry* entry = vec_last(*stack);
-    int                 num_primitives = entry->num_results;
+    int                 num_results = entry->num_results;
     udt_init = entry->node;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -997,92 +992,78 @@ process_udt_init(
     members = ast->nodes[udt_init].udt_init.arglist;
     ODBUTIL_DEBUG_ASSERT(members > -1, (void)0);
 
-    if (num_primitives == 0)
+    if (num_results == 0)
     {
-        for (; members > -1; members = ast->nodes[members].arglist.next)
+        for (; members > -1;
+             members = ast->nodes[members].arglist.next, ++num_results)
         {
-            ast_id     member = ast->nodes[members].arglist.expr;
-            union type member_type = ast_type_info(ast, member);
-            if (!type_is_primitive(member_type))
-                continue;
-
+            ast_id member = ast->nodes[members].arglist.expr;
             if (stack_push_node(stack, member) != 0)
                 return -1;
-            num_primitives++;
         }
+        stack_reverse_range(
+            *stack, stack_count(*stack) - num_results, stack_count(*stack));
 
-        if (num_primitives > 0)
-        {
-            stack_reverse_range(
-                *stack,
-                stack_count(*stack) - num_primitives,
-                stack_count(*stack));
-            entry->num_results = num_primitives;
-            return 0;
-        }
+        entry->num_results = num_results;
+        return 0;
     }
 
-    /* Get parent struct type */
+    llvm::ArrayRef<llvm::Value*> Members(
+        results_pop_by(*results, num_results), num_results);
+
+    /* Allocate struct memory */
     ast_id udt_decl = type_udt_decl(ast_type_info(ast, udt_init));
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
     ast_id            udt_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
-    struct utf8_span  type_span = ast->nodes[udt_ident].identifier.name;
-    struct utf8_view  type_name = utf8_span_view(source, type_span);
-    struct view_scope key = {type_name, ast_scope(ast, udt_decl)};
+    struct utf8_span  span = ast->nodes[udt_ident].identifier.name;
+    struct utf8_view  name = utf8_span_view(source, span);
+    struct view_scope key = {name, ast_scope(ast, udt_decl)};
     llvm::StructType** StructTy = typemap_find(udt_table, key);
     ODBUTIL_DEBUG_ASSERT(StructTy, (void)0);
+    llvm::StringRef   TypeName(name.data + name.off, name.len);
+    llvm::AllocaInst* StructPtr = b.CreateAlloca(*StructTy, nullptr, TypeName);
 
-    llvm::ArrayRef<llvm::Value*> PrimitiveMembers(
-        results_pop_by(*results, num_primitives), num_primitives);
-    llvm::Value* StructPtr = *results_pop(*results);
-    stack_pop(*stack);
-
-    for (prim_idx = 0, struct_idx = 0; members > -1;
+    for (struct_idx = 0; members > -1;
          members = ast->nodes[members].arglist.next, ++struct_idx)
     {
-        ast_id     member = ast->nodes[members].arglist.expr;
-        union type member_type = ast_type_info(ast, member);
-        if (!type_is_primitive(member_type))
-            continue;
-
+        ast_id       member = ast->nodes[members].arglist.expr;
+        union type   member_type = ast_type_info(ast, member);
         llvm::Value* MemberPtr
             = b.CreateStructGEP(*StructTy, StructPtr, struct_idx);
-        llvm::Value* InitValue = PrimitiveMembers[prim_idx++];
-        b.CreateStore(InitValue, MemberPtr);
-    }
 
-    for (struct_idx = 0, members = ast->nodes[udt_init].udt_init.arglist;
-         members > -1;
-         members = ast->nodes[members].arglist.next, ++struct_idx)
-    {
-        ast_id     member = ast->nodes[members].arglist.expr;
-        union type member_type = ast_type_info(ast, member);
         if (type_is_primitive(member_type))
-            continue;
+        {
+            llvm::Value* InitValue = Members[struct_idx];
+            b.CreateStore(InitValue, MemberPtr);
+        }
+        else
+        {
+            ast_id            udt_member_decl = type_udt_decl(member_type);
+            int32_t           member_scope = ast_scope(ast, udt_member_decl);
+            struct utf8_view  member_name = type_name(member_type, ast, source);
+            struct view_scope member_key = {member_name, member_scope};
+            llvm::StructType** MemberStructTy
+                = typemap_find(udt_table, member_key);
+            ODBUTIL_DEBUG_ASSERT(MemberStructTy != nullptr, (void)0);
 
-        /* udt_init expects the parent node to allocate the space for
-         * its members. This is because returning UDTs from e.g.
-         * functions can't be done through registers (generally).
-         * Instead, it must be returned through an out-parameter. In
-         * this case, we don't need to create a new alloca, but instead
-         * we calculate an offset into our parent's alloca, which
-         * becomes the base pointer of the nested structure. */
-        llvm::Value* MemberPtr
-            = b.CreateStructGEP(*StructTy, StructPtr, struct_idx);
-        if (results_push(results, MemberPtr) != 0)
-            return -1;
-        if (stack_push_node(stack, member) != 0)
-            return -1;
+            const llvm::DataLayout& DL = ir->Mod.getDataLayout();
+            llvm::TypeSize StructTySize = DL.getTypeAllocSize(*MemberStructTy);
+            llvm::Type*    I32Ty = llvm::Type::getInt32Ty(ir->Ctx);
+            llvm::Value* NumBytes = llvm::ConstantInt::get(I32Ty, StructTySize);
+            llvm::Align  Align = DL.getPrefTypeAlign(*StructTy);
+            b.CreateMemCpy(
+                MemberPtr, Align, Members[struct_idx], Align, NumBytes);
+        }
     }
 
-    return 0;
+    stack_pop(*stack);
+    return results_push(results, StructPtr);
 }
 
-static int
+static llvm::Value*
 udt_read_deref(
-    struct results**      results,
     struct ir_module*     ir,
     llvm::IRBuilder<>&    b,
     const struct ast*     ast,
@@ -1094,6 +1075,8 @@ udt_read_deref(
     if (ast_node_type(ast, parent) == AST_UDT_READ)
     {
         ast_id left = ast->nodes[parent].udt_read.left;
+        ast_id right = ast->nodes[parent].udt_read.right;
+
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, left) == AST_VAR_READ,
             log_err("type: %d\n", ast_node_type(ast, left)));
@@ -1110,54 +1093,29 @@ udt_read_deref(
 
         llvm::Value* MemberPtr = b.CreateStructGEP(
             *StructTy, StructPtr, ast->nodes[parent].udt_read.index);
-        return udt_read_deref(
-            results,
-            ir,
-            b,
-            ast,
-            ast->nodes[parent].udt_read.right,
-            source,
-            udt_table,
-            MemberPtr);
+
+        return udt_read_deref(ir, b, ast, right, source, udt_table, MemberPtr);
     }
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, parent) == AST_VAR_READ,
         log_err("type: %d\n", ast_node_type(ast, parent)));
 
-    if (type_is_primitive(ast_type_info(ast, parent)))
+    union type type = ast_type_info(ast, parent);
+    if (type_is_primitive(type))
     {
-        union type   type = ast_type_info(ast, parent);
-        llvm::Type*  Ty = type_to_llvm(type, ast, source, &ir->Ctx);
-        llvm::Value* Read = b.CreateLoad(Ty, StructPtr);
-        b.CreateStore(Read, *results_pop(*results));
-        return 0;
+        llvm::Type* Ty = type_to_llvm(type, ast, source, &ir->Ctx);
+        return b.CreateLoad(Ty, StructPtr);
     }
-    else
-    {
-        union type         type = ast_type_info(ast, parent);
-        ast_id             udt_decl = type_udt_decl(type);
-        struct utf8_view   name = type_name(type, ast, source);
-        struct view_scope  key = {name, ast_scope(ast, udt_decl)};
-        llvm::StructType** StructTy = typemap_find(udt_table, key);
-        ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
 
-        const llvm::DataLayout& DL = ir->Mod.getDataLayout();
-        llvm::TypeSize          StructTySize = DL.getTypeAllocSize(*StructTy);
-        llvm::Type*             I32Ty = llvm::Type::getInt32Ty(ir->Ctx);
-        llvm::Value* Bytes = llvm::ConstantInt::get(I32Ty, StructTySize);
-        llvm::Align  Align = DL.getPrefTypeAlign(*StructTy);
-        b.CreateMemCpy(*results_pop(*results), Align, StructPtr, Align, Bytes);
-
-        return 0;
-    }
+    return StructPtr;
 }
 
 static int
 process_udt_read(
+    struct ir_module*     ir,
     struct stack**        stack,
     struct results**      results,
-    struct ir_module*     ir,
     llvm::IRBuilder<>&    b,
     const struct ast*     ast,
     const char*           source,
@@ -1182,21 +1140,23 @@ process_udt_read(
     llvm::AllocaInst** A = allocamap_find(*allocamap, left_key);
     ODBUTIL_DEBUG_ASSERT(A != nullptr, (void)0);
 
-    return udt_read_deref(results, ir, b, ast, udt_read, source, udt_table, *A);
+    llvm::Value* Read
+        = udt_read_deref(ir, b, ast, udt_read, source, udt_table, *A);
+    return results_push(results, Read);
 }
 
-static llvm::Value*
+static int
 udt_write_deref(
+    struct ir_module*     ir,
     llvm::IRBuilder<>&    b,
     const struct ast*     ast,
     ast_id                parent,
     const char*           source,
     const struct typemap* udt_table,
+    llvm::Value*          LoadedValue,
     llvm::Value*          StructPtr)
 {
-    if (ast_node_type(ast, parent) == AST_VAR_WRITE)
-        return StructPtr;
-    else if (ast_node_type(ast, parent) == AST_UDT_WRITE)
+    if (ast_node_type(ast, parent) == AST_UDT_WRITE)
     {
         ast_id left = ast->nodes[parent].udt_write.left;
         ODBUTIL_DEBUG_ASSERT(
@@ -1216,15 +1176,40 @@ udt_write_deref(
         llvm::Value* MemberPtr = b.CreateStructGEP(
             *StructTy, StructPtr, ast->nodes[parent].udt_write.index);
         ast_id right = ast->nodes[parent].udt_write.right;
-        return udt_write_deref(b, ast, right, source, udt_table, MemberPtr);
+        return udt_write_deref(
+            ir, b, ast, right, source, udt_table, LoadedValue, MemberPtr);
     }
 
-    ODBUTIL_DEBUG_ASSERT(0, (void)0);
-    return nullptr;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, parent) == AST_VAR_WRITE,
+        log_err("type: %d\n", ast_node_type(ast, parent)));
+
+    union type type = ast_type_info(ast, parent);
+    if (type_is_primitive(type))
+    {
+        b.CreateStore(LoadedValue, StructPtr);
+        return 0;
+    }
+
+    ast_id             udt_decl = type_udt_decl(type);
+    struct utf8_view   name = type_name(type, ast, source);
+    struct view_scope  key = {name, ast_scope(ast, udt_decl)};
+    llvm::StructType** StructTy = typemap_find(udt_table, key);
+    ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
+
+    const llvm::DataLayout& DL = ir->Mod.getDataLayout();
+    llvm::TypeSize          StructTySize = DL.getTypeAllocSize(*StructTy);
+    llvm::Type*             I32Ty = llvm::Type::getInt32Ty(ir->Ctx);
+    llvm::Value* NumBytes = llvm::ConstantInt::get(I32Ty, StructTySize);
+    llvm::Align  Align = DL.getPrefTypeAlign(*StructTy);
+    b.CreateMemCpy(StructPtr, Align, LoadedValue, Align, NumBytes);
+
+    return 0;
 }
 
 static int
 process_udt_write(
+    struct ir_module*     ir,
     struct stack**        stack,
     struct results**      results,
     llvm::IRBuilder<>&    b,
@@ -1251,15 +1236,16 @@ process_udt_write(
     llvm::AllocaInst** A = allocamap_find(*allocamap, left_key);
     ODBUTIL_DEBUG_ASSERT(A != nullptr, (void)0);
 
-    return results_push(
-        results, udt_write_deref(b, ast, udt_write, source, udt_table, *A));
+    llvm::Value* LoadedValue = *results_pop(*results);
+    return udt_write_deref(
+        ir, b, ast, udt_write, source, udt_table, LoadedValue, *A);
 }
 
 static int
 process_binop(
+    struct ir_module*  ir,
     struct stack**     stack,
     struct results**   results,
-    struct ir_module*  ir,
     llvm::IRBuilder<>& b,
     const struct ast*  ast)
 {
@@ -1519,9 +1505,9 @@ process_unop()
 
 static int
 process_cond(
+    struct ir_module*  ir,
     struct stack**     stack,
     struct results**   results,
-    struct ir_module*  ir,
     llvm::IRBuilder<>& b,
     const struct ast*  ast)
 {
@@ -1628,8 +1614,8 @@ process_cond(
 
 static int
 process_loop(
-    struct stack**      stack,
     struct ir_module*   ir,
+    struct stack**      stack,
     llvm::IRBuilder<>&  b,
     const struct ast*   ast,
     struct loop_stack** loop_stack)
@@ -1805,9 +1791,9 @@ process_loop_exit(
 
 static int
 process_func(
+    struct ir_module*                       ir,
     struct stack**                          stack,
     struct results**                        results,
-    struct ir_module*                       ir,
     llvm::IRBuilder<>&                      b,
     const struct ast*                       ast,
     const char*                             source,
@@ -2004,9 +1990,9 @@ process_func_call(
 
 static int
 process_cast(
+    struct ir_module*  ir,
     struct stack**     stack,
     struct results**   results,
-    struct ir_module*  ir,
     llvm::IRBuilder<>& builder,
     const struct ast*  ast,
     const char*        source)
@@ -2152,9 +2138,9 @@ process_node(
         case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_COMMAND:
             return process_command(
+                ir,
                 stack,
                 results,
-                ir,
                 b,
                 ast,
                 source,
@@ -2163,39 +2149,39 @@ process_node(
                 CmdFuncTable);
         case AST_ASSIGNMENT:
             return process_assignment(
-                stack, *results, ir, b, ast, source, allocamap);
+                ir, stack, *results, b, ast, source, allocamap);
         case AST_VAR_DECL1:
             return process_var_decl(
-                stack, results, ir, b, source, ast, udt_table, allocamap);
+                ir, stack, results, b, source, ast, udt_table, allocamap);
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_VAR_READ:
             return process_var_read(stack, results, b, ast, source, allocamap);
         case AST_VAR_WRITE:
             return process_var_write(
-                stack, results, ir, b, ast, source, allocamap);
+                ir, stack, results, b, ast, source, allocamap);
         case AST_UDT_DECL:
             /* Skip over declarations, they do nothing */
             stack_pop(*stack);
             return 0;
         case AST_UDT_INIT:
             return process_udt_init(
-                stack, results, b, ast, source, udt_table, allocamap);
+                ir, stack, results, b, ast, source, udt_table, allocamap);
         case AST_UDT_READ:
             return process_udt_read(
-                stack, results, ir, b, ast, source, udt_table, allocamap);
+                ir, stack, results, b, ast, source, udt_table, allocamap);
         case AST_UDT_WRITE:
             return process_udt_write(
-                stack, results, b, ast, source, udt_table, allocamap);
+                ir, stack, results, b, ast, source, udt_table, allocamap);
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             ODBUTIL_DEBUG_ASSERT(
                 0, log_err("Identifiers should never be pushed\n"));
             return -1;
-        case AST_BINOP: return process_binop(stack, results, ir, b, ast);
+        case AST_BINOP: return process_binop(ir, stack, results, b, ast);
         case AST_UNOP: return process_unop();
-        case AST_COND: return process_cond(stack, results, ir, b, ast);
+        case AST_COND: return process_cond(ir, stack, results, b, ast);
         case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-        case AST_LOOP1: return process_loop(stack, ir, b, ast, loop_stack);
+        case AST_LOOP1: return process_loop(ir, stack, b, ast, loop_stack);
         case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -2210,7 +2196,7 @@ process_node(
             return 0;
         case AST_FUNC1:
             return process_func(
-                stack, results, ir, b, ast, source, allocamap, DbFuncTable);
+                ir, stack, results, b, ast, source, allocamap, DbFuncTable);
         case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -2296,7 +2282,7 @@ process_node(
             llvm::StringRef  Str(source + span.off, span.len);
             return results_push(results, StringTable.find(Str)->getValue());
         }
-        case AST_CAST: return process_cast(stack, results, ir, b, ast, source);
+        case AST_CAST: return process_cast(ir, stack, results, b, ast, source);
         case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_AS_EXPR: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
