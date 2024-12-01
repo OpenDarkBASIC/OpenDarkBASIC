@@ -24,7 +24,7 @@ target_compile_options (odb-asttool
         $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
-if (ODBASTOOL_WERROR)
+if (ODBASTTOOL_WERROR)
     target_compile_options (odb-asttool
         PRIVATE
             $<$<C_COMPILER_ID:GNU>:-Werror>

@@ -3158,6 +3158,9 @@ process_node(
             /* Is handled by AST_COND */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return DEP_ERROR;
+        case AST_SELECT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_CASELIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_CASE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP1: return process_loop(stack, astp, n, filename, source);
         case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;

@@ -278,6 +278,9 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
             break;
         case AST_COND: break;
         case AST_COND_BRANCHES: break;
+        case AST_SELECT: break;
+        case AST_CASELIST: break;
+        case AST_CASE: break;
         case AST_LOOP1:
             if (!utf8_equal(
                     utf8_span_view(source, ast->nodes[n1].loop1.name),

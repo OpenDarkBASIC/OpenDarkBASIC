@@ -140,6 +140,7 @@ ast_block_append_stmt(
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(block > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(stmt > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, block) == AST_BLOCK,
         log_err("type: %d\n", ast_node_type(ast, block)));
@@ -712,6 +713,106 @@ ast_cond_branches(
 
     ast->nodes[n].cond_branches.yes = yes;
     ast->nodes[n].cond_branches.no = no;
+
+    return n;
+}
+
+ast_id
+ast_select(
+    struct ast** astp, ast_id expr, ast_id caselist, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_SELECT, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        caselist == -1 || ast_node_type(ast, caselist) == AST_CASELIST,
+        log_err("type: %d\n", ast_node_type(ast, caselist)));
+
+    ast->nodes[n].select.expr = expr;
+    ast->nodes[n].select.caselist = caselist;
+
+    return n;
+}
+
+ast_id
+ast_caselist(struct ast** astp, ast_id case_, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_CASELIST, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(case_ > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, case_) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(*astp, case_)));
+
+    (*astp)->nodes[n].caselist.case_ = case_;
+
+    return n;
+}
+
+void
+ast_caselist_append(
+    struct ast*      ast,
+    ast_id           caselist,
+    ast_id           append_caselist,
+    struct utf8_span location)
+{
+    ODBUTIL_DEBUG_ASSERT(caselist > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, caselist) == AST_CASELIST,
+        log_err("type: %d\n", ast_node_type(ast, caselist)));
+    ODBUTIL_DEBUG_ASSERT(append_caselist > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, append_caselist) == AST_CASELIST,
+        log_err("type: %d\n", ast_node_type(ast, append_caselist)));
+
+    while (ast->nodes[caselist].caselist.next > -1)
+        caselist = ast->nodes[caselist].caselist.next;
+
+    ast->nodes[caselist].caselist.next = append_caselist;
+}
+
+ast_id
+ast_caselist_append_case(
+    struct ast** astp, ast_id caselist, ast_id case_, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_CASELIST, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(caselist > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, caselist) == AST_CASELIST,
+        log_err("type: %d\n", ast_node_type(ast, caselist)));
+    ODBUTIL_DEBUG_ASSERT(case_ > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, case_) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, case_)));
+
+    ast_caselist_append(ast, caselist, n, location);
+    ast->nodes[n].caselist.case_ = case_;
+
+    return n;
+}
+
+ast_id
+ast_case(struct ast** astp, ast_id expr, ast_id body, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_CASE, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        body == -1 || ast_node_type(ast, body) == AST_BLOCK,
+        log_err("type: %d\n", ast_node_type(ast, body)));
+
+    ast->nodes[n].case_.expr = expr;
+    ast->nodes[n].case_.body = body;
 
     return n;
 }

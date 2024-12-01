@@ -35,6 +35,9 @@ child_changed:
 
         case AST_COND: return -1;
         case AST_COND_BRANCHES: return -1;
+        case AST_SELECT: return -1;
+        case AST_CASELIST: return -1;
+        case AST_CASE: return -1;
         case AST_LOOP1: return -1;
         case AST_LOOP2: return -1;
         case AST_LOOP_FOR1: return -1;

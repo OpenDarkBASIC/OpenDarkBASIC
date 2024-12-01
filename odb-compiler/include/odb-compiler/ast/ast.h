@@ -86,6 +86,9 @@ enum ast_type
     AST_UNOP,
     AST_COND,
     AST_COND_BRANCHES,
+    AST_SELECT,
+    AST_CASELIST,
+    AST_CASE,
     AST_LOOP1,
     AST_LOOP2,
     AST_LOOP_FOR1,
@@ -273,6 +276,24 @@ union ast_node
         ast_id yes;
         ast_id no;
     } cond_branches;
+
+    struct {
+        struct info info;
+        ast_id expr;
+        ast_id caselist;
+    } select;
+
+    struct {
+        struct info info;
+        ast_id case_;
+        ast_id next;
+    } caselist;
+
+    struct {
+        struct info info;
+        ast_id expr;
+        ast_id body;
+    } case_;
 
     struct {
         struct info info;
@@ -563,6 +584,11 @@ ast_id ast_binop(
 ast_id ast_unop(struct ast** astp, enum unop_type op, ast_id expr, struct utf8_span location);
 ast_id ast_cond(struct ast** astp, ast_id expr, ast_id cond_branches, struct utf8_span location);
 ast_id ast_cond_branches(struct ast** astp, ast_id yes, ast_id no, struct utf8_span location);
+ast_id ast_select(struct ast** astp, ast_id expr, ast_id caselist, struct utf8_span location);
+ast_id ast_caselist(struct ast** astp, ast_id case_, struct utf8_span location);
+void ast_caselist_append(struct ast* ast, ast_id caselist, ast_id append_caselist, struct utf8_span location);
+ast_id ast_caselist_append_case(struct ast** astp, ast_id caselist, ast_id case_, struct utf8_span location);
+ast_id ast_case(struct ast** astp, ast_id expr, ast_id body, struct utf8_span location);
 ast_id ast_loop(
     struct ast** astp,
     ast_id body,

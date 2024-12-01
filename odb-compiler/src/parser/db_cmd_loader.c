@@ -13,6 +13,7 @@ enum token
 
     TOK_TYPE = 256,
     TOK_STRING,
+    TOK_IDENTIFIER,
     TOK_LOAD_PLUGIN,
     TOK_LOAD_COMMAND,
 };
@@ -124,7 +125,7 @@ scan_next(struct parser* p)
         SCAN_TYPE("float", TYPE_F32)
         SCAN_TYPE("double", TYPE_F64)
         SCAN_TYPE("string", TYPE_STRING)
-#undef SCAN_STRING_VALUE
+#undef SCAN_TYPE
 
 #define SCAN_CHAR(char)                                                        \
     if (p->source[p->head] == char)                                            \
@@ -144,6 +145,21 @@ scan_next(struct parser* p)
                 return parser_error(p, "Missing closing quote on string.\n");
             p->value.str.len = p->head++ - p->value.str.off;
             return TOK_STRING;
+        }
+
+        /* Identifier [a-zA-Z_-][a-zA-Z0-9_-]* */
+        if (isalpha(p->source[p->head]) || p->source[p->head] == '_'
+            || p->source[p->head] == '-')
+        {
+            p->value.str.off = p->head++;
+            while (p->head != p->end
+                   && (isalnum(p->source[p->head]) || p->source[p->head] == '_'
+                       || p->source[p->head] == '-'))
+            {
+                p->head++;
+            }
+            p->value.str.len = p->head - p->value.str.off;
+            return TOK_IDENTIFIER;
         }
 
         p->tail = ++p->head;

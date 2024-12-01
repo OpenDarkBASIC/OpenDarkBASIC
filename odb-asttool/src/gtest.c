@@ -35,6 +35,9 @@
     X(AST_UNOP, "unop", "unop", "expr", "")                                    \
     X(AST_COND, "cond", "cond", "expr", "cond_branches")                       \
     X(AST_COND_BRANCHES, "branches", "cond_branches", "yes", "no")             \
+    X(AST_SELECT, "select", "select", "expr", "caselist")                      \
+    X(AST_CASELIST, "caselist", "caselist", "case_", "next")                   \
+    X(AST_CASE, "case_", "case_", "expr", "body")                              \
     X(AST_LOOP1, "loop1_", "loop1", "loop2", "loop_for1")                      \
     X(AST_LOOP2, "loop2_", "loop2", "body", "post_body")                       \
     X(AST_LOOP_FOR1, "for1_", "loop_for1", "loop_for2", "init")                \
@@ -423,6 +426,9 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
             break;
         case AST_COND: break;
         case AST_COND_BRANCHES: break;
+        case AST_SELECT: break;
+        case AST_CASELIST: break;
+        case AST_CASE: break;
         case AST_LOOP1:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);

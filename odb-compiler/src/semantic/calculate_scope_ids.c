@@ -127,6 +127,9 @@ process_node(
         case AST_BINOP:
         case AST_UNOP:
         case AST_COND:
+        case AST_SELECT:
+        case AST_CASELIST:
+        case AST_CASE:
         case AST_COND_BRANCHES:
         case AST_LOOP1:
         case AST_LOOP2:
@@ -192,6 +195,7 @@ static const struct semantic_check* depends[] = {
        care about calculating scope IDs */
     &semantic_loop_for,
     &semantic_loop_cont,
+    &semantic_select,
     NULL};
 
 const struct semantic_check semantic_calculate_scope_ids

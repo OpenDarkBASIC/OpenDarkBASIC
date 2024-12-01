@@ -10,6 +10,7 @@ rem ---------------------------------------------------------------------------
 #load command "end draw", "libraylib.so", "EndDrawing", void
 #load command "cls", "libraylib.so", "ClearBackground", void, dword
 #load command "text", "libraylib.so", "DrawText", void, string, integer, integer, integer, dword
+#load command "text width", "libraylib.so", "MeasureText", integer, string, integer
 #load command "keystate", "libraylib.so", "IsKeyDown", boolean, integer
 rem #load command "circle", "libraylib.so", "DrawCircleV", void, Vector2, float, dword
 
@@ -44,15 +45,13 @@ endtype
 type Player
     id as integer
     pos as Vector2
+    dims as Vector2
     health as integer
     speed# as float
 endtype
 
-player as Player = Player(1, Vector2(50, 50), 100, screen.width / 100)
+player as Player = Player(1, Vector2(50, 50), Vector2(200, 80), 100, screen.width / 100)
 player.pos = GetCenterPos(screen)
-
-window should close()
-incclamp(10, 5, 20)
 
 rem ---------------------------------------------------------------------------
 rem Main loop
@@ -65,15 +64,16 @@ while window should close() = 0
     left = keystate(KEY_A) or keystate(KEY_LEFT)
     down = keystate(KEY_S) or keystate(KEY_DOWN)
     up = keystate(KEY_W) or keystate(KEY_UP)
-    if right then player.pos.x# = incclamp(player.pos.x#, player.speed#, screen.width - 200)
-    if left then player.pos.x# = decclamp(player.pos.x#, player.speed#, 0)
-    if down then player.pos.y# = incclamp(player.pos.y#, player.speed#, screen.height - 80)
-    if up then player.pos.y# = decclamp(player.pos.y#, player.speed#, 0)
+    if right then player.pos.x# = incclamp(player.pos.x#, player.speed#, screen.width - player.dims.x#/2)
+    if left then player.pos.x# = decclamp(player.pos.x#, player.speed#, player.dims.x#/2)
+    if down then player.pos.y# = incclamp(player.pos.y#, player.speed#, screen.height - player.dims.y#/2)
+    if up then player.pos.y# = decclamp(player.pos.y#, player.speed#, player.dims.y#/2)
 
     rem render
     begin draw
         cls 0xFF502020
-        DrawText(player.pos)
+        CenterText("Use WASD to move", Vector2(screen.width / 2, 50))
+        DrawText(player.pos, player.dims)
     end draw
 endwhile
 
@@ -85,12 +85,19 @@ rem ---------------------------------------------------------------------------
 rem Functions
 rem ---------------------------------------------------------------------------
 
-function GetCenterPos(screen as Screen) as Vector2
+function GetCenterPos(screen)
 endfunction Vector2(screen.width / 2, screen.height / 2)
 
-function DrawText(pos)
-    text "yeaaaah boiii", pos.x#, pos.y#, 20, 0xFFFFFFFF
-    text "oi ya cunt", pos.x#, pos.y# + 40, 40, 0xFFA0AA00
+function DrawText(pos, dims)
+    x# = pos.x# - dims.x#/2
+    y# = pos.y# - dims.y#/2
+    text "yeaaaah boiii", x#, y#, 20, 0xFFFFFFFF
+    text "oi ya cunt", x#, y# + 40, 40, 0xFFA0AA00
+endfunction
+
+function CenterText(str, pos)
+    width = text width(str, 20)
+    text str, pos.x# - width/2, pos.y# - 10, 20, 0xFFFFFFFF
 endfunction
 
 function incclamp(x, amount, max)

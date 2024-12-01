@@ -47,6 +47,11 @@ then,               TOK_THEN
 else,               TOK_ELSE
 elseif,             TOK_ELSEIF
 endif,              TOK_ENDIF
+select,             TOK_SELECT
+endselect,          TOK_ENDSELECT
+case,               TOK_CASE
+endcase,            TOK_ENDCASE
+default,            TOK_DEFAULT
 /* Loops */
 while,              TOK_WHILE
 endwhile,           TOK_ENDWHILE
@@ -71,12 +76,8 @@ exitfunction,       TOK_EXITFUNCTION
 endfunction,        TOK_ENDFUNCTION
 %%
 
-//case,             TOK_CASE
 //complex,          TOK_COMPLEX
 //dim,              TOK_DIM
-//default,          TOK_DEFAULT
-//endcase,          TOK_ENDCASE
-//endselect,        TOK_ENDSELECT
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO
 //mat2x2,           TOK_MAT2X2
@@ -91,7 +92,6 @@ endfunction,        TOK_ENDFUNCTION
 //mod,              TOK_MOD
 //quat,             TOK_QUAT
 //return,           TOK_RETURN
-//select,           TOK_SELECT
 //type,             TOK_TYPE
 //undim,            TOK_UNDIM
 //vec2,             TOK_VEC2

@@ -138,6 +138,11 @@
 %token ELSEIF
 %token NO_ELSE
 %token ENDIF
+%token SELECT
+%token ENDSELECT
+%token CASE
+%token ENDCASE
+%token DEFAULT
 /* Loops */
 %token WHILE
 %token ENDWHILE
@@ -248,6 +253,7 @@
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
+%type<node_value> select caselist case
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_for_init loop_next loop_cont loop_exit
 %type<string_value> loop_name
 %type<node_value> as_type as_type_auto maybe_as_type
@@ -287,6 +293,7 @@ iblock
   ;
 stmt
   : conditional                             { $$ = $1; }
+  | select                                  { $$ = $1; }
   | loop                                    { $$ = $1; }
   | func                                    { $$ = $1; }
   | var_decl                                { $$ = $1; }
@@ -455,6 +462,26 @@ cond_next
                                               $$ = ast_block(ctx->astp, cond, @$); }
   | ELSE maybe_block ENDIF                  { $$ = $2; }
   | ENDIF                                   { $$ = -1; }
+  ;
+select
+  : SELECT expr
+        maybe_seps caselist maybe_seps
+    ENDSELECT                               { $$ = ast_select(ctx->astp, $2, $4, @$); }
+  | SELECT expr
+        seps
+    ENDSELECT                               { $$ = ast_select(ctx->astp, $2, -1, @$); }
+  ;
+caselist
+  : caselist seps case                      { $$ = $1; ast_caselist_append_case(ctx->astp, $$, $3, @$); }
+  | case                                    { $$ = ast_caselist(ctx->astp, $1, @$); }
+  ;
+case
+  : CASE expr
+        maybe_block
+    ENDCASE                                 { $$ = ast_case(ctx->astp, $2, $3, @$); }
+  | CASE DEFAULT
+        maybe_block
+    ENDCASE                                 { $$ = ast_case(ctx->astp, -1, $3, @$); }
   ;
 loop
   : loop_do                                 { $$ = $1; }

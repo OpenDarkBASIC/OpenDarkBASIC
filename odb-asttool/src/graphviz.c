@@ -165,6 +165,9 @@ get_node_style(enum ast_type node_type, const struct style* style)
         case AST_UNOP: return &style->operator;
         case AST_COND: return &style->control_flow;
         case AST_COND_BRANCHES: return &style->control_flow;
+        case AST_SELECT: return &style->control_flow;
+        case AST_CASELIST: return &style->list;
+        case AST_CASE: return &style->control_flow;
         case AST_LOOP1: return &style->control_flow;
         case AST_LOOP2: return &style->control_flow;
         case AST_LOOP_FOR1: return &style->control_flow;
@@ -324,6 +327,14 @@ write_node(
             break;
         case AST_COND: fprintf(fp, "if"); break;
         case AST_COND_BRANCHES: fprintf(fp, "branches"); break;
+        case AST_SELECT: fprintf(fp, "select"); break;
+        case AST_CASELIST: fprintf(fp, "caselist"); break;
+        case AST_CASE:
+            if (ast->nodes[n].case_.expr > -1)
+                fprintf(fp, "case");
+            else
+                fprintf(fp, "case default");
+            break;
         case AST_LOOP1:
             if (ast->nodes[n].loop1.name.len)
                 fprintf(
@@ -370,9 +381,7 @@ write_node(
             break;
         case AST_FUNC_EXIT: fprintf(fp, "exitfunction"); break;
         case AST_FUNC_CALL: fprintf(fp, "call"); break;
-        case AST_CALL_LIKE:
-            fprintf(fp, "call (unresolved)");
-            break;
+        case AST_CALL_LIKE: fprintf(fp, "call (unresolved)"); break;
         case AST_CONTAINER_WRITE: fprintf(fp, "container_write"); break;
         case AST_BOOLEAN_LITERAL:
             fprintf(
@@ -498,6 +507,9 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_UNOP: NAMES("expr", "")
         case AST_COND: NAMES("expr", "cond_branches")
         case AST_COND_BRANCHES: NAMES("yes", "no")
+        case AST_SELECT: NAMES("expr", "caselist")
+        case AST_CASELIST: NAMES("case_", "next")
+        case AST_CASE: NAMES("expr", "body")
         case AST_LOOP1: NAMES("loop_body", "loop_for1")
         case AST_LOOP2: NAMES("body", "post_body")
         case AST_LOOP_FOR1: NAMES("loop_for2", "init")

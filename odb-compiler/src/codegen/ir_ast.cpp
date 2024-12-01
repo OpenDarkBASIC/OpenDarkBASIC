@@ -2109,6 +2109,9 @@ process_node(
         case AST_UNOP: return process_unop();
         case AST_COND: return process_cond(ir, stack, results, b, ast);
         case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_SELECT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_CASELIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_CASE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP1: return process_loop(ir, stack, b, ast, loop_stack);
         case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
