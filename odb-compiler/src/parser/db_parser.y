@@ -547,7 +547,8 @@ maybe_scope
   |                                         { $$ = SCOPE_LOCAL; }
   ;
 as_type
-  : AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_BOOL), @$); }
+  : AS VOID                                 { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_VOID), @$); }
+  | AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_BOOL), @$); }
   | AS BYTE                                 { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U8), @$); }
   | AS WORD                                 { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_U16), @$); }
   | AS INTEGER                              { $$ = ast_as_type(ctx->astp, primitive_type(TYPE_I32), @$); }

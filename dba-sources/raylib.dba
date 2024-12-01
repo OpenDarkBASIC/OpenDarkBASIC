@@ -1,3 +1,7 @@
+rem ---------------------------------------------------------------------------
+rem Define raylib commands, types and constants
+rem ---------------------------------------------------------------------------
+
 #load command "init window", "libraylib.so", "InitWindow", void, integer, integer, string
 #load command "close window", "libraylib.so", "CloseWindow", void
 #load command "sync rate", "libraylib.so", "SetTargetFPS", void, integer
@@ -18,6 +22,20 @@ KEY_A = 65
 KEY_S = 83
 KEY_D = 68
 
+rem ---------------------------------------------------------------------------
+rem Beginning of DarkBASIC program
+rem ---------------------------------------------------------------------------
+
+type Screen
+    width as integer
+    height as integer
+endtype
+
+rem screen as Screen = Screen(1920, 1280)
+screen as Screen = Screen(800, 600)
+init window screen.width, screen.height, "raylib hello world"
+sync rate 60
+
 type Vector2
     x# as float
     y# as float
@@ -30,21 +48,16 @@ type Player
     speed# as float
 endtype
 
-type Screen
-    width as integer
-    height as integer
-endtype
-
-rem screen as Screen = Screen(1920, 1280)
-screen as Screen = Screen(800, 600)
 player as Player = Player(1, Vector2(50, 50), 100, screen.width / 100)
-player.pos = Vector2(50, 50)
-
-init window screen.width, screen.height, "raylib hello world"
-sync rate 60
+player.pos = GetCenterPos(screen)
 
 window should close()
 incclamp(10, 5, 20)
+
+rem ---------------------------------------------------------------------------
+rem Main loop
+rem ---------------------------------------------------------------------------
+
 while window should close() = 0
 
     rem move player with WASD or arrow keys
@@ -57,17 +70,27 @@ while window should close() = 0
     if down then player.pos.y# = incclamp(player.pos.y#, player.speed#, screen.height - 80)
     if up then player.pos.y# = decclamp(player.pos.y#, player.speed#, 0)
 
+    rem render
     begin draw
         cls 0xFF502020
-        DrawText(player.pos.x#, player.pos.y#)
+        DrawText(player.pos)
     end draw
 endwhile
 
+rem Clean up and exit program
 close window
+end
 
-function DrawText(x, y)
-    text "yeaaaah boiii", x, y, 20, 0xFFFFFFFF
-    text "oi ya cunt", x, y + 40, 40, 0xFFA0AA00
+rem ---------------------------------------------------------------------------
+rem Functions
+rem ---------------------------------------------------------------------------
+
+function GetCenterPos(screen as Screen) as Vector2
+endfunction Vector2(screen.width / 2, screen.height / 2)
+
+function DrawText(pos)
+    text "yeaaaah boiii", pos.x#, pos.y#, 20, 0xFFFFFFFF
+    text "oi ya cunt", pos.x#, pos.y# + 40, 40, 0xFFA0AA00
 endfunction
 
 function incclamp(x, amount, max)

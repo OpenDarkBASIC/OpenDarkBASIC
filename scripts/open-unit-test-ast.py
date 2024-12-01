@@ -3,7 +3,6 @@ import os
 import subprocess
 
 odb_path = "./build-Debug/bin/x86_64/linux/bin"
-asttool_args = "--scopes --types"
 fname = sys.argv[1]
 line_num = int(sys.argv[2])
 ast_type = int(sys.argv[3])
@@ -56,7 +55,10 @@ def find_parser_source(line_num):
 def find_asttool_args(line_num):
     if "/* odb-asttool --format" not in lines[line_num]:
         raise RuntimeError("Failed to find asttool args")
-    args = lines[line_num].strip("/* ").split(" ")[1:]
+    args = lines[line_num]\
+            .strip("/* ")\
+            .replace("--format gtest", "")\
+            .split(" ")[1:]
     while "*" in lines[line_num+1]:
         args += lines[line_num+1].strip("/* ").split(" ")
         line_num += 1

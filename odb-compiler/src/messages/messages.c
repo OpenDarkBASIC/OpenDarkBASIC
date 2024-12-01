@@ -355,7 +355,7 @@ err_func_return_incompatible_types(
 {
     ast_id           f2, identifier;
     struct utf8_span ret_type_loc;
-    struct utf8_view ret_tname, ident_tname;
+    struct utf8_view func_tname, ret_tname;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -366,12 +366,12 @@ err_func_return_incompatible_types(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
-    ident_tname = type_name(ast_type_info(ast, identifier), ast, source);
 
     f2 = ast->nodes[func].func1.func2;
     ret_type_loc = ast->nodes[f2].func2.as > -1
                        ? ast_loc(ast, ast->nodes[f2].func2.as)
                        : ast_loc(ast, identifier);
+    func_tname = type_name(ast_type_info(ast, func), ast, source);
     ret_tname = type_name(ast_type_info(ast, retval), ast, source);
 
     log_flc(filename, source, ast_loc(ast, retval));
@@ -381,8 +381,8 @@ err_func_return_incompatible_types(
         "incompatible.\n",
         ret_tname.len,
         ret_tname.data + ret_tname.off,
-        ident_tname.len,
-        ident_tname.data + ident_tname.off);
+        func_tname.len,
+        func_tname.data + func_tname.off);
     log_excerpt_1(source, ast_loc(ast, retval), ret_tname, 0);
 
     log_flc(filename, source, ret_type_loc);
@@ -1373,7 +1373,7 @@ warn_func_return_implicit_conversion(
 {
     ast_id           f2, identifier;
     struct utf8_span ret_type_loc;
-    struct utf8_view ret_tname, ident_tname;
+    struct utf8_view func_tname, ret_tname;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1384,12 +1384,12 @@ warn_func_return_implicit_conversion(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
-    ident_tname = type_name(ast_type_info(ast, identifier), ast, source);
 
     f2 = ast->nodes[func].func1.func2;
     ret_type_loc = ast->nodes[f2].func2.as > -1
                        ? ast_loc(ast, ast->nodes[f2].func2.as)
                        : ast_loc(ast, identifier);
+    func_tname = type_name(ast_type_info(ast, func), ast, source);
     ret_tname = type_name(ast_type_info(ast, retval), ast, source);
 
     log_flc(filename, source, ast_loc(ast, retval));
@@ -1398,8 +1398,8 @@ warn_func_return_implicit_conversion(
         "return.\n",
         ret_tname.len,
         ret_tname.data + ret_tname.off,
-        ident_tname.len,
-        ident_tname.data + ident_tname.off);
+        func_tname.len,
+        func_tname.data + func_tname.off);
     log_excerpt_1(source, ast_loc(ast, retval), ret_tname, 0);
 
     log_flc(filename, source, ret_type_loc);
@@ -1423,7 +1423,7 @@ warn_func_return_truncation(
 {
     ast_id           f2, identifier;
     struct utf8_span ret_type_loc;
-    struct utf8_view ident_tname, ret_tname;
+    struct utf8_view func_tname, ret_tname;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1434,12 +1434,12 @@ warn_func_return_truncation(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
-    ident_tname = type_name(ast_type_info(ast, identifier), ast, source);
 
     f2 = ast->nodes[func].func1.func2;
     ret_type_loc = ast->nodes[f2].func2.as > -1
                        ? ast_loc(ast, ast->nodes[f2].func2.as)
                        : ast_loc(ast, identifier);
+    func_tname = type_name(ast_type_info(ast, func), ast, source);
     ret_tname = type_name(ast_type_info(ast, retval), ast, source);
 
     log_flc(filename, source, ast_loc(ast, retval));
@@ -1448,8 +1448,8 @@ warn_func_return_truncation(
         "in function return.\n",
         ret_tname.len,
         ret_tname.data + ret_tname.off,
-        ident_tname.len,
-        ident_tname.data + ident_tname.off);
+        func_tname.len,
+        func_tname.data + func_tname.off);
     log_excerpt_1(source, ast_loc(ast, retval), ret_tname, 0);
 
     log_flc(filename, source, ret_type_loc);

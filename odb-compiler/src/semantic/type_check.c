@@ -2456,7 +2456,15 @@ process_func(
      * no explicit type was used, then we default to VOID */
     set_or_get_return_type(*astp, func, primitive_type(TYPE_VOID));
 
-    /* TODO: Type check identifier's return type with explicit_type */
+    /* Ensure a return value exists if the function was explicitly declared
+     * to return a value */
+    if (retval < 0 && ast_type_info(*astp, func).primitive != TYPE_VOID)
+    {
+        struct utf8_span ret_loc
+            = (*astp)->nodes[func].func1.endfunction_location;
+        err_func_missing_return_value(*astp, func, ret_loc, filename, source);
+        return DEP_ERROR;
+    }
 
     /* TODO: Type check function's annotation
     ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);

@@ -338,7 +338,35 @@ TEST_F(NAME, func_returns_result_of_another_func)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    // TODO: Check
+    /* odb-asttool --format gtest --node-filter func1,call --types */
+    ASSERT_THAT(ast_count(ast), Eq(104));
+
+    ast_id block10 = ast->root;
+    ast_id block37 = ast->nodes[block10].block.next;
+    ast_id block81 = ast->nodes[block37].block.next;
+    ast_id block55 = ast->nodes[block81].block.next;
+    ast_id block101 = ast->nodes[block55].block.next;
+    ast_id f1_100 = ast->nodes[block101].block.stmt;
+    ast_id func_poly54 = ast->nodes[block55].block.stmt;
+    ast_id f1_50 = ast->nodes[func_poly54].func_poly.func;
+    ast_id f1_80 = ast->nodes[block81].block.stmt;
+    ast_id f2_78 = ast->nodes[f1_80].func1.func2;
+    ast_id f3_77 = ast->nodes[f2_78].func2.func3;
+    ast_id f4_67 = ast->nodes[f3_77].func3.func4;
+    ast_id call66 = ast->nodes[f4_67].func4.retval;
+    ast_id func_poly36 = ast->nodes[block37].block.stmt;
+    ast_id f1_32 = ast->nodes[func_poly36].func_poly.func;
+    ast_id cmd9 = ast->nodes[block10].block.stmt;
+    ast_id arglist8 = ast->nodes[cmd9].cmd.arglist;
+    ast_id call7 = ast->nodes[arglist8].arglist.expr;
+
+    ASSERT_THAT(ast_type_info(ast, call7).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f1_32).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f1_50).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, call66).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f1_80).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f1_100).primitive, Eq(TYPE_U8));
+    /* odb-asttool end */
 }
 
 TEST_F(NAME, func_result_as_arg_to_call)
@@ -353,7 +381,33 @@ TEST_F(NAME, func_result_as_arg_to_call)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    // TODO: Check
+    /* odb-asttool --format gtest --node-filter func1,call --types */
+    ASSERT_THAT(ast_count(ast), Eq(88));
+
+    ast_id block13 = ast->root;
+    ast_id block31 = ast->nodes[block13].block.next;
+    ast_id block85 = ast->nodes[block31].block.next;
+    ast_id block49 = ast->nodes[block85].block.next;
+    ast_id block66 = ast->nodes[block49].block.next;
+    ast_id f1_65 = ast->nodes[block66].block.stmt;
+    ast_id func_poly48 = ast->nodes[block49].block.stmt;
+    ast_id f1_44 = ast->nodes[func_poly48].func_poly.func;
+    ast_id f1_84 = ast->nodes[block85].block.stmt;
+    ast_id func_poly30 = ast->nodes[block31].block.stmt;
+    ast_id f1_26 = ast->nodes[func_poly30].func_poly.func;
+    ast_id cmd12 = ast->nodes[block13].block.stmt;
+    ast_id arglist11 = ast->nodes[cmd12].cmd.arglist;
+    ast_id call10 = ast->nodes[arglist11].arglist.expr;
+    ast_id arglist7 = ast->nodes[call10].func_call.arglist;
+    ast_id call6 = ast->nodes[arglist7].arglist.expr;
+
+    ASSERT_THAT(ast_type_info(ast, call6).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, call10).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f1_26).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f1_44).primitive, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, f1_65).primitive, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, f1_84).primitive, Eq(TYPE_U8));
+    /* odb-asttool end */
 }
 
 TEST_F(NAME, recursion_1)
@@ -366,8 +420,6 @@ TEST_F(NAME, recursion_1)
           "ENDFUNCTION fib(n-1) + fib(n-2)\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-
-    // TODO: Check
 }
 
 TEST_F(NAME, recursion_2)
@@ -415,8 +467,7 @@ TEST_F(NAME, nested_recursion_2)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    /* odb-asttool --format gtest --types */
-    /* odb-asttool end */
+    // TODO: Check
 }
 
 TEST_F(NAME, nested_recursion_3)
@@ -448,6 +499,8 @@ TEST_F(NAME, recursion_with_local_variable)
           "endfunction n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+
+    // TODO: Check
 }
 
 TEST_F(NAME, recursion_with_self_referencing_variable)
@@ -460,6 +513,8 @@ TEST_F(NAME, recursion_with_self_referencing_variable)
           "endfunction n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     // TODO ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+
+    // TODO: Check
 }
 
 TEST_F(NAME, infinite_recursion)
@@ -470,5 +525,7 @@ TEST_F(NAME, infinite_recursion)
           "ENDFUNCTION foo()\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+
+    // TODO: Check
 }
 

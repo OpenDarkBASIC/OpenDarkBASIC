@@ -3,6 +3,16 @@
 #include "odb-compiler/ast/ast.h"
 #include <stdio.h>
 
+/*
+ * enum, var, node, left, right
+ *
+ * enum: Enum name
+ * var: Prefix name of the variable to declare in the unit test code.
+ *      For example, "f1_" will result in "ast_id f1_36 = ..."
+ * node: Field name in the AST node struct.
+ * left: Field name of the left child node.
+ * right: Field name of the right child node.
+ */
 #define NAMES_LIST                                                             \
     X(AST_GC, "", "", "", "")                                                  \
     X(AST_BLOCK, "block", "block", "stmt", "next")                             \
@@ -207,6 +217,8 @@ is_node_in_filter(const struct ast* ast, ast_id n, const char* filter)
 #define X(enum, var, node, left, right)                                        \
     case enum:                                                                 \
         if (is_node_name_in_filter(var, filter))                               \
+            return 1;                                                          \
+        if (is_node_name_in_filter(node, filter))                              \
             return 1;                                                          \
         break;
         NAMES_LIST
@@ -585,7 +597,9 @@ write_type_check(FILE* fp, const struct ast* ast, ast_id n)
     write_var_name(fp, ast, n);
     fprintf(fp, ")");
 
-    if (type_is_primitive(type))
+    if (type_is_invalid(type))
+        fprintf(fp, ".primitive, Eq(TYPE_INVALID");
+    else if (type_is_primitive(type))
     {
         fprintf(fp, ".primitive, Eq(");
         write_primitive_type_enum_name(fp, type.primitive);
