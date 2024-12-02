@@ -293,6 +293,7 @@ union ast_node
         struct info info;
         ast_id expr;
         ast_id body;
+        struct utf8_span case_loc;
     } case_;
 
     struct {
@@ -588,7 +589,7 @@ ast_id ast_select(struct ast** astp, ast_id expr, ast_id caselist, struct utf8_s
 ast_id ast_caselist(struct ast** astp, ast_id case_, struct utf8_span location);
 void ast_caselist_append(struct ast* ast, ast_id caselist, ast_id append_caselist, struct utf8_span location);
 ast_id ast_caselist_append_case(struct ast** astp, ast_id caselist, ast_id case_, struct utf8_span location);
-ast_id ast_case(struct ast** astp, ast_id expr, ast_id body, struct utf8_span location);
+ast_id ast_case(struct ast** astp, ast_id expr, ast_id body, struct utf8_span case_loc, struct utf8_span location);
 ast_id ast_loop(
     struct ast** astp,
     ast_id body,

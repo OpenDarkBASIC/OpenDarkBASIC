@@ -78,6 +78,7 @@ TEST_F(NAME, test)
 
 TEST_F(NAME, multiple_default_cases)
 {
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     const char* source
         = "SELECT in\n"
           "    CASE DEFAULT\n"
@@ -90,18 +91,15 @@ TEST_F(NAME, multiple_default_cases)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_select), Eq(-1));
 
-    // TODO log output
+    EXPECT_THAT(
+        log(),
+        LogEq("test:5:5\n"
+              "error: Multiple default cases in select statement.\n"
+              " 5 | CASE DEFAULT\n"
+              "   | ^~~~~~~~~~~<\n"
+              "test:2:5\n"
+              "note: First default case defined here:\n"
+              " 2 | CASE DEFAULT\n"
+              "   | ^~~~~~~~~~~<\n"));
 }
 
-TEST_F(NAME, select_void_func)
-{
-    const char* source
-        = "SELECT test()\n"
-          "ENDSELECT\n"
-          "FUNCTION test() AS VOID\n"
-          "ENDFUNCTION\n";
-    ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(semantic(&semantic_select), Eq(-1));
-
-    // TODO log output
-}

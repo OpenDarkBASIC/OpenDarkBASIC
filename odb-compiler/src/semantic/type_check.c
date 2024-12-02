@@ -2188,6 +2188,64 @@ process_cond(
 }
 
 static enum process_result
+process_select(
+    struct stack** stack,
+    struct ast**   astp,
+    ast_id         select,
+    const char*    filename,
+    const char*    source)
+{
+    ast_id  caselist, expr;
+    int32_t top = stack_count(*stack);
+
+    ODBUTIL_DEBUG_ASSERT(select > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, select) == AST_SELECT,
+        log_err("type: %d\n", ast_node_type(*astp, select)));
+
+    expr = (*astp)->nodes[select].select.expr;
+    caselist = (*astp)->nodes[select].select.caselist;
+    ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, caselist) == AST_CASELIST,
+        log_err("type: %d\n", ast_node_type(*astp, caselist)));
+
+    if (caselist > -1 && type_is_invalid(ast_type_info(*astp, caselist)))
+        stack_push_entry(stack, select, caselist);
+    if (type_is_invalid(ast_type_info(*astp, expr)))
+        stack_push_entry(stack, select, expr);
+
+    if (stack_count(*stack) != top)
+        return DEP_ADDED_CHILDREN;
+
+    return DEP_SOLVED;
+}
+
+static enum process_result
+process_caselist(struct stack** stack, struct ast* ast, ast_id caselist)
+{
+    ast_id  case_, next;
+    int32_t top = stack_count(*stack);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, caselist) == AST_CASELIST,
+        log_err("type: %d\n", ast_node_type(ast, caselist)));
+
+    next = ast->nodes[caselist].caselist.next;
+    case_ = ast->nodes[caselist].caselist.case_;
+
+    if (next > -1 && type_is_invalid(ast_type_info(ast, next)))
+        stack_push_entry(stack, caselist, next);
+    if (type_is_invalid(ast_type_info(ast, case_)))
+        stack_push_entry(stack, caselist, case_);
+
+    if (stack_count(*stack) != top)
+        return DEP_ADDED_CHILDREN;
+
+    return DEP_SOLVED;
+}
+
+static enum process_result
 process_loop(
     struct stack** stack,
     struct ast**   astp,
@@ -3158,7 +3216,7 @@ process_node(
             /* Is handled by AST_COND */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return DEP_ERROR;
-        case AST_SELECT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_SELECT: process_select();
         case AST_CASELIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_CASE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP1: return process_loop(stack, astp, n, filename, source);

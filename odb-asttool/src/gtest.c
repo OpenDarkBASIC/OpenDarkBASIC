@@ -428,7 +428,15 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
         case AST_COND_BRANCHES: break;
         case AST_SELECT: break;
         case AST_CASELIST: break;
-        case AST_CASE: break;
+        case AST_CASE:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].case_.case_loc, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].case_.case_loc.off,
+                ast->nodes[n].case_.case_loc.len);
+            break;
         case AST_LOOP1:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);

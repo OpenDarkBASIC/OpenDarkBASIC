@@ -16,13 +16,14 @@ local function var_to_node_name(value)
     local special_cases = {
         ["ident"] = "identifier",
         ["ass"] = "assignment",
+        ["default_case"] = "case_",
     }
     return special_cases[value] or value
 end
 
 ls.add_snippets("c", {
     s({ trig = "ast", desc = "Access AST node" },
-        fmt("{}->nodes[{}].{}.{};", {
+        fmt("{}->nodes[{}].{}.{}", {
             c(1, { i(1, "ast"), i(2, "(*astp)") }),
             i(2, "node", { key = "varname" }),
             c(3, {

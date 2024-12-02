@@ -589,6 +589,37 @@ err_param_redeclaration(
 }
 
 int
+err_select_duplicate_default(
+    const struct ast* ast,
+    ast_id            default_case,
+    ast_id            first_default_case,
+    const char*       filename,
+    const char*       source)
+{
+    struct utf8_span loc, first_loc;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, default_case) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, default_case)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, first_default_case) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, first_default_case)));
+
+    loc = ast->nodes[default_case].case_.case_loc;
+    first_loc = ast->nodes[first_default_case].case_.case_loc;
+
+    log_flc(filename, source, loc);
+    log_err("Multiple default cases in select statement.\n");
+    log_excerpt_1(source, loc, empty_utf8_view(), 0);
+
+    log_flc(filename, source, first_loc);
+    log_note("First default case defined here:\n");
+    log_excerpt_1(source, first_loc, empty_utf8_view(), 0);
+
+    return -1;
+}
+
+int
 err_unterminated_remark(
     struct utf8_span location, const char* filename, const char* source)
 {

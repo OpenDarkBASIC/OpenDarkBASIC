@@ -478,10 +478,10 @@ caselist
 case
   : CASE expr
         maybe_block
-    ENDCASE                                 { $$ = ast_case(ctx->astp, $2, $3, @$); }
+    ENDCASE                                 { $$ = ast_case(ctx->astp, $2, $3, utf8_span_union(@1, @2), @$); }
   | CASE DEFAULT
         maybe_block
-    ENDCASE                                 { $$ = ast_case(ctx->astp, -1, $3, @$); }
+    ENDCASE                                 { $$ = ast_case(ctx->astp, -1, $3, utf8_span_union(@1, @2), @$); }
   ;
 loop
   : loop_do                                 { $$ = $1; }

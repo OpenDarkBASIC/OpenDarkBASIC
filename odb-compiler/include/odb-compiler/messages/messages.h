@@ -132,6 +132,13 @@ err_param_redeclaration(
     const char*       filename,
     const char*       source);
 int
+err_select_duplicate_default(
+    const struct ast* ast,
+    ast_id            default_case,
+    ast_id            first_default_case,
+    const char*       filename,
+    const char*       source);
+int
 err_unterminated_remark(
     struct utf8_span location, const char* filename, const char* source);
 int

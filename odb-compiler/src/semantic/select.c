@@ -129,6 +129,41 @@ convert_select_to_primitives(
 }
 
 static int
+report_duplicate_default_case(
+    const struct ast* ast,
+    ast_id            select,
+    const char*       filename,
+    const char*       source)
+{
+    ast_id caselist, first_default_case;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, select) == AST_SELECT,
+        log_err("type: %d\n", ast_node_type(ast, select)));
+    caselist = ast->nodes[select].select.caselist;
+
+    first_default_case = -1;
+    for (; caselist > -1; caselist = ast->nodes[caselist].caselist.next)
+    {
+        ast_id default_case = ast->nodes[caselist].caselist.case_;
+        ast_id expr = ast->nodes[default_case].case_.expr;
+        if (expr > -1)
+            continue;
+
+        if (first_default_case == -1)
+        {
+            first_default_case = default_case;
+            continue;
+        }
+
+        return err_select_duplicate_default(
+            ast, default_case, first_default_case, filename, source);
+    }
+
+    return 0;
+}
+
+static int
 select(
     struct ast**              tus,
     int                       tu_count,
@@ -151,6 +186,8 @@ select(
         if (ast_node_type(*astp, n) != AST_SELECT)
             continue;
 
+        if (report_duplicate_default_case(ast, n, filename, source) != 0)
+            return -1;
         if (convert_select_to_primitives(astp, n, filename, source) != 0)
             return -1;
     }
@@ -159,6 +196,6 @@ select(
     return 0;
 }
 
-static const struct semantic_check* depends[] = {NULL};
+static const struct semantic_check* depends[] = {&semantic_type_check, NULL};
 
 const struct semantic_check semantic_select = {select, depends, "select"};

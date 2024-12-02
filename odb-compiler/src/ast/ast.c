@@ -800,7 +800,12 @@ ast_caselist_append_case(
 }
 
 ast_id
-ast_case(struct ast** astp, ast_id expr, ast_id body, struct utf8_span location)
+ast_case(
+    struct ast**     astp,
+    ast_id           expr,
+    ast_id           body,
+    struct utf8_span case_loc,
+    struct utf8_span location)
 {
     ast_id      n = new_node(astp, AST_CASE, location);
     struct ast* ast = *astp;
@@ -813,6 +818,7 @@ ast_case(struct ast** astp, ast_id expr, ast_id body, struct utf8_span location)
 
     ast->nodes[n].case_.expr = expr;
     ast->nodes[n].case_.body = body;
+    ast->nodes[n].case_.case_loc = case_loc;
 
     return n;
 }

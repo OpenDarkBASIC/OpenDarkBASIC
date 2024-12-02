@@ -195,7 +195,6 @@ static const struct semantic_check* depends[] = {
        care about calculating scope IDs */
     &semantic_loop_for,
     &semantic_loop_cont,
-    &semantic_select,
     NULL};
 
 const struct semantic_check semantic_calculate_scope_ids
