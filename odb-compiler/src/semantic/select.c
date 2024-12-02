@@ -10,7 +10,7 @@ static ast_id
 find_default_case(const struct ast* ast, ast_id caselist)
 {
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, caselist) == AST_CASELIST,
+        caselist == -1 || ast_node_type(ast, caselist) == AST_CASELIST,
         log_err("type: %d\n", ast_node_type(ast, caselist)));
 
     for (; caselist > -1; caselist = ast->nodes[caselist].caselist.next)

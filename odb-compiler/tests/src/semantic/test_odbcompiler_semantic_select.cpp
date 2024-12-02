@@ -75,3 +75,33 @@ TEST_F(NAME, test)
     ast_id ident25 = ast->nodes[decl228].var_decl2.identifier;
     /* odb-asttool end */
 }
+
+TEST_F(NAME, multiple_default_cases)
+{
+    const char* source
+        = "SELECT in\n"
+          "    CASE DEFAULT\n"
+          "        PRINT \"default1\"\n"
+          "    ENDCASE\n"
+          "    CASE DEFAULT\n"
+          "        PRINT \"default2\"\n"
+          "    ENDCASE\n"
+          "ENDSELECT\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_select), Eq(-1));
+
+    // TODO log output
+}
+
+TEST_F(NAME, select_void_func)
+{
+    const char* source
+        = "SELECT test()\n"
+          "ENDSELECT\n"
+          "FUNCTION test() AS VOID\n"
+          "ENDFUNCTION\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_select), Eq(-1));
+
+    // TODO log output
+}

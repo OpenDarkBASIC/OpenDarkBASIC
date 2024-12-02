@@ -55,3 +55,4 @@ TEST_F(NAME, return_value_but_func_is_void)
               " 1 | FUNCTION test() AS VOID\n"
               "   |                 ^~~~~~<\n"));
 }
+
