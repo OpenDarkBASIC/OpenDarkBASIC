@@ -132,6 +132,13 @@ err_param_redeclaration(
     const char*       filename,
     const char*       source);
 int
+err_select_incompatible_types(
+    const struct ast* ast,
+    ast_id            select,
+    ast_id            case_,
+    const char*       filename,
+    const char*       source);
+int
 err_select_duplicate_default(
     const struct ast* ast,
     ast_id            default_case,
@@ -333,6 +340,20 @@ warn_loop_for_incorrect_next(
     ast_id      loop_var,
     const char* filename,
     const char* source);
+void
+warn_select_implicit_conversion(
+    const struct ast* ast,
+    ast_id            select,
+    ast_id            case_,
+    const char*       filename,
+    const char*       source);
+void
+warn_select_truncation(
+    const struct ast* ast,
+    ast_id            select,
+    ast_id            case_,
+    const char*       filename,
+    const char*       source);
 void
 warn_var_decl_implicit_conversion(
     const struct ast* ast,

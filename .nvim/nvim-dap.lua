@@ -1,4 +1,5 @@
 local dap = require("dap")
+local last_dba = vim.fn.getcwd() .. '/dba-sources/'
 
 dap.set_log_level("TRACE")
 
@@ -94,7 +95,11 @@ dap.configurations.cpp = {
         cwd         = "${workspaceFolder}/build-Debug/bin",
         stopOnEntry = false,
         args        = function()
-            local dba_file = vim.fn.input('Path to DBA: ', vim.fn.getcwd() .. '/dba-sources/', 'file')
+            local current_fname = vim.api.nvim_buf_get_name(0)
+            if current_fname:match(".dba$") then
+                last_dba = current_fname
+            end
+            local dba_file = vim.fn.input('Path to DBA: ', last_dba, 'file')
             local output = "${workspaceFolder}/build-Debug/bin/" .. vim.fs.basename(dba_file) .. ".exe"
             return { "-b", "-c", "--dba", dba_file, "--output", output, "--exec" }
         end,
@@ -143,3 +148,23 @@ dap.configurations.cpp = {
 }
 
 dap.configurations.c = dap.configurations.cpp
+
+dap.configurations.basic = {
+    {
+        name        = "Run DBA",
+        type        = "lldb",
+        request     = "launch",
+        program     = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-cli",
+        cwd         = "${workspaceFolder}/build-Debug/bin",
+        stopOnEntry = false,
+        args        = function()
+            local current_fname = vim.api.nvim_buf_get_name(0)
+            if current_fname:match(".dba$") then
+                last_dba = current_fname
+            end
+            local dba_file = vim.fn.input('Path to DBA: ', last_dba, 'file')
+            local output = "${workspaceFolder}/build-Debug/bin/" .. vim.fs.basename(dba_file) .. ".exe"
+            return { "-b", "-c", "--dba", dba_file, "--output", output, "--exec" }
+        end,
+    },
+}

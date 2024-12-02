@@ -1,9 +1,9 @@
 select 1
     case default
-        stdout "default"
+        print stdout "default"
     endcase
     case 1
-        stdout "1"
+        print stdout "1"
     endcase
 endselect
 

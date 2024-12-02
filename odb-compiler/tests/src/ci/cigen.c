@@ -967,9 +967,20 @@ gen_source(
             *name = '_';
         }
 
-        /* Call odb-cli to compile the program */
         mstream_fmt(ms, "TEST_F(NAME, %s)" NL, files->file[f].dbaname);
         mstream_cstr(ms, "{" NL);
+
+        /* Ensure the output directory exists */
+        mstream_cstr(ms, "    struct ospath outdir = empty_ospath();" NL);
+        mstream_fmt(
+            ms,
+            "    ospath_set_cstr(&outdir, \"../../../ci-tests/%s/%s\");" NL,
+            cfg->suite_name,
+            files->file[f].dbaname);
+        mstream_cstr(ms, "    ASSERT_THAT(fs_make_path(outdir), Eq(0));" NL);
+        mstream_cstr(ms, "    ospath_deinit(outdir);" NL NL);
+
+        /* Call odb-cli to compile the program */
         /* clang-format off */
         mstream_fmt(
             ms,
@@ -1016,7 +1027,7 @@ gen_source(
         mstream_cstr(
             ms,
             "        &out, &err, 3000), Eq(0)) << std::string(err.data, "
-            "err.len);" NL);
+            "err.len);" NL NL);
         mstream_cstr(ms, "    ASSERT_THAT(out, Utf8Eq(\"\"));" NL);
         /* Compiler will generate output on stderr, but it's hard to predict
          * what it will be exactly */

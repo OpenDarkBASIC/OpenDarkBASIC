@@ -27,19 +27,29 @@ static ast_id
 create_hidden_var_identifier(struct ast** astp, ast_id select)
 {
     ast_id           expr = (*astp)->nodes[select].select.expr;
-    struct utf8_span sel_loc = ast_loc(*astp, select);
+    union type       type = ast_type_info(*astp, expr);
+    int32_t          scope = ast_scope(*astp, expr);
     struct utf8_span expr_loc = ast_loc(*astp, expr);
+    struct utf8_span sel_loc = ast_loc(*astp, select);
     struct utf8_span hidden_name
         = {sel_loc.off, expr_loc.off - sel_loc.off + expr_loc.len};
+    ast_id ident = ast_identifier(astp, hidden_name, TA_NONE, hidden_name);
 
     ODBUTIL_DEBUG_ASSERT(hidden_name.off == sel_loc.off, (void)0);
     ODBUTIL_DEBUG_ASSERT(hidden_name.len > 0, (void)0);
-    return ast_identifier(astp, hidden_name, TA_NONE, hidden_name);
+
+    /* Fill in type info and scope */
+    (*astp)->nodes[ident].info.type_info = type;
+    (*astp)->nodes[ident].info.scope_id = scope;
+
+    return ident;
 }
 
 static ast_id
 read_select_expr_into_hidden_var(struct ast** astp, ast_id select)
 {
+    int32_t scope = ast_scope(*astp, select);
+
     /* The select expression is compared against each case expression, but we
      * must be careful to only evaluate it once. We do this by storing the
      * result in a "hidden" variable. As of this writing, the compiler doesn't
@@ -52,11 +62,22 @@ read_select_expr_into_hidden_var(struct ast** astp, ast_id select)
 
     /* The hidden variable's type must be equal to that of the select expression
      */
-    ast_id as = ast_as_auto(astp, loc);
-    ast_id select_expr = (*astp)->nodes[select].select.expr;
+    ast_id           select_expr = (*astp)->nodes[select].select.expr;
+    union type       select_type = ast_type_info(*astp, select_expr);
+    struct utf8_span select_loc = ast_loc(*astp, select_expr);
+    ast_id           as = ast_as_type(astp, select_type, select_loc);
 
-    return ast_var_decl(
+    ast_id decl1 = ast_var_decl(
         astp, ident, as, select_expr, SCOPE_LOCAL, loc, loc, loc);
+    ast_id decl2 = (*astp)->nodes[decl1].var_decl1.var_decl2;
+
+    /* Fill in type info and scope */
+    (*astp)->nodes[decl1].info.type_info = select_type;
+    (*astp)->nodes[decl2].info.type_info = select_type;
+    (*astp)->nodes[as].info.type_info = select_type;
+    ast_set_subtree_scope(*astp, decl1, scope);
+
+    return decl1;
 }
 
 static int
@@ -102,6 +123,14 @@ convert_select_to_primitives(
             ast_loc(*astp, case_));
         cond = ast_cond(astp, op, branches, ast_loc(*astp, expr));
         no = ast_block(astp, cond, loc);
+
+        /* Fill in type info and scope */
+        (*astp)->nodes[branches].info.type_info = primitive_type(TYPE_VOID);
+        (*astp)->nodes[var].info.type_info = ast_type_info(*astp, expr);
+        (*astp)->nodes[op].info.type_info = primitive_type(TYPE_BOOL);
+        (*astp)->nodes[cond].info.type_info = primitive_type(TYPE_VOID);
+        (*astp)->nodes[no].info.type_info = primitive_type(TYPE_VOID);
+        ast_set_subtree_scope(*astp, no, ast_scope(*astp, select));
 
         /* Unlink from old tree */
         (*astp)->nodes[case_].case_.expr = -1;

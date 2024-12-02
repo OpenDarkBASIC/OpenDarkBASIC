@@ -3,10 +3,10 @@ b = 2
 
 select 3
     case a+b
-        stdout "a+b"
+        print stdout "a+b"
     endcase
     case default
-        stdout "default"
+        print stdout "default"
     endcase
 endselect
 

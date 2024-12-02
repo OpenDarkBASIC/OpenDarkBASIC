@@ -239,6 +239,7 @@ semantic_run_essential_checks(
            &semantic_loop_exit,
            &semantic_loop_cont,
            &semantic_loop_for,
+           &semantic_select,
            NULL};
     static const struct semantic_check essential_check
         = {dummy_check, essential_checks, "essential_checks"};

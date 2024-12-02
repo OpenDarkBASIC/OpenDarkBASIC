@@ -583,6 +583,7 @@ convert_lvalue_to_rvalue(struct ast* ast, ast_id lvalue)
         union ast_node node = ast->nodes[lvalue];
         node.info.node_type = AST_VAR_READ;
         node.var_read.identifier = ast->nodes[lvalue].var_write.identifier;
+        node.var_read._pad = -1;
         ast->nodes[lvalue] = node;
     }
     else if (ast_node_type(ast, lvalue) == AST_UDT_WRITE)

@@ -2207,7 +2207,7 @@ process_select(
     caselist = (*astp)->nodes[select].select.caselist;
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, caselist) == AST_CASELIST,
+        caselist == -1 || ast_node_type(*astp, caselist) == AST_CASELIST,
         log_err("type: %d\n", ast_node_type(*astp, caselist)));
 
     if (caselist > -1 && type_is_invalid(ast_type_info(*astp, caselist)))
@@ -2218,6 +2218,49 @@ process_select(
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
 
+    for (; caselist > -1; caselist = (*astp)->nodes[caselist].caselist.next)
+    {
+        union type select_type, case_type;
+        ast_id     case_ = (*astp)->nodes[caselist].caselist.case_;
+        ast_id     select_expr = (*astp)->nodes[select].select.expr;
+        ast_id     case_expr = (*astp)->nodes[case_].case_.expr;
+
+        if (case_expr < 0) /* Default case */
+            continue;
+
+        select_type = ast_type_info(*astp, select_expr);
+        case_type = ast_type_info(*astp, case_expr);
+
+        switch (type_convert(case_type, select_type))
+        {
+            case TC_ALLOW: break;
+            case TC_DISALLOW:
+                return err_select_incompatible_types(
+                    *astp, select, case_, filename, source);
+            case TC_SIGN_CHANGE:
+            case TC_TRUENESS:
+            case TC_INT_TO_FLOAT:
+            case TC_BOOL_PROMOTION:
+                warn_select_implicit_conversion(
+                    *astp, select, case_, filename, source);
+                break;
+            case TC_TRUNCATE:
+                warn_select_truncation(*astp, select, case_, filename, source);
+                break;
+        }
+
+        if (!types_equal(case_type, select_type))
+        {
+            ast_id cast = cast_to_type(astp, case_expr, select_type);
+            if (cast < 0)
+                return DEP_ERROR;
+            (*astp)->nodes[case_].case_.expr = cast;
+        }
+    }
+
+    (*astp)->nodes[select].info.type_info = primitive_type(TYPE_VOID);
+
+    stack_pop(*stack);
     return DEP_SOLVED;
 }
 
@@ -2233,6 +2276,9 @@ process_caselist(struct stack** stack, struct ast* ast, ast_id caselist)
 
     next = ast->nodes[caselist].caselist.next;
     case_ = ast->nodes[caselist].caselist.case_;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, case_) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, case_)));
 
     if (next > -1 && type_is_invalid(ast_type_info(ast, next)))
         stack_push_entry(stack, caselist, next);
@@ -2242,6 +2288,36 @@ process_caselist(struct stack** stack, struct ast* ast, ast_id caselist)
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
 
+    ast->nodes[caselist].info.type_info = primitive_type(TYPE_VOID);
+
+    stack_pop(*stack);
+    return DEP_SOLVED;
+}
+
+static enum process_result
+process_case(struct stack** stack, struct ast* ast, ast_id case_)
+{
+    ast_id  expr, body;
+    int32_t top = stack_count(*stack);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, case_) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, case_)));
+
+    expr = ast->nodes[case_].case_.expr;
+    body = ast->nodes[case_].case_.body;
+
+    if (body > -1 && type_is_invalid(ast_type_info(ast, body)))
+        stack_push_entry(stack, case_, body);
+    if (expr > -1 && type_is_invalid(ast_type_info(ast, expr)))
+        stack_push_entry(stack, case_, expr);
+
+    if (stack_count(*stack) != top)
+        return DEP_ADDED_CHILDREN;
+
+    ast->nodes[case_].info.type_info = primitive_type(TYPE_VOID);
+
+    stack_pop(*stack);
     return DEP_SOLVED;
 }
 
@@ -2380,10 +2456,8 @@ process_func_return(
         {
             case TC_ALLOW: break;
             case TC_DISALLOW:
-                err_func_return_incompatible_types(
+                return err_func_return_incompatible_types(
                     *astp, func, retval, filename, source);
-                return -1;
-
             case TC_SIGN_CHANGE:
             case TC_TRUENESS:
             case TC_INT_TO_FLOAT:
@@ -2391,7 +2465,6 @@ process_func_return(
                 warn_func_return_implicit_conversion(
                     *astp, func, retval, filename, source);
                 break;
-
             case TC_TRUNCATE:
                 warn_func_return_truncation(
                     *astp, func, retval, filename, source);
@@ -3216,9 +3289,10 @@ process_node(
             /* Is handled by AST_COND */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return DEP_ERROR;
-        case AST_SELECT: process_select();
-        case AST_CASELIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
-        case AST_CASE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_SELECT:
+            return process_select(stack, astp, n, filename, source);
+        case AST_CASELIST: return process_caselist(stack, *astp, n);
+        case AST_CASE: return process_case(stack, *astp, n);
         case AST_LOOP1: return process_loop(stack, astp, n, filename, source);
         case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;

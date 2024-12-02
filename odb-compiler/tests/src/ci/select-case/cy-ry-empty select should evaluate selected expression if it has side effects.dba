@@ -4,7 +4,7 @@ endselect
 end
 
 function value()
-    stdout "value()"
+    print stdout "value()"
     result = 2
 endfunction result
 

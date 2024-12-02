@@ -561,7 +561,7 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
             write_var_name(fp, ast, n);
             fprintf(
                 fp,
-                "].string_literal.value, Utf8SpanEq(%d, %d));\n",
+                "].string_literal.str, Utf8SpanEq(%d, %d));\n",
                 ast->nodes[n].string_literal.str.off,
                 ast->nodes[n].string_literal.str.len);
             break;
@@ -569,10 +569,10 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
         case AST_AS_TYPE:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);
-            fprintf(fp, "].as_type.");
+            fprintf(fp, "].as_type.type.");
             if (type_is_primitive(ast->nodes[n].as_type.type))
             {
-                fprintf(fp, "type, Eq(");
+                fprintf(fp, "primitive, Eq(");
                 write_primitive_type_enum_name(
                     fp, ast->nodes[n].as_type.type.primitive);
             }

@@ -589,6 +589,46 @@ err_param_redeclaration(
 }
 
 int
+err_select_incompatible_types(
+    const struct ast* ast,
+    ast_id            select,
+    ast_id            case_,
+    const char*       filename,
+    const char*       source)
+{
+    ast_id           select_expr = ast->nodes[select].select.expr;
+    ast_id           case_expr = ast->nodes[case_].case_.expr;
+    union type       select_type = ast_type_info(ast, select_expr);
+    union type       case_type = ast_type_info(ast, case_expr);
+    struct utf8_view select_tname = type_name(select_type, ast, source);
+    struct utf8_view case_tname = type_name(case_type, ast, source);
+    struct utf8_span select_loc = ast_loc(ast, select_expr);
+    struct utf8_span case_loc = ast_loc(ast, case_expr);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, select) == AST_SELECT,
+        log_err("type: %d\n", ast_node_type(ast, select)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, case_) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, case_)));
+
+    log_flc(filename, source, case_loc);
+    log_err(
+        "Invalid conversion from {emph0:%.*s} to {emph1:%.*s} in select "
+        "statement. Types are incompatible.\n",
+        case_tname.len,
+        case_tname.data + case_tname.off,
+        select_tname.len,
+        select_tname.data + select_tname.off);
+    log_excerpt_1(source, case_loc, case_tname, 0);
+
+    log_flc(filename, source, select_loc);
+    log_excerpt_1(source, select_loc, select_tname, 1);
+
+    return -1;
+}
+
+int
 err_select_duplicate_default(
     const struct ast* ast,
     ast_id            default_case,
@@ -1630,6 +1670,105 @@ warn_loop_for_incorrect_next(
     log_flc(filename, source, ast_loc(ast, loop_var));
     log_note("Loop variable declared here:\n");
     log_excerpt_1(source, ast_loc(ast, loop_var), empty_utf8_view(), 0);
+}
+
+void
+warn_select_implicit_conversion(
+    const struct ast* ast,
+    ast_id            select,
+    ast_id            case_,
+    const char*       filename,
+    const char*       source)
+{
+    ast_id           select_expr = ast->nodes[select].select.expr;
+    ast_id           case_expr = ast->nodes[case_].case_.expr;
+    union type       select_type = ast_type_info(ast, select_expr);
+    union type       case_type = ast_type_info(ast, case_expr);
+    struct utf8_view select_tname = type_name(select_type, ast, source);
+    struct utf8_view case_tname = type_name(case_type, ast, source);
+    struct utf8_span select_loc = ast_loc(ast, select_expr);
+    struct utf8_span case_loc = ast_loc(ast, case_expr);
+
+    utf8_idx             loc_end = case_loc.off + case_loc.len;
+    struct utf8_view     ins1 = cstr_utf8_view(" AS ");
+    struct utf8_view     ins2 = select_tname;
+    struct utf8_view     ann = empty_utf8_view();
+    struct log_highlight hl[]
+        = {{ins1, ann, {loc_end, ins1.len}, LOG_INSERT, "^~~", 0},
+           {ins2, ann, {loc_end, ins2.len}, LOG_INSERT, "~~<", 0},
+           LOG_HIGHLIGHT_SENTINAL};
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, select) == AST_SELECT,
+        log_err("type: %d\n", ast_node_type(ast, select)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, case_) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, case_)));
+
+    log_flc(filename, source, case_loc);
+    log_warn(
+        "Implicit conversion from {emph0:%.*s} to {emph1:%.*s} in select "
+        "statement.\n",
+        case_tname.len,
+        case_tname.data + case_tname.off,
+        select_tname.len,
+        select_tname.data + select_tname.off);
+    log_excerpt_1(source, case_loc, case_tname, 0);
+
+    log_flc(filename, source, select_loc);
+    log_excerpt_1(source, select_loc, select_tname, 1);
+
+    log_help("Insert an explicit cast to silence this warning:\n");
+    log_excerpt(source, hl);
+}
+
+void
+warn_select_truncation(
+    const struct ast* ast,
+    ast_id            select,
+    ast_id            case_,
+    const char*       filename,
+    const char*       source)
+{
+    ast_id           select_expr = ast->nodes[select].select.expr;
+    ast_id           case_expr = ast->nodes[case_].case_.expr;
+    union type       select_type = ast_type_info(ast, select_expr);
+    union type       case_type = ast_type_info(ast, case_expr);
+    struct utf8_view select_tname = type_name(select_type, ast, source);
+    struct utf8_view case_tname = type_name(case_type, ast, source);
+    struct utf8_span select_loc = ast_loc(ast, select_expr);
+    struct utf8_span case_loc = ast_loc(ast, case_expr);
+
+    utf8_idx             loc_end = case_loc.off + case_loc.len;
+    struct utf8_view     ins1 = cstr_utf8_view(" AS ");
+    struct utf8_view     ins2 = select_tname;
+    struct utf8_view     ann = empty_utf8_view();
+    struct log_highlight hl[]
+        = {{ins1, ann, {loc_end, ins1.len}, LOG_INSERT, "^~~", 0},
+           {ins2, ann, {loc_end, ins2.len}, LOG_INSERT, "~~<", 0},
+           LOG_HIGHLIGHT_SENTINAL};
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, select) == AST_SELECT,
+        log_err("type: %d\n", ast_node_type(ast, select)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, case_) == AST_CASE,
+        log_err("type: %d\n", ast_node_type(ast, case_)));
+
+    log_flc(filename, source, case_loc);
+    log_warn(
+        "Case value is truncated when converting from {emph0:%.*s} to "
+        "{emph1:%.*s} in select statement.\n",
+        case_tname.len,
+        case_tname.data + case_tname.off,
+        select_tname.len,
+        select_tname.data + select_tname.off);
+    log_excerpt_1(source, case_loc, case_tname, 0);
+    log_flc(filename, source, select_loc);
+    log_excerpt_1(source, select_loc, select_tname, 1);
+
+    log_help("Insert an explicit cast to silence this warning:\n");
+    log_excerpt(source, hl);
 }
 
 void

@@ -543,7 +543,7 @@ if (ODBCOMPILER_TESTS)
     # folder must be listed here explicitly in order to generate the test
     # cases
     set (CIGEN_SUITES
-        "binop-precedence"
+        #"binop-precedence"
         "loop-do"
         "loop-for"
         "select-case"

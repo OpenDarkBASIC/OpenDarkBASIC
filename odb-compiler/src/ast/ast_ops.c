@@ -217,7 +217,7 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
 {
     if (ast_node_type(ast, n1) != ast_node_type(ast, n1))
         return 0;
-    if (types_equal(ast_type_info(ast, n1), ast_type_info(ast, n2)))
+    if (!types_equal(ast_type_info(ast, n1), ast_type_info(ast, n2)))
         return 0;
 
     switch (ast_node_type(ast, n1))

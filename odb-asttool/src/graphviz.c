@@ -266,7 +266,8 @@ write_node(
                 fp,
                 "<font color=\"%s\">%s</font> var_decl1",
                 style->keyword.color,
-                ast_scope(ast, n) == SCOPE_GLOBAL ? "GLOBAL" : "LOCAL");
+                ast->nodes[n].var_decl1.scope == SCOPE_GLOBAL ? "GLOBAL"
+                                                              : "LOCAL");
             break;
         case AST_VAR_DECL2: fprintf(fp, "var_decl2"); break;
         case AST_VAR_READ: fprintf(fp, "var_read"); break;
