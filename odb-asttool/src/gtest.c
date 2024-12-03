@@ -19,6 +19,9 @@
     X(AST_END, "end", "end", "", "")                                           \
     X(AST_ARGLIST, "arglist", "arglist", "expr", "next")                       \
     X(AST_PARAMLIST, "paramlist", "paramlist", "param", "next")                \
+    X(AST_TYPELIST, "typelist", "typelist", "type", "next")                    \
+    X(AST_LOAD_PLUGIN, "load_plugin", "load_plugin", "", "")                   \
+    X(AST_LOAD_COMMAND, "load_command", "load_command", "rettype", "typelist") \
     X(AST_COMMAND, "cmd", "cmd", "arglist", "")                                \
     X(AST_ASSIGNMENT, "ass", "assignment", "lvalue", "expr")                   \
     X(AST_VAR_DECL1, "decl1", "var_decl1", "var_decl2", "init_expr")           \
@@ -318,6 +321,39 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
                 "].paramlist.combined_location, Utf8SpanEq(%d, %d));\n",
                 ast->nodes[n].paramlist.combined_location.off,
                 ast->nodes[n].paramlist.combined_location.len);
+            break;
+        case AST_TYPELIST: break;
+        case AST_LOAD_PLUGIN:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].load_plugin.filepath, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].load_plugin.filepath.off,
+                ast->nodes[n].load_plugin.filepath.len);
+            break;
+        case AST_LOAD_COMMAND:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].load_command.cmd_name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].load_command.cmd_name.off,
+                ast->nodes[n].load_command.cmd_name.len);
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].load_command.filepath, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].load_command.filepath.off,
+                ast->nodes[n].load_command.filepath.len);
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].load_command.c_symbol, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].load_command.c_symbol.off,
+                ast->nodes[n].load_command.c_symbol.len);
             break;
         case AST_COMMAND:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");

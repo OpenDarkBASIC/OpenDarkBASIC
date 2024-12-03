@@ -101,6 +101,8 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 }
 <INITIAL>{
     "#constant"         { RETURN_TOKEN(TOK_CONSTANT); }
+    "#load plugin"      { RETURN_TOKEN(TOK_LOAD_PLUGIN); }
+    "#load command"     { RETURN_TOKEN(TOK_LOAD_COMMAND); }
 
     {BOOL_TRUE}         { yylval->boolean_value = 1;
                           RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }

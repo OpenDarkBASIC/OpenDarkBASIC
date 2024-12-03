@@ -227,6 +227,7 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         case AST_END: break;
         case AST_ARGLIST: break;
         case AST_PARAMLIST: break;
+        case AST_TYPELIST: break;
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */

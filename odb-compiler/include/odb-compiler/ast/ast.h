@@ -70,6 +70,9 @@ enum ast_type
     AST_END,
     AST_ARGLIST,
     AST_PARAMLIST,
+    AST_TYPELIST,
+    AST_LOAD_PLUGIN,
+    AST_LOAD_COMMAND,
     AST_COMMAND,
     AST_ASSIGNMENT,
     AST_VAR_DECL1,
@@ -168,6 +171,28 @@ union ast_node
         ast_id next;
         struct utf8_span combined_location;
     } paramlist;
+
+    struct {
+        struct info info;
+        ast_id type;
+        ast_id next;
+    } typelist;
+
+    struct {
+        struct info info;
+        ast_id _pad1;
+        ast_id _pad2;
+        struct utf8_span filepath;
+    } load_plugin;
+
+    struct {
+        struct info info;
+        ast_id rettype;
+        ast_id typelist;
+        struct utf8_span cmd_name;
+        struct utf8_span filepath;
+        struct utf8_span c_symbol;
+    } load_command;
 
     struct {
         struct info info;
