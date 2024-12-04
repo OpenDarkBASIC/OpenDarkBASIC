@@ -30,7 +30,7 @@ TEST_F(NAME, match_shorter_command)
 
     ASSERT_THAT(parse("RANDOMIZE"), Eq(0));
     int cmd = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(1));
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(1));
 }
 
 TEST_F(NAME, match_mid_command)
@@ -44,7 +44,7 @@ TEST_F(NAME, match_mid_command)
 
     ASSERT_THAT(parse("randomize matrix"), Eq(0));
     int cmd = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(2));
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(2));
 }
 
 TEST_F(NAME, match_longest_command)
@@ -58,7 +58,7 @@ TEST_F(NAME, match_longest_command)
 
     ASSERT_THAT(parse("randomize matrix normalized"), Eq(0));
     int cmd = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(3));
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(3));
 }
 
 TEST_F(NAME, dont_match_nonexisting_command)
@@ -83,7 +83,7 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
     ASSERT_THAT(parse("randomize timer"), Eq(0));
     int cmd = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cmd), Eq(AST_COMMAND));
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(1));
-    int ident = ast->nodes[ast->nodes[cmd].cmd.arglist].arglist.expr;
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(1));
+    int ident = ast->nodes[ast->nodes[cmd].command.arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, ident), Eq(AST_VAR_READ));
 }

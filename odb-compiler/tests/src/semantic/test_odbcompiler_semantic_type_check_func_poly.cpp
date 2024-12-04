@@ -93,7 +93,7 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
     ast_id var_read17 = ast->nodes[binop20].binop.left;
     ast_id ident16 = ast->nodes[var_read17].var_read.identifier;
     ast_id cmd7 = ast->nodes[block8].block.stmt;
-    ast_id arglist6 = ast->nodes[cmd7].cmd.arglist;
+    ast_id arglist6 = ast->nodes[cmd7].command.arglist;
     ast_id call5 = ast->nodes[arglist6].arglist.expr;
     ast_id arglist2 = ast->nodes[call5].func_call.arglist;
     ast_id arglist4 = ast->nodes[arglist2].arglist.next;
@@ -108,7 +108,7 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
     ASSERT_THAT(ast->nodes[lit3].byte_literal.value, Eq(3));
     ASSERT_THAT(ast->nodes[arglist4].arglist.combined_location, Utf8SpanEq(10, 4));
     ASSERT_THAT(ast->nodes[arglist6].arglist.combined_location, Utf8SpanEq(6, 9));
-    ASSERT_THAT(ast->nodes[cmd7].cmd.id, Eq(0));
+    ASSERT_THAT(ast->nodes[cmd7].command.id, Eq(0));
     ASSERT_THAT(ast->nodes[ident9].identifier.name, Utf8SpanEq(25, 3));
     ASSERT_THAT(ast->nodes[ident9].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[ident10].identifier.name, Utf8SpanEq(29, 1));
@@ -317,8 +317,8 @@ TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
     ast_id cmd1 = ast->nodes[block1].block.stmt;
     ast_id cmd2 = ast->nodes[block2].block.stmt;
     ast_id f1 = ast->nodes[block4].block.stmt;
-    ast_id arglist1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arglist1 = ast->nodes[cmd1].command.arglist;
+    ast_id arglist2 = ast->nodes[cmd2].command.arglist;
     ast_id call1 = ast->nodes[arglist1].arglist.expr;
     ast_id call2 = ast->nodes[arglist2].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call1), Eq(AST_FUNC_CALL));
@@ -357,7 +357,7 @@ TEST_F(NAME, func_returns_result_of_another_func)
     ast_id func_poly36 = ast->nodes[block37].block.stmt;
     ast_id f1_32 = ast->nodes[func_poly36].func_poly.func;
     ast_id cmd9 = ast->nodes[block10].block.stmt;
-    ast_id arglist8 = ast->nodes[cmd9].cmd.arglist;
+    ast_id arglist8 = ast->nodes[cmd9].command.arglist;
     ast_id call7 = ast->nodes[arglist8].arglist.expr;
 
     ASSERT_THAT(ast_type_info(ast, call7).primitive, Eq(TYPE_U8));
@@ -396,7 +396,7 @@ TEST_F(NAME, func_result_as_arg_to_call)
     ast_id func_poly30 = ast->nodes[block31].block.stmt;
     ast_id f1_26 = ast->nodes[func_poly30].func_poly.func;
     ast_id cmd12 = ast->nodes[block13].block.stmt;
-    ast_id arglist11 = ast->nodes[cmd12].cmd.arglist;
+    ast_id arglist11 = ast->nodes[cmd12].command.arglist;
     ast_id call10 = ast->nodes[arglist11].arglist.expr;
     ast_id arglist7 = ast->nodes[call10].func_call.arglist;
     ast_id call6 = ast->nodes[arglist7].arglist.expr;

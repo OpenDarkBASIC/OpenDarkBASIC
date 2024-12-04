@@ -116,13 +116,13 @@ mem_release_plugin_list(struct plugin_list* plugins)
 #endif
 
 plugin_id
-plugin_list_add_or_get(struct plugin_list** plugins, struct ospathc filepath)
+plugin_list_add_or_get(struct plugin_list** plugins, struct ospath* filepath)
 {
     plugin_id           plugin_id;
     struct plugin_info* plugin;
     struct ospath       name = empty_ospath();
 
-    if (ospath_set(&name, filepath) != 0)
+    if (utf8_set(&name.str, utf8_view(filepath->str)) != 0)
         return -1;
     ospath_filename(&name);
     ospath_remove_ext(&name);
@@ -131,14 +131,14 @@ plugin_list_add_or_get(struct plugin_list** plugins, struct ospathc filepath)
         if (utf8_equal(utf8_view(plugin->name), ospath_view(name)))
         {
             if (!utf8_equal(
-                    ospath_view(plugin->filepath), ospathc_view(filepath)))
+                    ospath_view(plugin->filepath), utf8_view(filepath->str)))
             {
                 return log_err(
                     "Same plugin added with different path.\n"
                     "  Existing: {quote:%s}\n"
                     "  New     : {quote:%s}\n",
                     ospath_cstr(plugin->filepath),
-                    ospathc_cstr(filepath));
+                    ospath_cstr(*filepath));
             }
 
             ospath_deinit(name);
@@ -151,11 +151,11 @@ plugin_list_add_or_get(struct plugin_list** plugins, struct ospathc filepath)
         return -1;
     plugin_info_init(plugin);
 
-    if (ospath_set(&plugin->filepath, filepath) != 0)
-        return -1;
     plugin->name = name.str;
+    plugin->filepath = *filepath;
+    filepath->str = empty_utf8();
 
-    log_dbg("Added plugin: %s\n", ospathc_cstr(filepath));
+    log_dbg("Added plugin: %s\n", ospath_cstr(plugin->filepath));
 
     return plugin_list_count(*plugins) - 1;
 }

@@ -35,18 +35,18 @@ ast_export_fp(
         {
             int              i;
             struct utf8_view name, compare;
-            name = utf8_list_view(cmds->db_cmd_names, node.cmd.id);
+            name = utf8_list_view(cmds->db_cmd_names, node.command.id);
             utf8_enumerate(cmd_names, i, compare)
             {
                 if (utf8_equal(name, compare))
                 {
-                    node.cmd.id = i;
+                    node.command.id = i;
                     break;
                 }
             }
             if (i == utf8_list_count(cmd_names))
             {
-                node.cmd.id = utf8_list_count(cmd_names);
+                node.command.id = utf8_list_count(cmd_names);
                 if (utf8_list_add(&cmd_names, name) != 0)
                     goto error;
             }

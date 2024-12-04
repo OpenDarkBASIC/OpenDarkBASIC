@@ -113,7 +113,11 @@ process_node(
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_END:
+        case AST_COMMAND_NAME:
         case AST_COMMAND:
+        case AST_TYPELIST:
+        case AST_LOAD_PLUGIN:
+        case AST_LOAD_COMMAND:
         case AST_ASSIGNMENT:
         case AST_VAR_DECL1:
         case AST_VAR_DECL2:

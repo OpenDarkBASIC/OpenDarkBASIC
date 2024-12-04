@@ -260,52 +260,139 @@ ast_paramlist_append(
 }
 
 ast_id
-ast_param(
-    struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location)
+ast_typelist(
+    struct ast**     astp,
+    struct utf8_span name,
+    ast_id           type,
+    struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_PARAM, location);
+    ast_id      n = new_node(astp, AST_TYPELIST, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
 
-    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(type > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("type: %d\n", ast_node_type(ast, identifier)));
-    ODBUTIL_DEBUG_ASSERT(
-        as == -1 || ast_node_type(ast, as) == AST_AS_TYPE
-            || ast_node_type(ast, as) == AST_AS_EXPR
-            || ast_node_type(ast, as) == AST_AS_AUTO
-            || ast_node_type(ast, as) == AST_AS_UDT,
-        log_err("type: %d\n", ast_node_type(ast, as)));
+        ast_node_type(ast, type) == AST_AS_TYPE
+            || ast_node_type(ast, type) == AST_AS_EXPR
+            || ast_node_type(ast, type) == AST_AS_UDT,
+        log_err("type: %d\n", ast_node_type(ast, type)));
 
-    ast->nodes[n].param.identifier = identifier;
-    ast->nodes[n].param.as = as;
+    ast->nodes[n].typelist.type = type;
+    ast->nodes[n].typelist.name = name;
+
+    return n;
+}
+
+void
+ast_typelist_append(
+    struct ast*      ast,
+    ast_id           typelist,
+    ast_id           append_typelist,
+    struct utf8_span location)
+{
+    ODBUTIL_DEBUG_ASSERT(typelist > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, typelist) == AST_TYPELIST,
+        log_err("type: %d\n", ast_node_type(ast, typelist)));
+    ODBUTIL_DEBUG_ASSERT(append_typelist > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, append_typelist) == AST_TYPELIST,
+        log_err("type: %d\n", ast_node_type(ast, append_typelist)));
+
+    while (ast->nodes[typelist].typelist.next > -1)
+        typelist = ast->nodes[typelist].typelist.next;
+
+    ast->nodes[typelist].typelist.next = append_typelist;
+}
+
+ast_id
+ast_typelist_append_type(
+    struct ast** astp, ast_id typelist, ast_id type, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_TYPELIST, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(typelist > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(type > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, typelist) == AST_TYPELIST,
+        log_err("type: %d\n", ast_node_type(ast, typelist)));
+
+    ast_typelist_append(ast, typelist, n, location);
+    ast->nodes[n].typelist.type = type;
 
     return n;
 }
 
 ast_id
-ast_command(
+ast_load_plugin(
+    struct ast** astp, struct utf8_span filepath, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_LOAD_PLUGIN, location);
+    if (n < 0)
+        return -1;
+
+    (*astp)->nodes[n].load_plugin.filepath = filepath;
+
+    return n;
+}
+
+ast_id
+ast_load_command(
     struct ast**     astp,
-    cmd_id           cmd_id,
-    ast_id           arglist,
-    char             is_expr,
+    ast_id           typelist,
+    ast_id           rettype,
+    struct utf8_span cmd_name,
+    struct utf8_span filepath,
+    struct utf8_span c_symbol,
     struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_COMMAND, location);
+    ast_id      n = new_node(astp, AST_LOAD_COMMAND, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
 
-    ODBUTIL_DEBUG_ASSERT(cmd_id > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, rettype) == AST_AS_TYPE
+            || ast_node_type(ast, rettype) == AST_AS_EXPR
+            || ast_node_type(ast, rettype) == AST_AS_UDT,
+        log_err("type: %d\n", ast_node_type(ast, rettype)));
+    ODBUTIL_DEBUG_ASSERT(
+        typelist == -1 || ast_node_type(ast, typelist) == AST_TYPELIST,
+        log_err("type: %d\n", ast_node_type(ast, typelist)));
+
+    ast->nodes[n].load_command.cmd_name = cmd_name;
+    ast->nodes[n].load_command.filepath = filepath;
+    ast->nodes[n].load_command.c_symbol = c_symbol;
+    ast->nodes[n].load_command.rettype = rettype;
+    ast->nodes[n].load_command.typelist = typelist;
+
+    return n;
+}
+
+ast_id
+ast_command_name(
+    struct ast**     astp,
+    struct utf8_span command_name,
+    ast_id           arglist,
+    char             is_expr,
+    struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_COMMAND_NAME, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
     ODBUTIL_DEBUG_ASSERT(
         arglist == -1 || ast_node_type(ast, arglist) == AST_ARGLIST,
         log_err("type: %d\n", ast_node_type(ast, arglist)));
 
-    ast->nodes[n].cmd.id = cmd_id;
-    ast->nodes[n].cmd.arglist = arglist;
-    ast->nodes[n].cmd.is_expr = !!is_expr;
+    ast->nodes[n].command_name.arglist = arglist;
+    ast->nodes[n].command_name.name = command_name;
+    ast->nodes[n].command_name.is_expr = !!is_expr;
 
     return n;
 }
@@ -481,6 +568,32 @@ ast_udt_read(
     (*astp)->nodes[n].udt_read.left = member;
     (*astp)->nodes[n].udt_read.right = next;
     (*astp)->nodes[n].udt_read.index = -1;
+
+    return n;
+}
+
+ast_id
+ast_param(
+    struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_PARAM, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        as == -1 || ast_node_type(ast, as) == AST_AS_TYPE
+            || ast_node_type(ast, as) == AST_AS_EXPR
+            || ast_node_type(ast, as) == AST_AS_AUTO
+            || ast_node_type(ast, as) == AST_AS_UDT,
+        log_err("type: %d\n", ast_node_type(ast, as)));
+
+    ast->nodes[n].param.identifier = identifier;
+    ast->nodes[n].param.as = as;
 
     return n;
 }

@@ -19,6 +19,7 @@ local function var_to_node_name(value)
         ["default_case"] = "case_",
         ["decl1"] = "var_decl1",
         ["decl2"] = "var_decl2",
+        ["cmd"] = "command",
     }
     return special_cases[value] or value
 end

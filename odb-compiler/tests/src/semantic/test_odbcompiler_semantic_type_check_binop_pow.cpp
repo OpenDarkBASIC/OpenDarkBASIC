@@ -26,7 +26,7 @@ TEST_F(NAME, exponent_cast_to_integer)
 
     ast_id block5 = ast->root;
     ast_id cmd4 = ast->nodes[block5].block.stmt;
-    ast_id arglist3 = ast->nodes[cmd4].cmd.arglist;
+    ast_id arglist3 = ast->nodes[cmd4].command.arglist;
     ast_id binop2 = ast->nodes[arglist3].arglist.expr;
     ast_id cast7 = ast->nodes[binop2].binop.right;
     ast_id as_type6 = ast->nodes[cast7].cast.as;

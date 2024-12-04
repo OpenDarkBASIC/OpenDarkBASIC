@@ -77,7 +77,7 @@ DBParserHelper::parse(const char* code)
         ast_init(&ast);
     }
 
-    int result = db_parse(&p, &ast, utf8_cstr(filename), src, &cmds);
+    int result = db_parse(&p, &ast, utf8_cstr(filename), src, &plugins, &cmds);
     if (result != 0)
         return result;
 

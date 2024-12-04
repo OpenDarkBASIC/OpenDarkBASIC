@@ -31,7 +31,7 @@ TEST_F(NAME, prefer_exact_overload)
     ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].primitive,
         Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(expected_cmd_id));
 }
 
 TEST_F(NAME, prefer_closer_matching_overload)
@@ -47,7 +47,7 @@ TEST_F(NAME, prefer_closer_matching_overload)
     ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].primitive,
         Eq(TYPE_F64));
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(expected_cmd_id));
 }
 
 TEST_F(NAME, command_expr_passed_as_argument)
@@ -64,7 +64,7 @@ TEST_F(NAME, command_expr_passed_as_argument)
     ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].primitive,
         Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(expected_cmd_id));
 }
 
 TEST_F(NAME, bool_is_promoted_to_integer_overload)
@@ -80,7 +80,7 @@ TEST_F(NAME, bool_is_promoted_to_integer_overload)
     ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].primitive,
         Eq(TYPE_I64));
-    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast->nodes[cmd].command.id, Eq(expected_cmd_id));
 }
 
 TEST_F(NAME, command_call_inside_func)

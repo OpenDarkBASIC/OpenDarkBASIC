@@ -20,7 +20,7 @@ struct style
     struct node_style end;
     struct node_style preprocessor;
     struct node_style list;
-    struct node_style cmd;
+    struct node_style command;
     struct node_style func;
     struct node_style operator;
     struct node_style identifier;
@@ -152,10 +152,11 @@ get_node_style(enum ast_type node_type, const struct style* style)
         case AST_END: return &style->end;
         case AST_ARGLIST: return &style->list;
         case AST_PARAMLIST: return &style->list;
-        case AST_TYPELIST: return &style->list;
+        case AST_TYPELIST: return &style->preprocessor;
         case AST_LOAD_PLUGIN: return &style->preprocessor;
         case AST_LOAD_COMMAND: return &style->preprocessor;
-        case AST_COMMAND: return &style->cmd;
+        case AST_COMMAND_NAME: return &style->command;
+        case AST_COMMAND: return &style->command;
         case AST_ASSIGNMENT: return &style->operator;
         case AST_VAR_DECL1: return &style->identifier;
         case AST_VAR_DECL2: return &style->identifier;
@@ -255,7 +256,16 @@ write_node(
         case AST_END: fprintf(fp, "end"); break;
         case AST_ARGLIST: fprintf(fp, "arglist"); break;
         case AST_PARAMLIST: fprintf(fp, "paramlist"); break;
-        case AST_TYPELIST: fprintf(fp, "typelist"); break;
+        case AST_TYPELIST:
+            if (ast->nodes[n].typelist.name.len)
+                fprintf(
+                    fp,
+                    "{typelist|\"%.*s\"}",
+                    ast->nodes[n].typelist.name.len,
+                    source + ast->nodes[n].typelist.name.off);
+            else
+                fprintf(fp, "typelist");
+            break;
         case AST_LOAD_PLUGIN: fprintf(fp, "#load_plugin"); break;
         case AST_LOAD_COMMAND: {
             struct utf8_span cmd_name = ast->nodes[n].load_command.cmd_name;
@@ -263,7 +273,7 @@ write_node(
             struct utf8_span c_symbol = ast->nodes[n].load_command.c_symbol;
             fprintf(
                 fp,
-                "#load_command \"%.*s\" %.*s %.*s\"",
+                "{#load_command|\"%.*s\"|\"%.*s\"|\"%.*s\"}",
                 cmd_name.len,
                 source + cmd_name.off,
                 filepath.len,
@@ -272,13 +282,18 @@ write_node(
                 source + c_symbol.off);
             break;
         }
+        case AST_COMMAND_NAME: {
+            struct utf8_span cmd_name = ast->nodes[n].command_name.name;
+            fprintf(fp, "%.*s", cmd_name.len, source + cmd_name.off);
+            break;
+        }
         case AST_COMMAND: {
             struct utf8_span cmd_name
-                = utf8_list_span(cmds, ast->nodes[n].cmd.id);
+                = utf8_list_span(cmds, ast->nodes[n].command.id);
             fprintf(
                 fp,
                 "%d %.*s",
-                ast->nodes[n].cmd.id,
+                ast->nodes[n].command.id,
                 cmd_name.len,
                 cmds->data + cmd_name.off);
             break;
@@ -518,6 +533,7 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_TYPELIST: NAMES("type", "next");
         case AST_LOAD_PLUGIN: break;
         case AST_LOAD_COMMAND: NAMES("rettype", "typelist");
+        case AST_COMMAND_NAME: NAMES("arglist", "")
         case AST_COMMAND: NAMES("arglist", "")
         case AST_ASSIGNMENT: NAMES("lvalue", "expr")
         case AST_VAR_DECL1: NAMES("var_decl2", "init")

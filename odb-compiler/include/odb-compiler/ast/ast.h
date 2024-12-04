@@ -73,6 +73,7 @@ enum ast_type
     AST_TYPELIST,
     AST_LOAD_PLUGIN,
     AST_LOAD_COMMAND,
+    AST_COMMAND_NAME,
     AST_COMMAND,
     AST_ASSIGNMENT,
     AST_VAR_DECL1,
@@ -176,6 +177,7 @@ union ast_node
         struct info info;
         ast_id type;
         ast_id next;
+        struct utf8_span name;
     } typelist;
 
     struct {
@@ -198,9 +200,17 @@ union ast_node
         struct info info;
         ast_id arglist;
         ast_id _pad;
+        struct utf8_span name;
+        unsigned is_expr : 1;
+    } command_name;
+
+    struct {
+        struct info info;
+        ast_id arglist;
+        ast_id _pad;
         cmd_id id;
         unsigned is_expr : 1;
-    } cmd;
+    } command;
 
     struct {
         struct info info;
@@ -577,36 +587,27 @@ ast_id ast_arglist(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append_expr(struct ast** astp, ast_id arglist, ast_id expr, struct utf8_span location);
 ast_id ast_paramlist(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_paramlist_append(struct ast** astp, ast_id paramlist, ast_id param, struct utf8_span location);
-ast_id ast_param(struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location);
-ast_id ast_command(struct ast** astp, cmd_id cmd_id, ast_id arglist, char is_expr, struct utf8_span location);
+ast_id ast_typelist(struct ast** astp, struct utf8_span name, ast_id type, struct utf8_span location);
+void ast_typelist_append(struct ast* ast, ast_id typelist, ast_id append_typelist, struct utf8_span location);
+ast_id ast_typelist_append_type(struct ast** astp, ast_id typelist, ast_id type, struct utf8_span location);
+ast_id ast_load_plugin(struct ast** astp, struct utf8_span filepath, struct utf8_span location);
+ast_id ast_load_command(struct ast** astp, ast_id typelist, ast_id rettype, struct utf8_span cmd_name, struct utf8_span filepath, struct utf8_span c_symbol, struct utf8_span location);
+ast_id ast_command_name(struct ast** astp, struct utf8_span command_name, ast_id arglist, char is_expr, struct utf8_span location);
 ast_id ast_assign(struct ast** astp, ast_id lvalue, ast_id expr, struct utf8_span op_location, struct utf8_span location);
-ast_id ast_var_decl(
-    struct ast** astp,
-    ast_id identifier,
-    ast_id as,
-    ast_id init_expr,
-    enum scope scope,
-    struct utf8_span scope_location,
-    struct utf8_span op_location,
-    struct utf8_span location);
+ast_id ast_var_decl(struct ast** astp, ast_id identifier, ast_id as, ast_id init_expr, enum scope scope, struct utf8_span scope_location, struct utf8_span op_location,struct utf8_span location);
 ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_udt_decl(struct ast** astp, ast_id type_identifier, ast_id members_block, struct utf8_span location);
 ast_id ast_udt_init(struct ast** astp, struct utf8_span type_name, ast_id arglist, struct utf8_span location);
 ast_id ast_udt_read(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
 ast_id ast_udt_write(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
+ast_id ast_param(struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 ast_id ast_inc_step(struct ast** astp, ast_id lvalue, ast_id expr, struct utf8_span location);
 ast_id ast_inc(struct ast** astp, ast_id lvalue, struct utf8_span location);
 ast_id ast_dec_step(struct ast** astp, ast_id lvalue, ast_id expr, struct utf8_span location);
 ast_id ast_dec(struct ast** astp, ast_id lvalue, struct utf8_span location);
-ast_id ast_binop(
-    struct ast** astp,
-    enum binop_type op,
-    ast_id left,
-    ast_id right,
-    struct utf8_span op_location,
-    struct utf8_span location);
+ast_id ast_binop(struct ast** astp, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location,struct utf8_span location);
 ast_id ast_unop(struct ast** astp, enum unop_type op, ast_id expr, struct utf8_span location);
 ast_id ast_cond(struct ast** astp, ast_id expr, ast_id cond_branches, struct utf8_span location);
 ast_id ast_cond_branches(struct ast** astp, ast_id yes, ast_id no, struct utf8_span location);
@@ -615,35 +616,13 @@ ast_id ast_caselist(struct ast** astp, ast_id case_, struct utf8_span location);
 void ast_caselist_append(struct ast* ast, ast_id caselist, ast_id append_caselist, struct utf8_span location);
 ast_id ast_caselist_append_case(struct ast** astp, ast_id caselist, ast_id case_, struct utf8_span location);
 ast_id ast_case(struct ast** astp, ast_id expr, ast_id body, struct utf8_span case_loc, struct utf8_span location);
-ast_id ast_loop(
-    struct ast** astp,
-    ast_id body,
-    struct utf8_span name,
-    struct utf8_span implicit_name,
-    struct utf8_span location);
+ast_id ast_loop(struct ast** astp, ast_id body, struct utf8_span name, struct utf8_span implicit_name,struct utf8_span location);
 ast_id ast_loop_while(struct ast** astp, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_until(struct ast** astp, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
-ast_id ast_loop_for(
-    struct ast** astp,
-    ast_id body,
-    ast_id init,
-    ast_id end,
-    ast_id step,
-    ast_id next,
-    struct utf8_span name,
-    struct utf8_span location);
+ast_id ast_loop_for(struct ast** astp, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name,struct utf8_span location);
 ast_id ast_loop_cont(struct ast** astp, struct utf8_span name, ast_id step, struct utf8_span location);
 ast_id ast_loop_exit(struct ast** astp, struct utf8_span name, struct utf8_span location);
-ast_id ast_func(
-    struct ast** astp,
-    enum scope scope,
-    ast_id identifier,
-    ast_id as,
-    ast_id paramlist,
-    ast_id body,
-    ast_id retval,
-    struct utf8_span endfunction_location,
-    struct utf8_span location);
+ast_id ast_func(struct ast** astp, enum scope scope, ast_id identifier, ast_id as, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span endfunction_location,struct utf8_span location);
 ast_id ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location);
 ast_id ast_call_like(struct ast** astp, ast_id identifier, ast_id arglist, char is_expr, struct utf8_span location);
 ast_id ast_container_write(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);

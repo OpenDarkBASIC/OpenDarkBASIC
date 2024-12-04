@@ -4,7 +4,6 @@
 extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
-#include "odb-compiler/parser/db_cmd_loader.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/semantic/globals.h"
 #include "odb-compiler/semantic/post.h"
@@ -237,14 +236,19 @@ parse_worker(void* arg)
         log_info(
             "Parsing source file: {emph:%s}\n",
             filename->len ? utf8_cstr(*filename) : "<stdin>");
+        mem_acquire_cmd_list(getCommandList());
+        mem_acquire_plugin_list(*getPluginList());
         mem_acquire_ast(*astp);
         parse_result = db_parse(
             &parser,
             astp,
             filename->len ? utf8_cstr(*filename) : "<stdin>",
             *source,
+            getPluginList(),
             getCommandList());
         mem_release_ast(*astp);
+        mem_release_plugin_list(*getPluginList());
+        mem_release_cmd_list(getCommandList());
         if (parse_result != 0)
             goto parse_failed;
 
@@ -354,6 +358,8 @@ execute_parse_workers(std::vector<worker>* workers)
     {
         mem_release_ast(*astp);
     }
+    mem_release_plugin_list(*getPluginList());
+    mem_release_cmd_list(getCommandList());
 
     for (worker_id = 0; worker_id != (int)workers->size(); ++worker_id)
     {
@@ -369,6 +375,8 @@ execute_parse_workers(std::vector<worker>* workers)
             goto parse_thread_failed;
     }
 
+    mem_acquire_cmd_list(getCommandList());
+    mem_acquire_plugin_list(*getPluginList());
     vec_for_each(ctx.tus, astp)
     {
         mem_acquire_ast(*astp);
@@ -385,6 +393,8 @@ start_parse_thread_failed:
         struct worker& worker = workers->at(worker_id);
         thread_join(worker.thread);
     }
+    mem_acquire_cmd_list(getCommandList());
+    mem_acquire_plugin_list(*getPluginList());
     vec_for_each(ctx.tus, astp)
     {
         mem_acquire_ast(*astp);
@@ -472,21 +482,6 @@ parse_dba(const std::vector<std::string>& args)
         worker.id = i;
         worker.ctx = &ctx;
         worker.mutex = mutex;
-    }
-
-    for (i = 0; i != sources_count(ctx.sources); ++i)
-    {
-        struct utf8*      filename = vec_get(ctx.filenames, i);
-        struct db_source* source = vec_get(ctx.sources, i);
-        if (cmd_list_from_source(
-                getPluginList(),
-                getCommandList(),
-                utf8_cstr(*filename),
-                *source)
-            != 0)
-        {
-            goto parse_failed;
-        }
     }
 
     if (execute_parse_workers(&workers) != 0)

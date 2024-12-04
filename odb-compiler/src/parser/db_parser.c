@@ -110,7 +110,6 @@ get_next_assembled_token(
         || token->pushed_char == TOK_INTEGER_LITERAL) /* Commands can start with
                                                          an integer literal */
     {
-        cmd_id           longest_match_cmd_idx;
         int              i, longest_match_token_idx = -1;
         struct utf8_span candidate = token->pushed_location;
         for (i = 0; candidate.len <= cmds->longest_command; ++i)
@@ -124,10 +123,7 @@ get_next_assembled_token(
 
             cmd_id cmd = cmd_list_find(cmds, utf8_view(*cmd_buf));
             if (cmd > -1)
-            {
-                longest_match_cmd_idx = cmd;
                 longest_match_token_idx = i;
-            }
 
             /* Get or scan next token */
             if (i + 1 >= token_queue_count(*tokens))
@@ -171,7 +167,7 @@ get_next_assembled_token(
         {
             token = token_queue_peek_read(*tokens);
             token->pushed_char = TOK_COMMAND;
-            token->pushed_value.cmd_value = longest_match_cmd_idx;
+            token->pushed_value.string_value = token->pushed_location;
         }
     }
 
@@ -188,51 +184,114 @@ get_next_assembled_token(
     return token_queue_take(*tokens);
 }
 
-static struct token*
-get_next_token_ignoring_comments(
-    struct token_queue**   tokens,
-    struct utf8*           cmd_buf,
-    const struct cmd_list* cmds,
-    const char*            filename,
-    const char*            source,
-    dbscan_t               scanner,
-    DBLTYPE*               scanner_location)
+int
+db_parser_load_command(
+    struct ast*          ast,
+    ast_id               load_command,
+    const char*          filename,
+    const char*          source,
+    struct plugin_list** plugins,
+    struct cmd_list*     cmds)
 {
-    struct token* expect_remend;
+    plugin_id        plugin;
+    cmd_id           cmd;
+    ast_id           rettype, typelist;
+    struct utf8_span cmd_name, c_symbol, filepath_span;
+    struct utf8_view filepath_view;
+    struct utf8      cmd_name_upper = empty_utf8();
+    struct ospath    plugin_filepath = empty_ospath();
 
-    while (1)
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, load_command) == AST_LOAD_COMMAND,
+        log_err("type: %d\n", ast_node_type(ast, load_command)));
+
+    rettype = ast->nodes[load_command].load_command.rettype;
+    typelist = ast->nodes[load_command].load_command.typelist;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, rettype) == AST_AS_TYPE
+            || ast_node_type(ast, rettype) == AST_AS_EXPR
+            || ast_node_type(ast, rettype) == AST_AS_UDT,
+        log_err("type: %d\n", ast_node_type(ast, rettype)));
+    ODBUTIL_DEBUG_ASSERT(
+        typelist == -1 || ast_node_type(ast, typelist) == AST_TYPELIST,
+        log_err("type: %d\n", ast_node_type(ast, typelist)));
+
+    cmd_name = ast->nodes[load_command].load_command.cmd_name;
+    c_symbol = ast->nodes[load_command].load_command.c_symbol;
+    filepath_span = ast->nodes[load_command].load_command.filepath;
+    filepath_view = utf8_span_view(source, filepath_span);
+    if (ospath_set_utf8(&plugin_filepath, filepath_view) != 0)
+        goto error;
+    if (utf8_set(&cmd_name_upper, utf8_span_view(source, cmd_name)) != 0)
+        goto error;
+    log_dbg("#load command %.*s\n", cmd_name.len, source + cmd_name.off);
+
+    plugin = plugin_list_add_or_get(plugins, &plugin_filepath);
+    if (plugin < 0)
+        goto error;
+
+    // TODO: Commands currently only support primitive types
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, rettype) == AST_AS_TYPE,
+        log_err("type: %d\n", ast_node_type(ast, rettype)));
+
+    utf8_toupper(cmd_name_upper);
+    cmd = cmd_list_add(
+        cmds,
+        plugin,
+        ast->nodes[rettype].as_type.type.primitive,
+        utf8_view(cmd_name_upper),
+        utf8_span_view(source, c_symbol));
+    if (cmd < 0)
+        goto error;
+
+    for (; typelist > -1; typelist = ast->nodes[typelist].typelist.next)
     {
-        struct token* token = get_next_assembled_token(
-            tokens, cmd_buf, cmds, source, scanner, scanner_location);
-        if (token == NULL)
-            return NULL;
-        if (token->pushed_char != TOK_REMSTART)
-            return token;
-
-        expect_remend = get_next_assembled_token(
-            tokens, cmd_buf, cmds, source, scanner, scanner_location);
-        if (expect_remend->pushed_char == TOK_REMEND)
-            continue;
-
-        err_unterminated_remark(token->pushed_location, filename, source);
-        return NULL;
+        struct utf8_span name_span = ast->nodes[typelist].typelist.name;
+        // TODO: Commands currently only support primitive types
+        ast_id as_type = ast->nodes[typelist].typelist.type;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, as_type) == AST_AS_TYPE,
+            log_err("type: %d\n", ast_node_type(ast, as_type)));
+        if (cmd_add_param(
+                cmds,
+                cmd,
+                ast->nodes[as_type].as_type.type.primitive,
+                CMD_PARAM_IN,
+                utf8_span_view(source, name_span))
+            < 0)
+        {
+            goto error;
+        }
     }
+
+    utf8_deinit(cmd_name_upper);
+    ospath_deinit(plugin_filepath);
+    return 0;
+
+error:
+    utf8_deinit(cmd_name_upper);
+    ospath_deinit(plugin_filepath);
+    return -1;
 }
 
 int
 db_parse(
-    struct db_parser*      parser,
-    struct ast**           astp,
-    const char*            filename,
-    struct db_source       source,
-    const struct cmd_list* cmds)
+    struct db_parser*    parser,
+    struct ast**         astp,
+    const char*          filename,
+    struct db_source     source,
+    struct plugin_list** plugins,
+    struct cmd_list*     cmds)
 {
     struct token_queue* tokens;
     YY_BUFFER_STATE     buffer_state;
     int                 parse_result = -1;
     struct utf8_span    scanner_location = empty_utf8_span();
     struct utf8         cmd_buf = empty_utf8();
-    struct parse_param  parse_param = {astp, filename, source.text.data};
+    struct parse_param  parse_param
+        = {astp, filename, source.text.data, plugins, cmds};
 
     if (source.text.len == 0)
     {
@@ -263,16 +322,39 @@ db_parse(
 
     do
     {
-        struct token* token = get_next_token_ignoring_comments(
+        struct token* token = get_next_assembled_token(
             &tokens,
             &cmd_buf,
             cmds,
-            filename,
             source.text.data,
             parser->scanner,
             &scanner_location);
         if (token == NULL)
+        {
+            parse_result = -1;
             goto parse_failed;
+        }
+
+        if (token->pushed_char == TOK_REMSTART)
+        {
+            struct token* expect_remend = get_next_assembled_token(
+                &tokens,
+                &cmd_buf,
+                cmds,
+                source.text.data,
+                parser->scanner,
+                &scanner_location);
+            if (expect_remend->pushed_char == TOK_REMEND)
+            {
+                parse_result = YYPUSH_MORE;
+                continue;
+            }
+
+            err_unterminated_remark(
+                token->pushed_location, filename, source.text.data);
+            parse_result = -1;
+            goto parse_failed;
+        }
 
         parse_result = dbpush_parse(
             parser->parser,

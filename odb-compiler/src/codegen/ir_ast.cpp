@@ -398,7 +398,7 @@ create_cmd_func_table(
         if (ast_node_type(ast, n) != AST_COMMAND)
             continue;
 
-        cmd_id           cmd_id = ast->nodes[n].cmd.id;
+        cmd_id           cmd_id = ast->nodes[n].command.id;
         struct utf8_view c_sym = utf8_list_view(cmds->c_symbols, cmd_id);
         llvm::StringRef  c_sym_ref(c_sym.data + c_sym.off, c_sym.len);
 
@@ -670,7 +670,7 @@ get_cmd_func_signature(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cmd) == AST_COMMAND,
         log_err("type: %d\n", ast_node_type(ast, cmd)));
-    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
+    cmd_id cmd_id = ast->nodes[cmd].command.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
     const struct cmd_param_types_list* param_types
@@ -722,7 +722,7 @@ process_command(
         ast_node_type(ast, cmd) == AST_COMMAND,
         log_err("type: %d\n", ast_node_type(ast, cmd)));
 
-    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    ast_id arglist = ast->nodes[cmd].command.arglist;
     if (num_args == 0 && arglist > -1)
     {
         for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
@@ -744,7 +744,7 @@ process_command(
     if (sdk_type == SDK_DBPRO)
     {
         int i = results_count(*results) - num_args;
-        for (arglist = ast->nodes[cmd].cmd.arglist; arglist > -1;
+        for (arglist = ast->nodes[cmd].command.arglist; arglist > -1;
              arglist = ast->nodes[arglist].arglist.next, ++i)
         {
             ast_id expr = ast->nodes[arglist].arglist.expr;
@@ -761,7 +761,7 @@ process_command(
     /* Function table for commands should be generated at this
      * point. Look up the command's symbol in the command list and
      * get the associated llvm::Function */
-    cmd_id                cmd_id = ast->nodes[cmd].cmd.id;
+    cmd_id                cmd_id = ast->nodes[cmd].command.id;
     struct utf8_view      cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
     llvm::StringRef       CmdSymbol(cmd_sym.data + cmd_sym.off, cmd_sym.len);
     llvm::GlobalVariable* CmdFuncPtr = CmdFuncTable.find(CmdSymbol)->getValue();
@@ -783,7 +783,7 @@ process_command(
 
         /* If the command is used as a statement, then nothing will pop the
          * result off of the stack. Avoid pushing it in this case */
-        if (ast->nodes[cmd].cmd.is_expr)
+        if (ast->nodes[cmd].command.is_expr)
             if (results_push(results, RetVal) != 0)
                 return -1;
     }
@@ -2064,6 +2064,10 @@ process_node(
         case AST_END: return process_end(stack, ir, b, ast);
         case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_TYPELIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_LOAD_PLUGIN: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_LOAD_COMMAND: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_COMMAND_NAME: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_COMMAND:
             return process_command(
                 ir,

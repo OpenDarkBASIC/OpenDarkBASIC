@@ -187,8 +187,8 @@ TEST_F(NAME, function_with_multiple_statements)
     ast_id block3 = ast->nodes[block2].block.next;
     ast_id cmd1 = ast->nodes[block1].block.stmt;
     ast_id cmd2 = ast->nodes[block2].block.stmt;
-    ast_id arglist1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arglist1 = ast->nodes[cmd1].command.arglist;
+    ast_id arglist2 = ast->nodes[cmd2].command.arglist;
     ast_id var1 = ast->nodes[arglist1].arglist.expr;
     ast_id var2 = ast->nodes[arglist2].arglist.expr;
     ident1 = ast->nodes[var1].var_read.identifier;
@@ -243,8 +243,8 @@ TEST_F(NAME, function_with_explicit_types)
     ast_id block3 = ast->nodes[block2].block.next;
     ast_id cmd1 = ast->nodes[block1].block.stmt;
     ast_id cmd2 = ast->nodes[block2].block.stmt;
-    ast_id arglist1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arglist1 = ast->nodes[cmd1].command.arglist;
+    ast_id arglist2 = ast->nodes[cmd2].command.arglist;
     ast_id var1 = ast->nodes[arglist1].arglist.expr;
     ast_id var2 = ast->nodes[arglist2].arglist.expr;
     ident1 = ast->nodes[var1].var_read.identifier;

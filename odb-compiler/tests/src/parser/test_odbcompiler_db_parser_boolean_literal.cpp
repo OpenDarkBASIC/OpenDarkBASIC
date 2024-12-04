@@ -25,7 +25,7 @@ TEST_F(NAME, bool_true)
     ASSERT_THAT(parse("PRINT true\n"), Eq(0)) << log().text;
 
     ast_id cmd = ast->nodes[ast->root].block.stmt;
-    ast_id arg = ast->nodes[cmd].cmd.arglist;
+    ast_id arg = ast->nodes[cmd].command.arglist;
     ast_id lit = ast->nodes[arg].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, lit), Eq(AST_BOOLEAN_LITERAL));
     ASSERT_THAT(ast->nodes[lit].boolean_literal.is_true, IsTrue());
@@ -36,7 +36,7 @@ TEST_F(NAME, bool_false)
     ASSERT_THAT(parse("PRINT false\n"), Eq(0)) << log().text;
 
     ast_id cmd = ast->nodes[ast->root].block.stmt;
-    ast_id arg = ast->nodes[cmd].cmd.arglist;
+    ast_id arg = ast->nodes[cmd].command.arglist;
     ast_id lit = ast->nodes[arg].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, lit), Eq(AST_BOOLEAN_LITERAL));
     ASSERT_THAT(ast->nodes[lit].boolean_literal.is_true, IsFalse());

@@ -309,7 +309,7 @@ TEST_F(NAME, func_returns_result_of_another_func)
     ASSERT_THAT(block4, Eq(-1));
 
     ast_id cmd = ast->nodes[block1].block.stmt;
-    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    ast_id arglist = ast->nodes[cmd].command.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
     ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
@@ -366,7 +366,7 @@ TEST_F(NAME, func_result_as_arg_to_call)
     ASSERT_THAT(block4, Eq(-1));
 
     ast_id cmd = ast->nodes[block1].block.stmt;
-    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    ast_id arglist = ast->nodes[cmd].command.arglist;
     ast_id call_mul = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call_mul), Eq(AST_FUNC_CALL));
     ASSERT_THAT(ast_type_info(ast, call_mul).primitive, Eq(TYPE_I32));
@@ -426,7 +426,7 @@ TEST_F(NAME, recursion_1)
     ASSERT_THAT(block3, Eq(-1));
 
     ast_id cmd = ast->nodes[block1].block.stmt;
-    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    ast_id arglist = ast->nodes[cmd].command.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
     ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
@@ -472,7 +472,7 @@ TEST_F(NAME, recursion_2)
     ASSERT_THAT(block3, Eq(-1));
 
     ast_id cmd = ast->nodes[block1].block.stmt;
-    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    ast_id arglist = ast->nodes[cmd].command.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
     ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
@@ -522,7 +522,7 @@ TEST_F(NAME, nested_recursion_1)
     ASSERT_THAT(block4, Eq(-1));
 
     ast_id cmd = ast->nodes[block1].block.stmt;
-    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    ast_id arglist = ast->nodes[cmd].command.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
     ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));
@@ -581,7 +581,7 @@ TEST_F(NAME, nested_recursion_2)
     ASSERT_THAT(block4, Eq(-1));
 
     ast_id cmd = ast->nodes[block1].block.stmt;
-    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    ast_id arglist = ast->nodes[cmd].command.arglist;
     ast_id call = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call), Eq(AST_FUNC_CALL));
     ASSERT_THAT(ast_type_info(ast, call).primitive, Eq(TYPE_I32));

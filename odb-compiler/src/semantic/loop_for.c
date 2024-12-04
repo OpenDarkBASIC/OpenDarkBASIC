@@ -29,6 +29,10 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_END: break;
         case AST_ARGLIST: break;
         case AST_PARAMLIST: break;
+        case AST_TYPELIST: break;
+        case AST_LOAD_PLUGIN: break;
+        case AST_LOAD_COMMAND: break;
+        case AST_COMMAND_NAME: break;
         case AST_COMMAND: break;
         case AST_ASSIGNMENT: break;
         case AST_VAR_DECL1: break;

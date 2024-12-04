@@ -227,11 +227,49 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         case AST_END: break;
         case AST_ARGLIST: break;
         case AST_PARAMLIST: break;
-        case AST_TYPELIST: break;
+        case AST_TYPELIST:
+            if (!utf8_equal(
+                    utf8_span_view(source, ast->nodes[n1].typelist.name),
+                    utf8_span_view(source, ast->nodes[n2].typelist.name)))
+                return 0;
+            break;
+        case AST_LOAD_PLUGIN:
+            if (!utf8_equal(
+                    utf8_span_view(source, ast->nodes[n1].load_plugin.filepath),
+                    utf8_span_view(
+                        source, ast->nodes[n2].load_plugin.filepath)))
+                return 0;
+            break;
+        case AST_LOAD_COMMAND:
+            if (!utf8_equal(
+                    utf8_span_view(
+                        source, ast->nodes[n1].load_command.cmd_name),
+                    utf8_span_view(
+                        source, ast->nodes[n2].load_command.cmd_name)))
+                return 0;
+            if (!utf8_equal(
+                    utf8_span_view(
+                        source, ast->nodes[n1].load_command.filepath),
+                    utf8_span_view(
+                        source, ast->nodes[n2].load_command.filepath)))
+                return 0;
+            if (!utf8_equal(
+                    utf8_span_view(
+                        source, ast->nodes[n1].load_command.c_symbol),
+                    utf8_span_view(
+                        source, ast->nodes[n2].load_command.c_symbol)))
+                return 0;
+            break;
+        case AST_COMMAND_NAME:
+            if (!utf8_equal(
+                    utf8_span_view(source, ast->nodes[n1].command_name.name),
+                    utf8_span_view(source, ast->nodes[n2].command_name.name)))
+                return 0;
+            break;
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */
-            if (ast->nodes[n1].cmd.id != ast->nodes[n2].cmd.id)
+            if (ast->nodes[n1].command.id != ast->nodes[n2].command.id)
                 return 0;
             break;
         case AST_ASSIGNMENT: break;

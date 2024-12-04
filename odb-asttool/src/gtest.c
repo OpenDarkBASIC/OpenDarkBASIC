@@ -22,6 +22,7 @@
     X(AST_TYPELIST, "typelist", "typelist", "type", "next")                    \
     X(AST_LOAD_PLUGIN, "load_plugin", "load_plugin", "", "")                   \
     X(AST_LOAD_COMMAND, "load_command", "load_command", "rettype", "typelist") \
+    X(AST_COMMAND_NAME, "command_name", "command_name", "arglist", "")         \
     X(AST_COMMAND, "cmd", "cmd", "arglist", "")                                \
     X(AST_ASSIGNMENT, "ass", "assignment", "lvalue", "expr")                   \
     X(AST_VAR_DECL1, "decl1", "var_decl1", "var_decl2", "init_expr")           \
@@ -322,7 +323,18 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
                 ast->nodes[n].paramlist.combined_location.off,
                 ast->nodes[n].paramlist.combined_location.len);
             break;
-        case AST_TYPELIST: break;
+        case AST_TYPELIST:
+            if (ast->nodes[n].typelist.name.len > 0)
+            {
+                fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+                write_var_name(fp, ast, n);
+                fprintf(
+                    fp,
+                    "].typelist.name, Utf8SpanEq(%d, %d));\n",
+                    ast->nodes[n].typelist.name.off,
+                    ast->nodes[n].typelist.name.len);
+            }
+            break;
         case AST_LOAD_PLUGIN:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);
@@ -355,10 +367,19 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
                 ast->nodes[n].load_command.c_symbol.off,
                 ast->nodes[n].load_command.c_symbol.len);
             break;
+        case AST_COMMAND_NAME:
+            fprintf(fp, "    ASSERT_THAT(ast->nodes[");
+            write_var_name(fp, ast, n);
+            fprintf(
+                fp,
+                "].command_name.name, Utf8SpanEq(%d, %d));\n",
+                ast->nodes[n].command_name.name.off,
+                ast->nodes[n].command_name.name.len);
+            break;
         case AST_COMMAND:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);
-            fprintf(fp, "].cmd.id, Eq(%d));\n", ast->nodes[n].cmd.id);
+            fprintf(fp, "].cmd.id, Eq(%d));\n", ast->nodes[n].command.id);
             break;
         case AST_ASSIGNMENT:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");

@@ -14,6 +14,10 @@ child_changed:
         case AST_END: return -1;
         case AST_ARGLIST: return -1;
         case AST_PARAMLIST: return -1;
+        case AST_TYPELIST: return -1;
+        case AST_LOAD_PLUGIN: return -1;
+        case AST_LOAD_COMMAND: return -1;
+        case AST_COMMAND_NAME: return -1;
         case AST_COMMAND: return -1;
         case AST_ASSIGNMENT: return -1;
         case AST_VAR_DECL1: return -1;

@@ -50,7 +50,7 @@ mem_release_plugin_list(struct plugin_list* plugins);
 #endif
 
 ODBCOMPILER_PUBLIC_API plugin_id
-plugin_list_add_or_get(struct plugin_list** plugins, struct ospathc filepath);
+plugin_list_add_or_get(struct plugin_list** plugins, struct ospath* filepath);
 
 ODBCOMPILER_PUBLIC_API int
 plugin_list_populate(

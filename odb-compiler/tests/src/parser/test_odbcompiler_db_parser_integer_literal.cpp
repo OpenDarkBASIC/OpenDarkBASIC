@@ -29,8 +29,8 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
 
     ast_id cmd1 = ast->nodes[ast->root].block.stmt;
     ast_id cmd2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id arg1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arg1 = ast->nodes[cmd1].command.arglist;
+    ast_id arg2 = ast->nodes[cmd2].command.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
     EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_BYTE_LITERAL));
@@ -48,8 +48,8 @@ TEST_F(NAME, byte_literal)
 
     ast_id cmd1 = ast->nodes[ast->root].block.stmt;
     ast_id cmd2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id arg1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arg1 = ast->nodes[cmd1].command.arglist;
+    ast_id arg2 = ast->nodes[cmd2].command.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
     EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_BYTE_LITERAL));
@@ -67,8 +67,8 @@ TEST_F(NAME, word_literal)
 
     ast_id cmd1 = ast->nodes[ast->root].block.stmt;
     ast_id cmd2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id arg1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arg1 = ast->nodes[cmd1].command.arglist;
+    ast_id arg2 = ast->nodes[cmd2].command.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
     EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_WORD_LITERAL));
@@ -86,8 +86,8 @@ TEST_F(NAME, integer_literal)
 
     ast_id cmd1 = ast->nodes[ast->root].block.stmt;
     ast_id cmd2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id arg1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arg1 = ast->nodes[cmd1].command.arglist;
+    ast_id arg2 = ast->nodes[cmd2].command.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
     EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_INTEGER_LITERAL));
@@ -105,8 +105,8 @@ TEST_F(NAME, dword_literal)
 
     ast_id cmd1 = ast->nodes[ast->root].block.stmt;
     ast_id cmd2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id arg1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arg1 = ast->nodes[cmd1].command.arglist;
+    ast_id arg2 = ast->nodes[cmd2].command.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
     EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_DWORD_LITERAL));
@@ -124,8 +124,8 @@ TEST_F(NAME, double_integer_literal)
 
     ast_id cmd1 = ast->nodes[ast->root].block.stmt;
     ast_id cmd2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id arg1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id arg1 = ast->nodes[cmd1].command.arglist;
+    ast_id arg2 = ast->nodes[cmd2].command.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
     EXPECT_THAT(
@@ -159,11 +159,11 @@ TEST_F(NAME, hex_literals)
     ast_id cmddword = ast->nodes[blockdword].block.stmt;
     ast_id cmddint = ast->nodes[blockdint].block.stmt;
 
-    ast_id argbyte = ast->nodes[cmdbyte].cmd.arglist;
-    ast_id argword = ast->nodes[cmdword].cmd.arglist;
-    ast_id argint = ast->nodes[cmdint].cmd.arglist;
-    ast_id argdword = ast->nodes[cmddword].cmd.arglist;
-    ast_id argdint = ast->nodes[cmddint].cmd.arglist;
+    ast_id argbyte = ast->nodes[cmdbyte].command.arglist;
+    ast_id argword = ast->nodes[cmdword].command.arglist;
+    ast_id argint = ast->nodes[cmdint].command.arglist;
+    ast_id argdword = ast->nodes[cmddword].command.arglist;
+    ast_id argdint = ast->nodes[cmddint].command.arglist;
 
     ast_id litbyte = ast->nodes[argbyte].arglist.expr;
     ast_id litword = ast->nodes[argword].arglist.expr;
@@ -208,11 +208,11 @@ TEST_F(NAME, binary_literals)
     ast_id cmddword = ast->nodes[blockdword].block.stmt;
     ast_id cmddint = ast->nodes[blockdint].block.stmt;
 
-    ast_id argbyte = ast->nodes[cmdbyte].cmd.arglist;
-    ast_id argword = ast->nodes[cmdword].cmd.arglist;
-    ast_id argint = ast->nodes[cmdint].cmd.arglist;
-    ast_id argdword = ast->nodes[cmddword].cmd.arglist;
-    ast_id argdint = ast->nodes[cmddint].cmd.arglist;
+    ast_id argbyte = ast->nodes[cmdbyte].command.arglist;
+    ast_id argword = ast->nodes[cmdword].command.arglist;
+    ast_id argint = ast->nodes[cmdint].command.arglist;
+    ast_id argdword = ast->nodes[cmddword].command.arglist;
+    ast_id argdint = ast->nodes[cmddint].command.arglist;
 
     ast_id litbyte = ast->nodes[argbyte].arglist.expr;
     ast_id litword = ast->nodes[argword].arglist.expr;

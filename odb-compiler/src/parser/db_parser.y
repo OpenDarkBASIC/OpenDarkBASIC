@@ -9,7 +9,7 @@
 
     #include "odb-util/utf8.h"  /* %union contains struct utf8_span */
     #include "odb-compiler/ast/ast.h"  /* %union contains ast_id */
-    #include "odb-compiler/parser/db_source.h"
+    #include "odb-compiler/parser/db_parser.h"  /* For Preprocessor callbacks */
 
     typedef void* dbscan_t;
     typedef struct dbpstate dbpstate;
@@ -20,6 +20,8 @@
         struct ast** astp;
         const char* filename;
         const char* source;
+        struct plugin_list** plugins;
+        struct cmd_list* cmds;
     };
 }
 
@@ -110,7 +112,6 @@
      * length into the memory-mapped file. */
     struct utf8_span string_value;
     ast_id node_value;  /* Index into the ast->nodes[] array */
-    cmd_id cmd_value;  /* Index into the command_list */
     enum scope scope_value;
 }
 
@@ -243,14 +244,14 @@
 %token<string_value> IDENTIFIER_FLOAT "FLOAT identifier"
 %token<string_value> IDENTIFIER_DOUBLE "DOUBLE identifier"
 %token<string_value> IDENTIFIER_STRING "STRING identifier"
-%token<cmd_value> COMMAND "command"
+%token<string_value> COMMAND "command"
 
 /* non-terminals */
 %type<node_value> program
 %type<node_value> block iblock maybe_block
 %type<node_value> stmt istmt
 %type<node_value> expr maybe_expr
-%type<node_value> arglist maybe_arglist paramlist maybe_paramlist typelist
+%type<node_value> arglist maybe_arglist paramlist maybe_paramlist typelist typelist_entry
 %type<node_value> inc dec
 %type<node_value> load_plugin load_command
 %type<node_value> command_stmt command_expr
@@ -384,31 +385,41 @@ load_plugin
   ;
 load_command
   : LOAD_COMMAND STRING_LITERAL ',' STRING_LITERAL ',' STRING_LITERAL ',' type ',' typelist {
-        $$ = ast_load_command(ctx->astp, $2, $4, $6, $8, @$);
+        $$ = ast_load_command(ctx->astp, $10, $8, $2, $4, $6, @$);
+        if (db_parser_load_command(*ctx->astp, $$, ctx->filename, ctx->source, ctx->plugins, ctx->cmds) != 0) {
+            YYABORT;
+        }
     }
   | LOAD_COMMAND STRING_LITERAL ',' STRING_LITERAL ',' STRING_LITERAL ',' type {
-        $$ = ast_load_command(ctx->astp, $2, $4, $6, $8, @$);
+        $$ = ast_load_command(ctx->astp, -1, $8, $2, $4, $6, @$);
+        if (db_parser_load_command(*ctx->astp, $$, ctx->filename, ctx->source, ctx->plugins, ctx->cmds) != 0) {
+            YYABORT;
+        }
     }
   ;
 typelist
-  : typelist ',' type                       { $$ = $1; ast_typelist_append_type(ctx->astp, $$, $3, @$); }
-  | type                                    { $$ = ast_typelist(ctx->astp, $1, @$); }
+  : typelist ',' typelist_entry             { $$ = $1; ast_typelist_append(*ctx->astp, $1, $3, @$); }
+  | typelist_entry                          { $$ = $1; }
+  ;
+typelist_entry
+  : IDENTIFIER AS type                      { $$ = ast_typelist(ctx->astp, $1, $3, @$); }
+  | type                                    { $$ = ast_typelist(ctx->astp, empty_utf8_span(), $1, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement. This
 // whole thing is ugly as hell, but '(' expr ')' causes conflicts so we have to
 // handle all of the other cases.
 command_stmt
-  : COMMAND maybe_arglist                   { $$ = ast_command(ctx->astp, $1, $2, 0, @$); }
-  | COMMAND '(' ')'                         { $$ = ast_command(ctx->astp, $1, -1, 0, @$); }
+  : COMMAND maybe_arglist                   { $$ = ast_command_name(ctx->astp, $1, $2, 0, @$); }
+  | COMMAND '(' ')'                         { $$ = ast_command_name(ctx->astp, $1, -1, 0, @$); }
   | COMMAND '(' arglist ',' expr ')'        {
         ast_arglist_append_expr(ctx->astp, $3, $5, utf8_span_union(@3, @5));
-        $$ = ast_command(ctx->astp, $1, $3, 0, @$);
+        $$ = ast_command_name(ctx->astp, $1, $3, 0, @$);
     }
   ;
 // Commands appearing as expressions must be called with arguments in brackets
 command_expr
-  : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, 1, @$); }
+  : COMMAND '(' maybe_arglist ')'           { $$ = ast_command_name(ctx->astp, $1, $3, 1, @$); }
   ;
 lvalue
   : lvalue '.' lvalue                       { $$ = ast_udt_write(ctx->astp, $1, $3, @$); }

@@ -41,7 +41,7 @@ TEST_F(NAME, and_implicit_evaluation_of_integer)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -76,7 +76,7 @@ TEST_F(NAME, and_implicit_evaluation_of_float)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -112,7 +112,7 @@ TEST_F(NAME, and_implicit_evaluation_of_double)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -148,7 +148,7 @@ TEST_F(NAME, or_implicit_evaluation_of_integer)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -183,7 +183,7 @@ TEST_F(NAME, or_implicit_evaluation_of_float)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -219,7 +219,7 @@ TEST_F(NAME, or_implicit_evaluation_of_double)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -255,7 +255,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_integer)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -290,7 +290,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_float)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -326,7 +326,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_double)
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
     ast_id cmd = ast->nodes[cmd_block].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;

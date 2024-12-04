@@ -428,8 +428,8 @@ typecheck_warnings(
 {
     int         i;
     struct ast* ast = *astp;
-    cmd_id      cmd_id = ast->nodes[cmd_node].cmd.id;
-    ast_id      arglist = ast->nodes[cmd_node].cmd.arglist;
+    cmd_id      cmd_id = ast->nodes[cmd_node].command.id;
+    ast_id      arglist = ast->nodes[cmd_node].command.arglist;
     const struct cmd_param_types_list* params = cmds->param_types->data[cmd_id];
 
     ODBUTIL_DEBUG_ASSERT(
@@ -567,16 +567,16 @@ resolve_cmd_overloads(
 
         /* Collect all overloads of the command */
         candidates_clear(candidates);
-        if (create_candidates_list(&candidates, cmds, ast->nodes[n].cmd.id)
+        if (create_candidates_list(&candidates, cmds, ast->nodes[n].command.id)
             != 0)
         {
             goto fail;
         }
 
         /* Count number of arguments in the AST */
-        ctx.arglist = ast->nodes[n].cmd.arglist;
+        ctx.arglist = ast->nodes[n].command.arglist;
         ctx.argcount = 0;
-        for (arglist = ast->nodes[n].cmd.arglist; arglist > -1;
+        for (arglist = ast->nodes[n].command.arglist; arglist > -1;
              arglist = ast->nodes[arglist].arglist.next)
             ctx.argcount++;
 
@@ -630,7 +630,7 @@ resolve_cmd_overloads(
         if (candidates_count(candidates) == 1
             || candidates_count(prev_candidates) == 1)
         {
-            ast->nodes[n].cmd.id = candidates_count(candidates) == 1
+            ast->nodes[n].command.id = candidates_count(candidates) == 1
                                        ? *vec_first(candidates)
                                        : *vec_first(prev_candidates);
             if (typecheck_warnings(astp, n, plugins, cmds, filename, source)
@@ -652,7 +652,7 @@ resolve_cmd_overloads(
         {
             report_ambiguous_overloads(
                 ast,
-                ast->nodes[n].cmd.arglist,
+                ast->nodes[n].command.arglist,
                 plugins,
                 cmds,
                 filename,
@@ -665,10 +665,10 @@ resolve_cmd_overloads(
             report_available_commands(
                 "Too few arguments to command.\n",
                 ast,
-                ast->nodes[n].cmd.arglist,
+                ast->nodes[n].command.arglist,
                 plugins,
                 cmds,
-                ast->nodes[n].cmd.id,
+                ast->nodes[n].command.id,
                 filename,
                 source);
         }
@@ -677,10 +677,10 @@ resolve_cmd_overloads(
             report_available_commands(
                 "Too many arguments to command.\n",
                 ast,
-                ast->nodes[n].cmd.arglist,
+                ast->nodes[n].command.arglist,
                 plugins,
                 cmds,
-                ast->nodes[n].cmd.id,
+                ast->nodes[n].command.id,
                 filename,
                 source);
         }
@@ -690,10 +690,10 @@ resolve_cmd_overloads(
                 "Parameter mismatch: No version of this command takes the "
                 "argument types used here.\n",
                 ast,
-                ast->nodes[n].cmd.arglist,
+                ast->nodes[n].command.arglist,
                 plugins,
                 cmds,
-                ast->nodes[n].cmd.id,
+                ast->nodes[n].command.id,
                 filename,
                 source);
         }

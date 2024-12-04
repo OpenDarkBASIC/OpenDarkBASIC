@@ -617,8 +617,8 @@ process_command(
         ast_node_type(*astp, cmd) == AST_COMMAND,
         log_err("type: %d\n", ast_node_type(*astp, cmd)));
 
-    arglist = (*astp)->nodes[cmd].cmd.arglist;
-    cmd_id = (*astp)->nodes[cmd].cmd.id;
+    arglist = (*astp)->nodes[cmd].command.arglist;
+    cmd_id = (*astp)->nodes[cmd].command.id;
 
     if (arglist > -1 && type_is_invalid(ast_type_info(*astp, arglist)))
     {
@@ -630,7 +630,7 @@ process_command(
     (*astp)->nodes[cmd].info.type_info = primitive_type(return_type);
 
     /* Check if the command has a return value that is being ignored */
-    if (return_type != TYPE_VOID && !(*astp)->nodes[cmd].cmd.is_expr)
+    if (return_type != TYPE_VOID && !(*astp)->nodes[cmd].command.is_expr)
     {
         ast_id parent = ast_find_parent(*astp, cmd);
         ODBUTIL_DEBUG_ASSERT(parent > -1, (void)0);
@@ -3242,6 +3242,16 @@ process_node(
             return DEP_SOLVED;
         case AST_ARGLIST: return process_arglist(stack, *astp, n);
         case AST_PARAMLIST: return process_paramlist(stack, *astp, n);
+        case AST_TYPELIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_LOAD_PLUGIN:
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return DEP_ERROR;
+        case AST_LOAD_COMMAND:
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return DEP_ERROR;
+        case AST_COMMAND_NAME:
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return DEP_ERROR;
         case AST_COMMAND:
             return process_command(stack, astp, n, filename, source, cmds);
         case AST_ASSIGNMENT:

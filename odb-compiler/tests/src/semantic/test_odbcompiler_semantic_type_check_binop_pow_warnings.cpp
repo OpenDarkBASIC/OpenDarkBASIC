@@ -32,7 +32,7 @@ TEST_F(NAME, exponent_truncated_from_double)
               "base when using floating point exponents.\n"
               "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -56,7 +56,7 @@ TEST_F(NAME, exponent_strange_conversion)
               "   |       >~~ ^ ~~~< BOOLEAN\n"
               "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -84,7 +84,7 @@ TEST_F(NAME, exponent_implicit_conversion_from_dword)
             "exponents.\n"
             "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -112,7 +112,7 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
               "exponents.\n"
               "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;

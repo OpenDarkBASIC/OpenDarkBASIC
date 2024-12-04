@@ -27,8 +27,8 @@ TEST_F(NAME, print_command)
     ast_id stmt = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(stmt, Gt(-1));
     ASSERT_THAT(ast_node_type(ast, stmt), Eq(AST_COMMAND));
-    ASSERT_THAT(ast->nodes[stmt].cmd.id, Eq(1));
-    ast_id arglist = ast->nodes[stmt].cmd.arglist;
+    ASSERT_THAT(ast->nodes[stmt].command.id, Eq(1));
+    ast_id arglist = ast->nodes[stmt].command.arglist;
     ASSERT_THAT(arglist, Gt(-1));
     ASSERT_THAT(ast_node_type(ast, arglist), Eq(AST_ARGLIST));
     ASSERT_THAT(ast->nodes[arglist].arglist.next, Eq(-1));

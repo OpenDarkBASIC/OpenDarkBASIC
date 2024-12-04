@@ -33,7 +33,7 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
     ASSERT_THAT(block4, Eq(-1));
 
     ast_id cmd = ast->nodes[block3].block.stmt;
-    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id args = ast->nodes[cmd].command.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id a_var_read = ast->nodes[op].binop.left;
     ast_id b_var_read = ast->nodes[op].binop.right;
