@@ -22,6 +22,7 @@
         const char* source;
         struct plugin_list** plugins;
         struct cmd_list* cmds;
+        struct udt_storage* udts;
     };
 }
 
@@ -386,13 +387,13 @@ load_plugin
 load_command
   : LOAD_COMMAND STRING_LITERAL ',' STRING_LITERAL ',' STRING_LITERAL ',' type ',' typelist {
         $$ = ast_load_command(ctx->astp, $10, $8, $2, $4, $6, @$);
-        if (db_parser_load_command(*ctx->astp, $$, ctx->filename, ctx->source, ctx->plugins, ctx->cmds) != 0) {
+        if (db_parser_load_command(*ctx->astp, $$, ctx->filename, ctx->source, ctx->plugins, ctx->cmds, ctx->udts) != 0) {
             YYABORT;
         }
     }
   | LOAD_COMMAND STRING_LITERAL ',' STRING_LITERAL ',' STRING_LITERAL ',' type {
         $$ = ast_load_command(ctx->astp, -1, $8, $2, $4, $6, @$);
-        if (db_parser_load_command(*ctx->astp, $$, ctx->filename, ctx->source, ctx->plugins, ctx->cmds) != 0) {
+        if (db_parser_load_command(*ctx->astp, $$, ctx->filename, ctx->source, ctx->plugins, ctx->cmds, ctx->udts) != 0) {
             YYABORT;
         }
     }

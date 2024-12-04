@@ -342,6 +342,7 @@ loop_for(
     const struct db_source*   sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
+    const struct udt_storage* udts,
     const struct globals*     globals)
 {
     ast_id       n;

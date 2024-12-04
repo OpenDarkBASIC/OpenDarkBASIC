@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-util/config.h"
+#include "odb-util/utf8.h"
 #include <assert.h>
 
 /*!

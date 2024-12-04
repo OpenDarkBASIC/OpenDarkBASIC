@@ -94,7 +94,7 @@ parse_command_string(
     cmd_id cmd = cmd_list_add(
         commands,
         plugin_id,
-        return_type,
+        primitive_type(return_type),
         utf8_span_view(data, cmd_name),
         utf8_span_view(data, c_symbol));
     if (cmd < 0)
@@ -132,7 +132,7 @@ parse_command_string(
         if (cmd_add_param(
                 commands,
                 cmd,
-                type,
+                primitive_type(type),
                 direction,
                 utf8_span_view(data, db_param_name))
             != 0)

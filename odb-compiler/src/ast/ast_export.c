@@ -35,7 +35,7 @@ ast_export_fp(
         {
             int              i;
             struct utf8_view name, compare;
-            name = utf8_list_view(cmds->db_cmd_names, node.command.id);
+            name = utf8_list_view(cmds->cmd_names, node.command.id);
             utf8_enumerate(cmd_names, i, compare)
             {
                 if (utf8_equal(name, compare))

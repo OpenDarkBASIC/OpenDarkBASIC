@@ -6,7 +6,7 @@
 #include "odb-util/vec.h"
 
 VEC_DEFINE_API(plugin_ids, int16_t, 16)
-VEC_DEFINE_API(return_types_list, enum primitive_type, 32)
+VEC_DEFINE_API(return_types_list, union type, 32)
 VEC_DEFINE_API(cmd_param_types_list, struct cmd_param, 8)
 VEC_DEFINE_API(cmd_param_types_lists, struct cmd_param_types_list*, 32)
 VEC_DEFINE_API(db_param_names, struct utf8_list*, 32)
@@ -14,12 +14,12 @@ VEC_DEFINE_API(db_param_names, struct utf8_list*, 32)
 void
 cmd_list_init(struct cmd_list* cmds)
 {
-    utf8_list_init(&cmds->db_cmd_names);
-    utf8_list_init(&cmds->c_symbols);
+    utf8_list_init(&cmds->cmd_names);
+    utf8_list_init(&cmds->symbols);
     plugin_ids_init(&cmds->plugin_ids);
     return_types_list_init(&cmds->return_types);
     cmd_param_types_lists_init(&cmds->param_types);
-    db_param_names_init(&cmds->db_param_names);
+    db_param_names_init(&cmds->param_names);
     cmds->longest_command = 0;
 }
 
@@ -29,9 +29,9 @@ cmd_list_deinit(struct cmd_list* cmds)
     struct utf8_list**            db_param_names;
     struct cmd_param_types_list** param_types;
 
-    vec_for_each(cmds->db_param_names, db_param_names)
+    vec_for_each(cmds->param_names, db_param_names)
         utf8_list_deinit(*db_param_names);
-    db_param_names_deinit(cmds->db_param_names);
+    db_param_names_deinit(cmds->param_names);
 
     vec_for_each(cmds->param_types, param_types)
         cmd_param_types_list_deinit(*param_types);
@@ -39,25 +39,26 @@ cmd_list_deinit(struct cmd_list* cmds)
 
     return_types_list_deinit(cmds->return_types);
     plugin_ids_deinit(cmds->plugin_ids);
-    utf8_list_deinit(cmds->c_symbols);
-    utf8_list_deinit(cmds->db_cmd_names);
+    utf8_list_deinit(cmds->symbols);
+    utf8_list_deinit(cmds->cmd_names);
 }
 
 cmd_id
 cmd_list_insert(
-    struct cmd_list*    cmds,
-    utf8_idx            insert,
-    plugin_id           plugin_id,
-    enum primitive_type return_type,
-    struct utf8_view    db_cmd_name,
-    struct utf8_view    c_symbol)
+    struct cmd_list* cmds,
+    utf8_idx         insert,
+    plugin_id        plugin_id,
+    union type       return_type,
+    struct utf8_view db_cmd_name,
+    struct utf8_view c_symbol)
 {
     struct cmd_param_types_list** param_types;
     struct utf8_list**            db_param_names;
 
     /* NOTE: DBPro supports command overloading, so there will be duplicates.
      * The check for whether an overload is ambiguous occurs later when the
-     * overload is resolved, specifically, in semantic/resolve_cmd_overoads.c.
+     * overload is resolved, specifically, in
+     * semantic/resolve_command_overoads.c.
      *
      * The effect is that ambiguous commands go unnoticed until they are
      * actually used. Whether this is a good decision or not is up for
@@ -83,9 +84,9 @@ cmd_list_insert(
                 db_cmd_name.data + db_cmd_name.off));
 #endif
 
-    if (utf8_list_insert(&cmds->db_cmd_names, insert, db_cmd_name) < 0)
+    if (utf8_list_insert(&cmds->cmd_names, insert, db_cmd_name) < 0)
         goto db_cmd_name_failed;
-    if (utf8_list_insert(&cmds->c_symbols, insert, c_symbol) < 0)
+    if (utf8_list_insert(&cmds->symbols, insert, c_symbol) < 0)
         goto c_identifier_failed;
     if (plugin_ids_insert(&cmds->plugin_ids, insert, plugin_id) < 0)
         goto plugin_insert_failed;
@@ -96,8 +97,7 @@ cmd_list_insert(
     if (param_types == NULL)
         goto param_types_failed;
     cmd_param_types_list_init(param_types);
-    db_param_names
-        = db_param_names_insert_emplace(&cmds->db_param_names, insert);
+    db_param_names = db_param_names_insert_emplace(&cmds->param_names, insert);
     if (db_param_names == NULL)
         goto param_names_failed;
     utf8_list_init(db_param_names);
@@ -114,9 +114,9 @@ param_types_failed:
 return_type_failed:
     plugin_ids_erase(cmds->plugin_ids, insert);
 plugin_insert_failed:
-    utf8_list_erase(cmds->c_symbols, insert);
+    utf8_list_erase(cmds->symbols, insert);
 c_identifier_failed:
-    utf8_list_erase(cmds->db_cmd_names, insert);
+    utf8_list_erase(cmds->cmd_names, insert);
 db_cmd_name_failed:
     return -1;
 }
@@ -129,8 +129,8 @@ mem_acquire_cmd_list(struct cmd_list* cmds)
     struct utf8_list**            db_param_names;
     if (cmds == NULL)
         return;
-    mem_acquire_utf8_list(cmds->db_cmd_names);
-    mem_acquire_utf8_list(cmds->c_symbols);
+    mem_acquire_utf8_list(cmds->cmd_names);
+    mem_acquire_utf8_list(cmds->symbols);
     mem_acquire_vec(plugin_ids, cmds->plugin_ids);
     mem_acquire_vec(return_types_list, cmds->return_types);
     mem_acquire_vec(cmd_param_types_lists, cmds->param_types);
@@ -138,8 +138,8 @@ mem_acquire_cmd_list(struct cmd_list* cmds)
     {
         mem_acquire_vec(cmd_param_types_list, *param_types);
     }
-    mem_acquire_vec(db_param_names, cmds->db_param_names);
-    vec_for_each(cmds->db_param_names, db_param_names)
+    mem_acquire_vec(db_param_names, cmds->param_names);
+    vec_for_each(cmds->param_names, db_param_names)
     {
         mem_acquire_utf8_list(*db_param_names);
     }
@@ -152,11 +152,11 @@ mem_release_cmd_list(struct cmd_list* cmds)
     if (cmds == NULL)
         return;
 
-    vec_for_each(cmds->db_param_names, db_param_names)
+    vec_for_each(cmds->param_names, db_param_names)
     {
         mem_release_utf8_list(*db_param_names);
     }
-    mem_release_vec(cmds->db_param_names);
+    mem_release_vec(cmds->param_names);
     vec_for_each(cmds->param_types, param_types)
     {
         mem_release_vec(*param_types);
@@ -164,22 +164,22 @@ mem_release_cmd_list(struct cmd_list* cmds)
     mem_release_vec(cmds->param_types);
     mem_release_vec(cmds->return_types);
     mem_release_vec(cmds->plugin_ids);
-    mem_release_utf8_list(cmds->c_symbols);
-    mem_release_utf8_list(cmds->db_cmd_names);
+    mem_release_utf8_list(cmds->symbols);
+    mem_release_utf8_list(cmds->cmd_names);
 }
 #endif
 
 cmd_id
 cmd_list_add(
-    struct cmd_list*    cmds,
-    plugin_id           plugin_id,
-    enum primitive_type return_type,
-    struct utf8_view    db_cmd_name,
-    struct utf8_view    c_symbol)
+    struct cmd_list* cmds,
+    plugin_id        plugin_id,
+    union type       return_type,
+    struct utf8_view cmd_name,
+    struct utf8_view symbol)
 {
-    utf8_idx insert = utf8_lower_bound(cmds->db_cmd_names, db_cmd_name);
+    utf8_idx insert = utf8_lower_bound(cmds->cmd_names, cmd_name);
     return cmd_list_insert(
-        cmds, insert, plugin_id, return_type, db_cmd_name, c_symbol);
+        cmds, insert, plugin_id, return_type, cmd_name, symbol);
 }
 
 void
@@ -188,18 +188,18 @@ cmd_list_erase(struct cmd_list* cmds, cmd_id cmd_id)
     /* The max length may have changed if we remove a command that is equal to
      * the max */
     int              recalc_longest_command = 0;
-    struct utf8_span span = utf8_list_span(cmds->db_cmd_names, cmd_id);
+    struct utf8_span span = utf8_list_span(cmds->cmd_names, cmd_id);
     if (span.len == cmds->longest_command)
         recalc_longest_command = 1;
 
-    utf8_list_deinit(cmds->db_param_names->data[cmd_id]);
-    db_param_names_erase(cmds->db_param_names, cmd_id);
+    utf8_list_deinit(cmds->param_names->data[cmd_id]);
+    db_param_names_erase(cmds->param_names, cmd_id);
     cmd_param_types_list_deinit(cmds->param_types->data[cmd_id]);
     cmd_param_types_lists_erase(cmds->param_types, cmd_id);
     return_types_list_erase(cmds->return_types, cmd_id);
     plugin_ids_erase(cmds->plugin_ids, cmd_id);
-    utf8_list_erase(cmds->c_symbols, cmd_id);
-    utf8_list_erase(cmds->db_cmd_names, cmd_id);
+    utf8_list_erase(cmds->symbols, cmd_id);
+    utf8_list_erase(cmds->cmd_names, cmd_id);
 
     if (recalc_longest_command)
     {
@@ -207,7 +207,7 @@ cmd_list_erase(struct cmd_list* cmds, cmd_id cmd_id)
         cmds->longest_command = 0;
         for (i = 0; i != cmd_list_count(cmds); ++i)
         {
-            span = utf8_list_span(cmds->db_cmd_names, i);
+            span = utf8_list_span(cmds->cmd_names, i);
             if (cmds->longest_command < span.len)
                 cmds->longest_command = span.len;
         }
@@ -218,17 +218,17 @@ int
 cmd_add_param(
     struct cmd_list*         cmds,
     cmd_id                   cmd_id,
-    enum primitive_type      type,
+    union type               type,
     enum cmd_param_direction direction,
     struct utf8_view         db_param_name)
 {
     struct cmd_param_types_list** params = &cmds->param_types->data[cmd_id];
-    struct utf8_list** param_names = &cmds->db_param_names->data[cmd_id];
+    struct utf8_list** param_names = &cmds->param_names->data[cmd_id];
 
     struct cmd_param* param = cmd_param_types_list_emplace(params);
     if (param == NULL)
         return -1;
-    param->primitive = type;
+    param->type = type;
     param->direction = direction;
 
     if (utf8_list_add(param_names, db_param_name) != 0)
@@ -243,9 +243,9 @@ cmd_add_param(
 cmd_id
 cmd_list_find(const struct cmd_list* commands, struct utf8_view name)
 {
-    cmd_id cmd = utf8_lower_bound(commands->db_cmd_names, name);
+    cmd_id cmd = utf8_lower_bound(commands->cmd_names, name);
     if (cmd < cmd_list_count(commands)
-        && utf8_equal(name, utf8_list_view(commands->db_cmd_names, cmd)))
+        && utf8_equal(name, utf8_list_view(commands->cmd_names, cmd)))
         return cmd;
     return -1;
 }

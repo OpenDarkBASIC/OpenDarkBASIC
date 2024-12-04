@@ -9,6 +9,7 @@ typedef struct dbpstate dbpstate;
 struct ast;
 struct cmd_list;
 struct plugin_list;
+struct udt_storage;
 
 struct db_parser
 {
@@ -29,14 +30,16 @@ db_parse(
     const char*          filename,
     struct db_source     source,
     struct plugin_list** plugins,
-    struct cmd_list*     cmds);
+    struct cmd_list*     cmds,
+    struct udt_storage*  udts);
 
 /* These functions get called by db_parser.y during parsing */
 int
 db_parser_load_command(
-    struct ast*          ast,
+    const struct ast*    ast,
     int                  load_command,
     const char*          filename,
     const char*          source,
     struct plugin_list** plugins,
-    struct cmd_list*     cmds);
+    struct cmd_list*     cmds,
+    struct udt_storage*  udts);

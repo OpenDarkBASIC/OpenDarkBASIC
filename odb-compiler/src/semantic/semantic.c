@@ -97,6 +97,7 @@ struct ctx
     const struct plugin_list* plugins;
     const struct cmd_list*    cmds;
     const struct globals*     globals;
+    const struct udt_storage* udts;
 };
 
 static int
@@ -125,6 +126,7 @@ run_check(
             ctx->sources,
             ctx->plugins,
             ctx->cmds,
+            ctx->udts,
             ctx->globals);
 
 #if defined(ODBCOMPILER_AST_DUMP)
@@ -170,6 +172,7 @@ semantic_check_run(
     const struct db_source*      sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
+    const struct udt_storage*    udts,
     const struct globals*        globals)
 {
     struct ptr_set* check_visited;
@@ -184,7 +187,8 @@ semantic_check_run(
            sources,
            plugins,
            cmds,
-           globals};
+           globals,
+           udts};
 
     if (ast_count(*astp) == 0)
     {
@@ -216,6 +220,7 @@ dummy_check(
     const struct db_source*   sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
+    const struct udt_storage* udts,
     const struct globals*     globals)
 {
     return 0;
@@ -231,6 +236,7 @@ semantic_run_essential_checks(
     const struct db_source*   sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
+    const struct udt_storage* udts,
     const struct globals*     globals)
 {
     static const struct semantic_check* essential_checks[]
@@ -254,5 +260,6 @@ semantic_run_essential_checks(
         sources,
         plugins,
         cmds,
+        udts,
         globals);
 }

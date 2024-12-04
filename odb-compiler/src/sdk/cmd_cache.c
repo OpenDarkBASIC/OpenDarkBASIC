@@ -1,17 +1,21 @@
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/sdk/cmd_cache.h"
+#include "odb-compiler/semantic/udt.h"
 #include "odb-util/fs.h"
 #include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/mfile.h"
 #include "odb-util/mstream.h"
 #include "odb-util/utf8.h"
 
-#define VERSION 0
+#define VERSION 1
 
 int
 cmd_cache_load(
     struct plugin_ids**       cached_plugins,
     const struct plugin_list* plugins,
     struct cmd_list*          cmds,
+    struct udt_storage*       udts,
     enum sdk_type             sdk_type,
     enum target_arch          arch,
     enum target_platform      platform)
@@ -20,6 +24,7 @@ cmd_cache_load(
     plugin_id          cached_plugin_count;
     cmd_id             cached_cmd;
     cmd_id             cached_cmd_count;
+    ast_id             node_count;
     struct mfile       mf;
     struct mstream     ms;
     struct plugin_ids* cached_plugin_map;
@@ -94,13 +99,13 @@ cmd_cache_load(
     cached_cmd_count = mstream_read_li32(&ms);
     for (cached_cmd = 0; cached_cmd != cached_cmd_count; ++cached_cmd)
     {
-        int                 i;
-        cmd_id              cmd;
-        struct utf8_view    db_cmd_name = mstream_read_utf8(&ms);
-        struct utf8_view    c_symbol = mstream_read_utf8(&ms);
-        plugin_id           cached_plugin_id = mstream_read_li16(&ms);
-        enum primitive_type return_type = mstream_read_u8(&ms);
-        int                 param_count = mstream_read_u8(&ms);
+        int              i;
+        cmd_id           cmd;
+        struct utf8_view db_cmd_name = mstream_read_utf8(&ms);
+        struct utf8_view c_symbol = mstream_read_utf8(&ms);
+        plugin_id        cached_plugin_id = mstream_read_li16(&ms);
+        union type       return_type = {mstream_read_li32(&ms)};
+        int              param_count = mstream_read_u8(&ms);
 
         if (cached_plugin_id < 0
             || cached_plugin_id >= plugin_ids_count(cached_plugin_map)
@@ -129,21 +134,32 @@ cmd_cache_load(
 
         for (i = 0; i != param_count; ++i)
         {
-            uint8_t                  data = mstream_read_u8(&ms);
+            uint32_t                 data = mstream_read_lu32(&ms);
             struct utf8_view         param_name = mstream_read_utf8(&ms);
             enum cmd_param_direction direction
-                = (data & 0x80) ? CMD_PARAM_OUT : CMD_PARAM_IN;
-            enum primitive_type param_type = (data & 0x7F);
+                = (data & 0x80000000) ? CMD_PARAM_OUT : CMD_PARAM_IN;
+            union type param_type = {(data & 0x7FFFFFFF)};
 
-            if (cmd_add_param(
-                    cmds,
-                    cmd,
-                    param_type,
-                    direction,
-                    param_name)
+            if (cmd_add_param(cmds, cmd, param_type, direction, param_name)
                 != 0)
                 goto parse_failed;
         }
+    }
+
+    /* User-Defined Type AST */
+    node_count = mstream_read_li32(&ms);
+    if (node_count > 0)
+    {
+        mem_size    node_bytes = sizeof(udts->ast->nodes[0]) * node_count;
+        struct ast* new_ast = ast_realloc(udts->ast, node_count);
+        if (new_ast == NULL)
+            goto parse_failed;
+        udts->ast = new_ast;
+        udts->ast->count = node_count;
+        memcpy(udts->ast->nodes, mstream_read(&ms, node_bytes), node_bytes);
+
+        if (utf8_set(&udts->source, mstream_read_utf8(&ms)) != 0)
+            goto parse_failed;
     }
 
     mfile_unmap(&mf);
@@ -165,6 +181,7 @@ int
 cmd_cache_save(
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
+    const struct udt_storage* udts,
     enum sdk_type             sdk_type,
     enum target_arch          arch,
     enum target_platform      platform)
@@ -217,10 +234,10 @@ cmd_cache_save(
     for (cmd = 0; cmd != cmd_list_count(cmds); ++cmd)
     {
         int i;
-        mstream_write_utf8(&ms, utf8_list_view(cmds->db_cmd_names, cmd));
-        mstream_write_utf8(&ms, utf8_list_view(cmds->c_symbols, cmd));
+        mstream_write_utf8(&ms, utf8_list_view(cmds->cmd_names, cmd));
+        mstream_write_utf8(&ms, utf8_list_view(cmds->symbols, cmd));
         mstream_write_li16(&ms, cmds->plugin_ids->data[cmd]);
-        mstream_write_u8(&ms, cmds->return_types->data[cmd]);
+        mstream_write_li32(&ms, cmds->return_types->data[cmd].id);
         mstream_write_u8(
             &ms, cmd_param_types_list_count(cmds->param_types->data[cmd]));
         for (i = 0;
@@ -230,12 +247,25 @@ cmd_cache_save(
             const struct cmd_param* param_type
                 = &cmds->param_types->data[cmd]->data[i];
             struct utf8_view param_name
-                = utf8_list_view(cmds->db_param_names->data[cmd], i);
-            mstream_write_u8(
+                = utf8_list_view(cmds->param_names->data[cmd], i);
+            mstream_write_lu32(
                 &ms,
-                (param_type->primitive & 0x7F) | (param_type->direction << 7));
+                (uint32_t)(param_type->type.id & 0x7FFFFFFF)
+                    | (uint32_t)(param_type->direction << 31));
             mstream_write_utf8(&ms, param_name);
         }
+    }
+
+    /* User-Defined Type AST */
+    if (udts->ast == NULL)
+        mstream_write_li32(&ms, 0);
+    else
+    {
+        ast_id   node_count = ast_count_unsafe(udts->ast);
+        mem_size node_bytes = sizeof(udts->ast->nodes[0]) * node_count;
+        mstream_write_li32(&ms, node_count);
+        mstream_write(&ms, udts->ast->nodes, node_bytes);
+        mstream_write_utf8(&ms, utf8_view(udts->source));
     }
 
     /* If at any point a write failed, the error flag is set */

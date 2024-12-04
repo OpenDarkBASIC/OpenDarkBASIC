@@ -21,6 +21,7 @@ using namespace testing;
 DBParserHelper::DBParserHelper()
 {
     plugin_list_init(&plugins);
+    udt_storage_init(&udts);
     cmd_list_init(&cmds);
     globals_init(&globals);
     db_parser_init(&p);
@@ -60,6 +61,7 @@ DBParserHelper::~DBParserHelper()
     utf8_deinit(filename);
     globals_deinit(globals);
     cmd_list_deinit(&cmds);
+    udt_storage_deinit(&udts);
     plugin_list_deinit(plugins);
 }
 
@@ -77,7 +79,8 @@ DBParserHelper::parse(const char* code)
         ast_init(&ast);
     }
 
-    int result = db_parse(&p, &ast, utf8_cstr(filename), src, &plugins, &cmds);
+    int result
+        = db_parse(&p, &ast, utf8_cstr(filename), src, &plugins, &cmds, &udts);
     if (result != 0)
         return result;
 
@@ -107,6 +110,7 @@ DBParserHelper::semantic(const struct semantic_check* check)
         &src,
         plugins,
         &cmds,
+        &udts,
         globals);
 #if defined(ODBCOMPILER_AST_DUMP)
     const testing::TestInfo* info
@@ -120,23 +124,38 @@ DBParserHelper::semantic(const struct semantic_check* check)
 }
 
 int
+DBParserHelper::addCommand(const char* name)
+{
+    return addCommand(TYPE_VOID, name);
+}
+int
+DBParserHelper::addCommand(enum primitive_type return_type, const char* name)
+{
+    return addCommand(return_type, name, {});
+}
+int
+DBParserHelper::addCommand(union type return_type, const char* name)
+{
+    return addCommand(return_type, name, {});
+}
+int
 DBParserHelper::addCommand(
-    enum primitive_type                        return_type,
-    const char*                                name,
-    std::initializer_list<enum primitive_type> param_types)
+    union type                        return_type,
+    const char*                       name,
+    std::initializer_list<union type> param_types)
 {
     cmd_id cmd = cmd_list_add(
         &cmds, 0, return_type, cstr_utf8_view(name), empty_utf8_view());
     if (cmd < 0)
         return cmd;
 
-    for (enum primitive_type type : param_types)
+    for (union type type : param_types)
         if (cmd_add_param(
                 &cmds,
                 cmd,
                 type,
                 CMD_PARAM_IN,
-                cstr_utf8_view(primitive_type_name(type)))
+                type_name(type, udts.ast, udts.source.data))
             < 0)
         {
             cmd_list_erase(&cmds, cmd);
@@ -146,14 +165,34 @@ DBParserHelper::addCommand(
     return cmd;
 }
 int
-DBParserHelper::addCommand(const char* name)
+DBParserHelper::addCommand(
+    enum primitive_type                        return_type,
+    const char*                                name,
+    std::initializer_list<enum primitive_type> param_types)
 {
-    return addCommand(TYPE_VOID, name);
-}
-int
-DBParserHelper::addCommand(enum primitive_type return_type, const char* name)
-{
-    return addCommand(return_type, name, {});
+    cmd_id cmd = cmd_list_add(
+        &cmds,
+        0,
+        primitive_type(return_type),
+        cstr_utf8_view(name),
+        empty_utf8_view());
+    if (cmd < 0)
+        return cmd;
+
+    for (enum primitive_type type : param_types)
+        if (cmd_add_param(
+                &cmds,
+                cmd,
+                primitive_type(type),
+                CMD_PARAM_IN,
+                cstr_utf8_view(primitive_type_name(type)))
+            < 0)
+        {
+            cmd_list_erase(&cmds, cmd);
+            return -1;
+        }
+
+    return cmd;
 }
 
 void

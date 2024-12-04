@@ -204,6 +204,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/select.c"
     "src/semantic/type.c"
     "src/semantic/type_check.c"
+    "src/semantic/udt.c"
     "src/semantic/unary_literal.c"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"

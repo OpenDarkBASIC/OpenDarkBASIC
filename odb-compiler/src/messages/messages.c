@@ -750,35 +750,10 @@ err_udt_decl_redeclaration(
     const char*       first_filename,
     const char*       first_source)
 {
-    ast_id           identifier;
     struct utf8_span first_name;
 
-    switch (ast_node_type(first_ast, first_occurrence))
-    {
-        case AST_UDT_DECL:
-            identifier
-                = first_ast->nodes[first_occurrence].udt_decl.type_identifier;
-            break;
-        case AST_FUNC_POLY: {
-            ast_id func1 = first_ast->nodes[first_occurrence].func_poly.func;
-            identifier = first_ast->nodes[func1].func1.identifier;
-            break;
-        }
-        case AST_FUNC1:
-            identifier = first_ast->nodes[first_occurrence].func1.identifier;
-            break;
-
-        default:
-            ODBUTIL_DEBUG_ASSERT(
-                0,
-                log_err(
-                    "type: %d\n", ast_node_type(first_ast, first_occurrence)));
-            identifier = -1;
-            break;
-    }
     /* Fallback to just using the location as the "name" */
-    first_name = identifier ? first_ast->nodes[identifier].identifier.name
-                            : ast_loc(first_ast, first_occurrence);
+    first_name = first_ast->nodes[first_occurrence].identifier.name;
 
     log_flc(filename, source, name);
     log_err(

@@ -15,4 +15,5 @@ bool dumpCommandsINI(const std::vector<std::string> &args);
 bool dumpCommandNames(const std::vector<std::string>& args);
 struct plugin_list** getPluginList(void);
 struct cmd_list* getCommandList();
+struct udt_storage* getUDTStorage();
 

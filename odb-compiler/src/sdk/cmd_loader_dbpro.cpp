@@ -193,7 +193,7 @@ load_dbpro_commands(
             cmd = cmd_list_add(
                 commands,
                 plugin_id,
-                return_type,
+                primitive_type(return_type),
                 utf8_span_view(entry_str.data, cmd_name),
                 utf8_span_view(entry_str.data, c_symbol));
             if (cmd < 0)
@@ -248,7 +248,7 @@ load_dbpro_commands(
                 if (cmd_add_param(
                         commands,
                         cmd,
-                        type,
+                        primitive_type(type),
                         direction,
                         utf8_span_view(entry_str.data, db_param_name))
                     != 0)

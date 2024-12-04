@@ -5,6 +5,7 @@
 extern "C" {
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/semantic/type.h"
+#include "odb-compiler/semantic/udt.h"
 #include "odb-compiler/sdk/cmd_list.h"
 
 struct ast;
@@ -22,14 +23,19 @@ struct DBParserHelper
     int semantic(const struct semantic_check* check);
     int addCommand(const char* name);
     int addCommand(enum primitive_type return_type, const char* name);
+    int addCommand(union type, const char* name);
     int addCommand(
-        enum primitive_type      return_type,
-        const char*              name,
-        std::initializer_list<
-            enum primitive_type> param_types);
+        union type  return_type,
+        const char* name,
+        std::initializer_list<union type> param_types);
+    int addCommand(
+        enum primitive_type return_type,
+        const char*         name,
+        std::initializer_list<enum primitive_type> param_types);
 
     struct plugin_list* plugins;
     struct cmd_list     cmds;
+    struct udt_storage  udts;
     struct globals*     globals;
     struct db_parser    p;
     struct utf8         filename;

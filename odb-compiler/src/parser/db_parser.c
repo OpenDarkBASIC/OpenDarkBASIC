@@ -7,6 +7,7 @@
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/parser/db_scanner.lex.h"
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-compiler/semantic/udt.h"
 #include "odb-util/config.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
@@ -186,13 +187,15 @@ get_next_assembled_token(
 
 int
 db_parser_load_command(
-    struct ast*          ast,
+    const struct ast*    ast,
     ast_id               load_command,
     const char*          filename,
     const char*          source,
     struct plugin_list** plugins,
-    struct cmd_list*     cmds)
+    struct cmd_list*     cmds,
+    struct udt_storage*  udts)
 {
+    union type       type;
     plugin_id        plugin;
     cmd_id           cmd;
     ast_id           rettype, typelist;
@@ -230,16 +233,30 @@ db_parser_load_command(
     if (plugin < 0)
         goto error;
 
-    // TODO: Commands currently only support primitive types
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, rettype) == AST_AS_TYPE,
-        log_err("type: %d\n", ast_node_type(ast, rettype)));
+    if (ast_node_type(ast, rettype) == AST_AS_UDT)
+    {
+        struct utf8_span name = ast->nodes[rettype].as_udt.type_name;
+        type = udt_storage_add_type(udts, name, ast, filename, source);
+        if (type_is_invalid(type))
+            goto error;
+    }
+    else if (ast_node_type(ast, rettype) == AST_AS_TYPE)
+        type = ast->nodes[rettype].as_type.type;
+    else
+    {
+        log_flc(filename, source, ast_loc(ast, rettype));
+        log_err(
+            "TYPE(x) is not supported for command return types. Use AS or a "
+            "User-Defined Type instead.\n");
+        log_excerpt_1(source, ast_loc(ast, rettype), empty_utf8_view(), 0);
+        goto error;
+    }
 
     utf8_toupper(cmd_name_upper);
     cmd = cmd_list_add(
         cmds,
         plugin,
-        ast->nodes[rettype].as_type.type.primitive,
+        type,
         utf8_view(cmd_name_upper),
         utf8_span_view(source, c_symbol));
     if (cmd < 0)
@@ -247,22 +264,32 @@ db_parser_load_command(
 
     for (; typelist > -1; typelist = ast->nodes[typelist].typelist.next)
     {
+        ast_id           as = ast->nodes[typelist].typelist.as;
         struct utf8_span name_span = ast->nodes[typelist].typelist.name;
-        // TODO: Commands currently only support primitive types
-        ast_id as_type = ast->nodes[typelist].typelist.type;
-        ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(ast, as_type) == AST_AS_TYPE,
-            log_err("type: %d\n", ast_node_type(ast, as_type)));
-        if (cmd_add_param(
-                cmds,
-                cmd,
-                ast->nodes[as_type].as_type.type.primitive,
-                CMD_PARAM_IN,
-                utf8_span_view(source, name_span))
-            < 0)
+        struct utf8_view name = utf8_span_view(source, name_span);
+
+        if (ast_node_type(ast, as) == AST_AS_UDT)
         {
+            struct utf8_span name = ast->nodes[as].as_udt.type_name;
+            type = udt_storage_add_type(udts, name, ast, filename, source);
+            if (type_is_invalid(type))
+                goto error;
+        }
+        else if (ast_node_type(ast, as) == AST_AS_TYPE)
+            type = ast->nodes[as].as_type.type;
+        else
+        {
+            log_flc(filename, source, ast_loc(ast, as));
+            log_err(
+                "TYPE(x) is not supported for command return types. Use AS or "
+                "a "
+                "User-Defined Type instead.\n");
+            log_excerpt_1(source, ast_loc(ast, rettype), empty_utf8_view(), 0);
             goto error;
         }
+
+        if (cmd_add_param(cmds, cmd, type, CMD_PARAM_IN, name) < 0)
+            goto error;
     }
 
     utf8_deinit(cmd_name_upper);
@@ -311,7 +338,8 @@ db_parse(
     const char*          filename,
     struct db_source     source,
     struct plugin_list** plugins,
-    struct cmd_list*     cmds)
+    struct cmd_list*     cmds,
+    struct udt_storage*  udts)
 {
     struct token_queue* tokens;
     YY_BUFFER_STATE     buffer_state;
@@ -319,7 +347,7 @@ db_parse(
     struct utf8_span    scanner_location = empty_utf8_span();
     struct utf8         cmd_buf = empty_utf8();
     struct parse_param  parse_param
-        = {astp, filename, source.text.data, plugins, cmds};
+        = {astp, filename, source.text.data, plugins, cmds, udts};
 
     if (source.text.len == 0)
     {

@@ -100,7 +100,7 @@ eliminate_candidates(cmd_id* cmd_id, void* user)
          ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
         ast_id     expr = ctx->ast->nodes[arglist].arglist.expr;
-        union type param = params->data[i].type;
+        union type param = primitive_type(params->data[i].primitive);
         union type arg = ast_type_info(ctx->ast, expr);
 
         if (!ctx->is_conversion_valid(arg, param))
@@ -123,12 +123,12 @@ arg_is_highlighted(const int* arg_positions, int arg_idx, int hl_count)
 static void
 report_duplicate_commands(
     const struct ast*         ast,
-    ast_id                    cmd,
     const char*               filename,
     const char*               source,
-    const struct udt_storage* udts,
+    ast_id                    cmd,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
+    const struct udt_storage* udts,
     const struct candidates*  candidates)
 {
     const cmd_id* cmdp;
@@ -180,10 +180,11 @@ static void
 report_ambiguous_overloads(
     const struct ast*         ast,
     ast_id                    arglist,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
     const char*               filename,
     const char*               source,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct udt_storage* udts,
     int                       rule_idx,
     const struct candidates*  candidates)
 {
@@ -212,8 +213,7 @@ report_ambiguous_overloads(
          arg = ast->nodes[arg].arglist.next, ++arg_idx)
     {
         ast_id     expr = ast->nodes[arg].arglist.expr;
-        union type arg_type
-            = primitive_type(ast_type_info(ast, expr).primitive);
+        union type arg_type = ast_type_info(ast, expr);
         vec_for_each(candidates, cmdp)
         {
             union type param_type
@@ -288,19 +288,22 @@ report_ambiguous_overloads(
             ret_type.primitive == TYPE_VOID ? " " : "(");
         for (arg_idx = 0; arg_idx != utf8_list_count(param_names); ++arg_idx)
         {
-            char fmt[26];
+            struct utf8_view tname = type_name(
+                param_types->data[arg_idx].type, udts->ast, udts->source.data);
+            char fmt[28];
             if (arg_idx)
                 log_raw(", ");
             if (arg_is_highlighted(arg_positions, arg_idx, hl_count))
-                sprintf(fmt, "{emph%d:%%s AS %%s}", arg_idx);
+                sprintf(fmt, "{emph%d:%%s AS %%.*s}", arg_idx);
             else
-                strcpy(fmt, "%s AS %s");
+                strcpy(fmt, "%s AS %.*s");
             log_raw(
                 fmt,
                 utf8_list_cstr(param_names, arg_idx),
-                param_types->data[arg_idx].type);
+                tname.len,
+                tname.data + tname.off);
         }
-        log_raw("%s  ", ret_type.primitive == TYPE_VOID ? "" : ")");
+        log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
         log_raw("[%s]\n", utf8_cstr(plugin->name));
     }
 
@@ -395,8 +398,6 @@ report_available_commands(
 static void
 log_signature(
     cmd_id                    cmd_id,
-    const struct ast*         ast,
-    const char*               source,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts)
@@ -461,7 +462,8 @@ typecheck_warnings(
         union type       arg_type = ast_type_info(ast, arg);
         union type       param_type = params->data[i].type;
         struct utf8_view arg_tname = type_name(arg_type, ast, source);
-        struct utf8_view param_tname = type_name(param_type, ast, source);
+        struct utf8_view param_tname
+            = type_name(param_type, udts->ast, udts->source.data);
 
         switch (type_convert(arg_type, param_type))
         {
@@ -479,7 +481,7 @@ typecheck_warnings(
                     param_tname.len,
                     param_tname.data + param_tname.off);
                 log_excerpt_1(source, ast_loc(ast, arg), arg_tname, 0);
-                log_signature(cmd_id, ast, source, plugins, cmds, udts);
+                log_signature(cmd_id, plugins, cmds, udts);
                 break;
 
             case TC_SIGN_CHANGE:
@@ -496,7 +498,7 @@ typecheck_warnings(
                     param_tname.len,
                     param_tname.data + param_tname.off);
                 log_excerpt_1(source, ast_loc(ast, arg), arg_tname, 0);
-                log_signature(cmd_id, ast, source, plugins, cmds, udts);
+                log_signature(cmd_id, plugins, cmds, udts);
                 break;
         }
 
@@ -543,7 +545,7 @@ create_candidates_list(
 }
 
 static int
-resolve_command_overloads(
+resolve_cmd_overloads(
     struct ast**              tus,
     int                       tu_count,
     int                       tu_id,
@@ -552,7 +554,6 @@ resolve_command_overloads(
     const struct db_source*   sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
     const struct globals*     globals)
 {
     ast_id             n;
@@ -648,8 +649,7 @@ resolve_command_overloads(
             ast->nodes[n].command.id = candidates_count(candidates) == 1
                                            ? *vec_first(candidates)
                                            : *vec_first(prev_candidates);
-            if (typecheck_warnings(
-                    astp, n, filename, source, plugins, cmds, udts)
+            if (typecheck_warnings(astp, n, plugins, cmds, filename, source)
                 != 0)
             {
                 goto fail;
@@ -662,7 +662,7 @@ resolve_command_overloads(
         if (candidates_count(candidates) > 0)
         {
             report_duplicate_commands(
-                ast, n, filename, source, udts, plugins, cmds, candidates);
+                ast, n, plugins, cmds, filename, source, candidates);
         }
         else if (candidates_count(prev_candidates) > 0)
         {
@@ -682,12 +682,11 @@ resolve_command_overloads(
                 "Too few arguments to command.\n",
                 ast,
                 ast->nodes[n].command.arglist,
-                filename,
-                source,
                 plugins,
                 cmds,
-                udts,
-                ast->nodes[n].command.id);
+                ast->nodes[n].command.id,
+                filename,
+                source);
         }
         else if (ctx.argcount > param_max)
         {
@@ -695,12 +694,11 @@ resolve_command_overloads(
                 "Too many arguments to command.\n",
                 ast,
                 ast->nodes[n].command.arglist,
-                filename,
-                source,
                 plugins,
                 cmds,
-                udts,
-                ast->nodes[n].command.id);
+                ast->nodes[n].command.id,
+                filename,
+                source);
         }
         else if (candidates_count(prev_candidates) == 0)
         {
@@ -709,12 +707,11 @@ resolve_command_overloads(
                 "argument types used here.\n",
                 ast,
                 ast->nodes[n].command.arglist,
-                filename,
-                source,
                 plugins,
                 cmds,
-                udts,
-                ast->nodes[n].command.id);
+                ast->nodes[n].command.id,
+                filename,
+                source);
         }
 
         goto fail;
@@ -732,5 +729,5 @@ fail:
 
 static const struct semantic_check* depends[] = {&semantic_type_check, NULL};
 
-const struct semantic_check semantic_resolve_command_overloads
-    = {resolve_command_overloads, depends, "resolve_command_overloads"};
+const struct semantic_check semantic_resolve_cmd_overloads
+    = {resolve_cmd_overloads, depends, "resolve_cmd_overloads"};

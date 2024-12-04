@@ -6,15 +6,18 @@ extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/semantic/type.h"
+#include "odb-compiler/semantic/udt.h"
 #include "odb-util/log.h"
 }
 
+static udt_storage  udts;
 static plugin_list* plugins;
 static cmd_list     commands;
 
 void
 initCommands(void)
 {
+    udt_storage_init(&udts);
     plugin_list_init(&plugins);
     cmd_list_init(&commands);
 }
@@ -29,6 +32,7 @@ deinitCommands(void)
         plugin_info_deinit(plugin);
     }
     plugin_list_deinit(plugins);
+    udt_storage_deinit(&udts);
 }
 
 // ----------------------------------------------------------------------------
@@ -48,6 +52,7 @@ loadCommands(const std::vector<std::string>& args)
     log_progress(0, 0, "Loading commands...\n");
     if (cmd_list_load_from_plugins(
             &commands,
+            &udts,
             plugins,
             getSDKType(),
             getTargetArch(),
@@ -164,27 +169,30 @@ dumpCommandNames(const std::vector<std::string>& args)
 {
     for (int i = 0; i != cmd_list_count(&commands); ++i)
     {
-        enum primitive_type ret_type = commands.return_types->data[i];
-        printf("%s ", primitive_type_name(ret_type));
-        printf("%s", utf8_list_cstr(commands.db_cmd_names, i));
-        printf("%s", ret_type == TYPE_VOID ? " " : "(");
+        union type       ret_type = commands.return_types->data[i];
+        struct utf8_view tname
+            = type_name(ret_type, udts.ast, udts.source.data);
+        printf("%.*s ", tname.len, tname.data + tname.off);
+        printf("%s", utf8_list_cstr(commands.cmd_names, i));
+        printf("%s", ret_type.primitive == TYPE_VOID ? " " : "(");
         const struct cmd_param_types_list* param_types
             = commands.param_types->data[i];
-        struct utf8_list*       param_names = commands.db_param_names->data[i];
+        struct utf8_list*       param_names = commands.param_names->data[i];
         const struct cmd_param* param;
         int                     n;
         vec_enumerate(param_types, n, param)
         {
+            tname = type_name(param->type, udts.ast, udts.source.data);
             if (n)
                 printf(", ");
             printf("%s", utf8_list_cstr(param_names, n));
             if (param->direction == CMD_PARAM_OUT)
                 printf("*");
-            printf(" AS %s", primitive_type_name(param->primitive));
+            printf(" AS %.*s", tname.len, tname.data + tname.off);
         }
-        if (ret_type != TYPE_VOID)
+        if (ret_type.primitive != TYPE_VOID)
             printf(")");
-        printf(" -> %s", utf8_list_cstr(commands.c_symbols, i));
+        printf(" -> %s", utf8_list_cstr(commands.symbols, i));
         printf(
             "  [%s]\n",
             utf8_cstr(plugins->data[commands.plugin_ids->data[i]].name));
@@ -206,4 +214,10 @@ struct cmd_list*
 getCommandList(void)
 {
     return &commands;
+}
+
+struct udt_storage*
+getUDTStorage()
+{
+    return &udts;
 }

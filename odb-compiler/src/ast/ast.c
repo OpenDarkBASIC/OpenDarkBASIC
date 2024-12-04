@@ -7,28 +7,34 @@
 #include "odb-util/utf8.h"
 #include <assert.h>
 
+struct ast*
+ast_realloc(struct ast* ast, ast_id node_count)
+{
+    ast_id      new_capacity = ast ? ast->capacity * 2 : 128;
+    mem_size    header_size = offsetof(struct ast, nodes);
+    mem_size    nodes_size = sizeof(union ast_node) * new_capacity;
+    struct ast* new_ast = mem_realloc(ast, header_size + nodes_size);
+    if (new_ast == NULL)
+        log_oom(header_size + nodes_size, "new_node()");
+    if (ast == NULL)
+        new_ast->count = 0;
+    new_ast->capacity = new_capacity;
+    return new_ast;
+}
+
 static ast_id
 ast_grow(struct ast** astp)
 {
-    struct ast* ast = *astp;
-    if (ast == NULL || ast->count == ast->capacity)
+    if (*astp == NULL || (*astp)->count == (*astp)->capacity)
     {
-        ast_id   new_capacity = ast ? ast->capacity * 2 : 128;
-        mem_size header_size = offsetof(struct ast, nodes);
-        mem_size nodes_size = sizeof(union ast_node) * new_capacity;
-
-        struct ast* new_ast = mem_realloc(ast, header_size + nodes_size);
+        struct ast* new_ast
+            = ast_realloc(*astp, *astp ? (*astp)->capacity * 2 : 128);
         if (new_ast == NULL)
-            return log_oom(header_size + nodes_size, "new_node()");
-
-        if (ast == NULL)
-            new_ast->count = 0;
-        new_ast->capacity = new_capacity;
-        ast = new_ast;
+            return -1;
         *astp = new_ast;
     }
 
-    return ast->count++;
+    return (*astp)->count++;
 }
 
 static ast_id
@@ -278,7 +284,7 @@ ast_typelist(
             || ast_node_type(ast, type) == AST_AS_UDT,
         log_err("type: %d\n", ast_node_type(ast, type)));
 
-    ast->nodes[n].typelist.type = type;
+    ast->nodes[n].typelist.as = type;
     ast->nodes[n].typelist.name = name;
 
     return n;
@@ -322,7 +328,7 @@ ast_typelist_append_type(
         log_err("type: %d\n", ast_node_type(ast, typelist)));
 
     ast_typelist_append(ast, typelist, n, location);
-    ast->nodes[n].typelist.type = type;
+    ast->nodes[n].typelist.as = type;
 
     return n;
 }

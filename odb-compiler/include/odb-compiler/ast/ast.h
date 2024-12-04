@@ -175,7 +175,7 @@ union ast_node
 
     struct {
         struct info info;
-        ast_id type;
+        ast_id as;
         ast_id next;
         struct utf8_span name;
     } typelist;
@@ -536,6 +536,9 @@ ast_init(struct ast** astp)
 
 ODBCOMPILER_PUBLIC_API void 
 ast_deinit(struct ast* ast);
+
+ODBCOMPILER_PUBLIC_API struct ast*
+ast_realloc(struct ast* ast, ast_id node_count);
 
 #if defined(ODBUTIL_MEM_DEBUGGING)
 ODBCOMPILER_PUBLIC_API void

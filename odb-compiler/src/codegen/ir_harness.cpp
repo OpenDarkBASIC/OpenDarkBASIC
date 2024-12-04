@@ -328,7 +328,7 @@ gen_cmd_loader(
                 continue;
 
             struct utf8_view c_sym_name
-                = utf8_list_view(cmds->c_symbols, *pcmd);
+                = utf8_list_view(cmds->symbols, *pcmd);
             llvm::StringRef c_sym_name_ref(
                 c_sym_name.data + c_sym_name.off, c_sym_name.len);
             llvm::Constant* SymNameConstant

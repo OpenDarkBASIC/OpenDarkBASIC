@@ -81,6 +81,7 @@ load_binary(const struct plugin_info* plugin, enum target_platform platform)
 int
 cmd_list_load_from_plugins(
     struct cmd_list*          cmds,
+    struct udt_storage*       udts,
     const struct plugin_list* plugins,
     enum sdk_type             sdk_type,
     enum target_arch          arch,
@@ -93,7 +94,8 @@ cmd_list_load_from_plugins(
     plugin_ids_init(&cached_plugins);
 
     log_progress(0, plugin_list_count(plugins), "Loading command cache");
-    if (cmd_cache_load(&cached_plugins, plugins, cmds, sdk_type, arch, platform)
+    if (cmd_cache_load(
+            &cached_plugins, plugins, cmds, udts, sdk_type, arch, platform)
         != 0)
     {
         log_warn("Failed to load command cache. All plugins will be parsed.\n");
@@ -155,7 +157,7 @@ cmd_list_load_from_plugins(
         }
     }
 
-    if (cmd_cache_save(plugins, cmds, sdk_type, arch, platform) != 0)
+    if (cmd_cache_save(plugins, cmds, udts, sdk_type, arch, platform) != 0)
         log_warn(
             "Failed to save command cache. All plugins will be parsed next "
             "time.\n");

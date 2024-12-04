@@ -608,9 +608,9 @@ process_command(
     const char*            source,
     const struct cmd_list* cmds)
 {
-    ast_id              arglist;
-    cmd_id              cmd_id;
-    enum primitive_type return_type;
+    ast_id     arglist;
+    cmd_id     cmd_id;
+    union type return_type;
 
     ODBUTIL_DEBUG_ASSERT(cmd > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -627,10 +627,11 @@ process_command(
     }
 
     return_type = cmds->return_types->data[cmd_id];
-    (*astp)->nodes[cmd].info.type_info = primitive_type(return_type);
+    (*astp)->nodes[cmd].info.type_info = return_type;
 
     /* Check if the command has a return value that is being ignored */
-    if (return_type != TYPE_VOID && !(*astp)->nodes[cmd].command.is_expr)
+    if (return_type.primitive != TYPE_VOID
+        && !(*astp)->nodes[cmd].command.is_expr)
     {
         ast_id parent = ast_find_parent(*astp, cmd);
         ODBUTIL_DEBUG_ASSERT(parent > -1, (void)0);
@@ -3456,6 +3457,7 @@ type_check(
     const struct db_source*   sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
+    const struct udt_storage* udts,
     const struct globals*     globals)
 {
     struct locals* locals;

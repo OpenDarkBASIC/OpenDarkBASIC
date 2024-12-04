@@ -399,7 +399,7 @@ create_cmd_func_table(
             continue;
 
         cmd_id           cmd_id = ast->nodes[n].command.id;
-        struct utf8_view c_sym = utf8_list_view(cmds->c_symbols, cmd_id);
+        struct utf8_view c_sym = utf8_list_view(cmds->symbols, cmd_id);
         llvm::StringRef  c_sym_ref(c_sym.data + c_sym.off, c_sym.len);
 
         auto result = CmdFuncTable->try_emplace(c_sym_ref, nullptr);
@@ -665,7 +665,8 @@ get_cmd_func_signature(
     const char*            source,
     ast_id                 cmd,
     enum sdk_type          sdk_type,
-    const struct cmd_list* cmds)
+    const struct cmd_list* cmds,
+    struct typemap**       udt_table)
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cmd) == AST_COMMAND,
@@ -679,25 +680,26 @@ get_cmd_func_signature(
     const struct cmd_param*           param;
     vec_for_each(param_types, param)
     {
-        if (sdk_type == SDK_DBPRO && param->primitive == TYPE_F32)
+        if (sdk_type == SDK_DBPRO && param->type.primitive == TYPE_F32)
             ParamTypes.push_back(llvm::Type::getInt32Ty(ir->Ctx));
         else
         {
-            llvm::Type* Ty = primitive_type_to_llvm(param->primitive, &ir->Ctx);
+            llvm::Type* Ty
+                = type_to_llvm(param->type, ast, source, udt_table, &ir->Ctx);
             ParamTypes.push_back(Ty);
         }
     }
 
     /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
-    enum primitive_type ret_type = cmds->return_types->data[cmd_id];
-    if (sdk_type == SDK_DBPRO && ret_type == TYPE_F32)
+    union type ret_type = cmds->return_types->data[cmd_id];
+    if (sdk_type == SDK_DBPRO && ret_type.primitive == TYPE_F32)
         return llvm::FunctionType::get(
             llvm::Type::getInt32Ty(ir->Ctx),
             ParamTypes,
             /*isVarArg=*/false);
 
     return llvm::FunctionType::get(
-        primitive_type_to_llvm(ret_type, &ir->Ctx),
+        type_to_llvm(ret_type, ast, source, udt_table, &ir->Ctx),
         ParamTypes,
         /*isVarArg=*/false);
 }
@@ -712,6 +714,7 @@ process_command(
     const char*                                   source,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
+    struct typemap**                              udt_table,
     const llvm::StringMap<llvm::GlobalVariable*>& CmdFuncTable)
 {
     struct stack_entry* entry = vec_last(*stack);
@@ -762,17 +765,17 @@ process_command(
      * point. Look up the command's symbol in the command list and
      * get the associated llvm::Function */
     cmd_id                cmd_id = ast->nodes[cmd].command.id;
-    struct utf8_view      cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
+    struct utf8_view      cmd_sym = utf8_list_view(cmds->symbols, cmd_id);
     llvm::StringRef       CmdSymbol(cmd_sym.data + cmd_sym.off, cmd_sym.len);
     llvm::GlobalVariable* CmdFuncPtr = CmdFuncTable.find(CmdSymbol)->getValue();
 
-    llvm::FunctionType* FT
-        = get_cmd_func_signature(ir, ast, source, cmd, sdk_type, cmds);
+    llvm::FunctionType* FT = get_cmd_func_signature(
+        ir, ast, source, cmd, sdk_type, cmds, udt_table);
     llvm::Value* CmdFuncAddr
         = b.CreateLoad(llvm::PointerType::getUnqual(ir->Ctx), CmdFuncPtr);
     llvm::Value* RetVal = b.CreateCall(FT, CmdFuncAddr, Args);
 
-    if (cmds->return_types->data[cmd_id] != TYPE_VOID)
+    if (cmds->return_types->data[cmd_id].primitive != TYPE_VOID)
     {
         /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
         if (sdk_type == SDK_DBPRO
@@ -2078,6 +2081,7 @@ process_node(
                 source,
                 sdk_type,
                 cmds,
+                udt_table,
                 CmdFuncTable);
         case AST_ASSIGNMENT:
             return process_assignment(

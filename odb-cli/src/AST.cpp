@@ -8,6 +8,7 @@ extern "C" {
 #include "odb-compiler/semantic/globals.h"
 #include "odb-compiler/semantic/post.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-compiler/semantic/udt.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
 #include "odb-util/mutex.h"
@@ -237,6 +238,7 @@ parse_worker(void* arg)
             "Parsing source file: {emph:%s}\n",
             filename->len ? utf8_cstr(*filename) : "<stdin>");
         mem_acquire_cmd_list(getCommandList());
+        mem_acquire_udt_storage(getUDTStorage());
         mem_acquire_plugin_list(*getPluginList());
         mem_acquire_ast(*astp);
         parse_result = db_parse(
@@ -245,9 +247,11 @@ parse_worker(void* arg)
             filename->len ? utf8_cstr(*filename) : "<stdin>",
             *source,
             getPluginList(),
-            getCommandList());
+            getCommandList(),
+            getUDTStorage());
         mem_release_ast(*astp);
         mem_release_plugin_list(*getPluginList());
+        mem_release_udt_storage(getUDTStorage());
         mem_release_cmd_list(getCommandList());
         if (parse_result != 0)
             goto parse_failed;
@@ -308,6 +312,7 @@ semantic_worker(void* arg)
             worker->ctx->sources->data,
             *getPluginList(),
             getCommandList(),
+            getUDTStorage(),
             worker->ctx->globals);
         mem_release_ast(*astp);
 
@@ -360,6 +365,7 @@ execute_parse_workers(std::vector<worker>* workers)
     }
     mem_release_plugin_list(*getPluginList());
     mem_release_cmd_list(getCommandList());
+    mem_release_udt_storage(getUDTStorage());
 
     for (worker_id = 0; worker_id != (int)workers->size(); ++worker_id)
     {
@@ -375,6 +381,7 @@ execute_parse_workers(std::vector<worker>* workers)
             goto parse_thread_failed;
     }
 
+    mem_acquire_udt_storage(getUDTStorage());
     mem_acquire_cmd_list(getCommandList());
     mem_acquire_plugin_list(*getPluginList());
     vec_for_each(ctx.tus, astp)

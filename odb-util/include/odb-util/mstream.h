@@ -159,7 +159,7 @@ static struct utf8_view
 mstream_read_utf8(struct mstream* ms)
 {
     struct utf8_view str;
-    str.len = mstream_read_li16(ms);
+    str.len = mstream_read_li32(ms);
     str.off = 0;
     str.data = mstream_read(ms, str.len + 1);
     return str;
@@ -213,6 +213,12 @@ mstream_write_li32(struct mstream* ms, int32_t value)
 }
 
 static inline int
+mstream_write_lu32(struct mstream* ms, uint32_t value)
+{
+    return mstream_write(ms, &value, 4);
+}
+
+static inline int
 mstream_write_lu64(struct mstream* ms, uint64_t value)
 {
     return mstream_write(ms, &value, 8);
@@ -221,11 +227,11 @@ mstream_write_lu64(struct mstream* ms, uint64_t value)
 static inline int
 mstream_write_utf8(struct mstream* ms, struct utf8_view str)
 {
-    if (mstream_write_li16(ms, str.len) != 0)
+    if (mstream_write_li32(ms, str.len) != 0)
         return -1;
     if (mstream_write(ms, str.data + str.off, str.len) != 0)
         return -1;
-    return mstream_write_u8(ms, 0);
+    return mstream_write_u8(ms, 0);  /* NULL terminator */
 }
 
 static inline int
