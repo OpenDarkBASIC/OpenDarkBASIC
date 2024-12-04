@@ -23,7 +23,7 @@ udt_storage_add_type(
     struct udt_storage* udts,
     struct utf8_span    type_name,
     const struct ast*   ast,
-    const char*         filename,
+    struct ospathc      filename,
     const char*         source)
 {
     ast_id n;

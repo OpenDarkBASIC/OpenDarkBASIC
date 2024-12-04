@@ -18,8 +18,8 @@
     struct parse_param
     {
         struct ast** astp;
-        const char* filename;
-        const char* source;
+        struct ospathc filename;
+        struct utf8* source;
         struct plugin_list** plugins;
         struct cmd_list* cmds;
         struct udt_storage* udts;
@@ -666,10 +666,10 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     {
         log_flc(
             parse_param->filename,
-            parse_param->source,
+            parse_param->source->data,
             *yypcontext_location(ctx));
         log_err("Unexpected %s\n", yysymbol_name(lookahead));
-        log_excerpt_1(parse_param->source, *yypcontext_location(ctx), empty_utf8_view(), 0);
+        log_excerpt_1(parse_param->source->data, *yypcontext_location(ctx), empty_utf8_view(), 0);
     }
 
     if (n < 0)
@@ -680,7 +680,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
         int i;
         log_flc(
             parse_param->filename,
-            parse_param->source,
+            parse_param->source->data,
             *yypcontext_location(ctx));
         log_err("Expected ");
         for (i = 0; i < n; ++i)

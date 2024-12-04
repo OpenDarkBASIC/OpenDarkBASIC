@@ -1,7 +1,8 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-compiler/parser/db_source.h"
+#include "odb-util/ospath.h"
+#include "odb-util/utf8.h"
 
 typedef void*           dbscan_t;
 typedef struct dbpstate dbpstate;
@@ -27,8 +28,8 @@ ODBCOMPILER_PUBLIC_API int
 db_parse(
     struct db_parser*    parser,
     struct ast**         astp,
-    const char*          filename,
-    struct db_source     source,
+    struct ospathc       filename,
+    struct utf8*         source,
     struct plugin_list** plugins,
     struct cmd_list*     cmds,
     struct udt_storage*  udts);
@@ -38,8 +39,8 @@ int
 db_parser_load_command(
     const struct ast*    ast,
     int                  load_command,
-    const char*          filename,
-    const char*          source,
+    struct ospathc       filename,
+    struct utf8*         source,
     struct plugin_list** plugins,
     struct cmd_list*     cmds,
     struct udt_storage*  udts);

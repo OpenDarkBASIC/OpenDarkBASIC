@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-util/config.h"
+#include "odb-util/ospath.h"
 #include "odb-util/utf8.h"
 #include <stdarg.h>
 
@@ -96,7 +97,7 @@ log_err(const char* fmt, ...)
 
 /* Location logging functions ---------------------------------------------- */
 ODBUTIL_PUBLIC_API void
-log_flc(const char* filename, const char* source, struct utf8_span location);
+log_flc(struct ospathc filename, const char* source, struct utf8_span location);
 
 enum log_highlight_type
 {

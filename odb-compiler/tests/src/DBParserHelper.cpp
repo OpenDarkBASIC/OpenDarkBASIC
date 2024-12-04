@@ -26,8 +26,8 @@ DBParserHelper::DBParserHelper()
     globals_init(&globals);
     db_parser_init(&p);
 
-    filename = empty_utf8();
-    utf8_set_cstr(&filename, "test");
+    filename = empty_ospath();
+    ospath_set_cstr(&filename, "test");
 
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
@@ -56,9 +56,8 @@ DBParserHelper::~DBParserHelper()
     }
 
     db_parser_deinit(&p);
-    if (src.text.data)
-        db_source_close(&src);
-    utf8_deinit(filename);
+    utf8_deinit(src);
+    ospath_deinit(filename);
     globals_deinit(globals);
     cmd_list_deinit(&cmds);
     udt_storage_deinit(&udts);
@@ -68,10 +67,9 @@ DBParserHelper::~DBParserHelper()
 int
 DBParserHelper::parse(const char* code)
 {
-    if (src.text.data)
-        db_source_close(&src);
-    if (db_source_open_string(&src, cstr_utf8_view(code)) != 0)
-        return -1;
+    utf8_deinit(src);
+    src = empty_utf8();
+    utf8_set_cstr(&src, code);
 
     if (ast)
     {
@@ -80,7 +78,7 @@ DBParserHelper::parse(const char* code)
     }
 
     int result
-        = db_parse(&p, &ast, utf8_cstr(filename), src, &plugins, &cmds, &udts);
+        = db_parse(&p, &ast, ospathc(filename), &src, &plugins, &cmds, &udts);
     if (result != 0)
         return result;
 
@@ -90,7 +88,7 @@ DBParserHelper::parse(const char* code)
     std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
                           + info->name() + ".ast";
     std::filesystem::create_directory("ast");
-    ast_export(ast, cstr_ospathc(astfile.c_str()), src, &cmds);
+    ast_export(ast, cstr_ospathc(astfile.c_str()), utf8_view(src), &cmds);
 #endif
 
     return globals_add_declarations_from_ast(
@@ -118,7 +116,7 @@ DBParserHelper::semantic(const struct semantic_check* check)
     std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
                           + info->name() + ".ast";
     std::filesystem::create_directory("ast");
-    ast_export(ast, cstr_ospathc(astfile.c_str()), src, &cmds);
+    ast_export(ast, cstr_ospathc(astfile.c_str()), utf8_view(src), &cmds);
 #endif
     return result;
 }
@@ -202,7 +200,8 @@ DBParserHelper::writeAST()
         return;
 
     if (odbtests_ast_filename == NULL)
-        ast_export_fp(ast, stdout, src, &cmds);
+        ast_export_fp(ast, stdout, utf8_view(src), &cmds);
     else
-        ast_export(ast, cstr_ospathc(odbtests_ast_filename), src, &cmds);
+        ast_export(
+            ast, cstr_ospathc(odbtests_ast_filename), utf8_view(src), &cmds);
 }

@@ -468,7 +468,7 @@ log_vprogress(int current, int total, const char* fmt, va_list ap)
 
 /* -------------------------------------------------------------------------- */
 void
-log_flc(const char* filename, const char* source, struct utf8_span location)
+log_flc(struct ospathc filename, const char* source, struct utf8_span location)
 {
     utf8_idx i;
     utf8_idx l1, c1;
@@ -482,7 +482,7 @@ log_flc(const char* filename, const char* source, struct utf8_span location)
     }
 
     mutex_lock(g_mutex);
-    fprintf_with_color("{emph:%s:%d:%d}\n", filename, l1, c1);
+    fprintf_with_color("{emph:%s:%d:%d}\n", ospathc_cstr(filename), l1, c1);
     mutex_unlock(g_mutex);
 }
 

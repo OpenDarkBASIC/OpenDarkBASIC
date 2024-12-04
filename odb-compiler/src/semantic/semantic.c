@@ -92,8 +92,8 @@ struct ctx
     int                       tu_count;
     int                       tu_id;
     struct mutex**            tu_mutexes;
-    const struct utf8*        filenames;
-    const struct db_source*   sources;
+    const struct ospath*      filenames;
+    const struct utf8*        sources;
     const struct plugin_list* plugins;
     const struct cmd_list*    cmds;
     const struct globals*     globals;
@@ -132,15 +132,17 @@ run_check(
 #if defined(ODBCOMPILER_AST_DUMP)
         {
             const struct ast* ast = ctx->tus[ctx->tu_id];
-            const char*       filename = utf8_cstr(ctx->filenames[ctx->tu_id]);
-            struct db_source  source = ctx->sources[ctx->tu_id];
-            ast_export_filename(ast, filename, source, ctx->cmds);
+            struct ospathc    filename = ospathc(ctx->filenames[ctx->tu_id]);
+            struct utf8_view  source = utf8_view(ctx->sources[ctx->tu_id]);
+            ast_export_basename(ast, filename, source, ctx->cmds);
         }
 #endif
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
         if (result == 0)
             result = ast_sanity_check(
-                ctx->tus[ctx->tu_id], ctx->sources[ctx->tu_id], ctx->cmds);
+                ctx->tus[ctx->tu_id],
+                utf8_cstr(ctx->sources[ctx->tu_id]),
+                ctx->cmds);
 #endif
 
         return result;
@@ -168,8 +170,8 @@ semantic_check_run(
     int                          tu_count,
     int                          tu_id,
     struct mutex**               tu_mutexes,
-    const struct utf8*           filenames,
-    const struct db_source*      sources,
+    const struct ospath*         filenames,
+    const struct utf8*           sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
     const struct udt_storage*    udts,
@@ -177,7 +179,7 @@ semantic_check_run(
 {
     struct ptr_set* check_visited;
     struct ast**    astp = &tus[tu_id];
-    struct utf8     filename = filenames[tu_id];
+    struct ospathc  filename = ospathc(filenames[tu_id]);
     struct ctx      ctx
         = {tus,
            tu_count,
@@ -193,7 +195,8 @@ semantic_check_run(
     if (ast_count(*astp) == 0)
     {
         log_warn(
-            "AST is empty for source file {quote:%s}\n", utf8_cstr(filename));
+            "AST is empty for source file {quote:%s}\n",
+            ospathc_cstr(filename));
         return 0;
     }
 
@@ -216,8 +219,8 @@ dummy_check(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
@@ -232,8 +235,8 @@ semantic_run_essential_checks(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,

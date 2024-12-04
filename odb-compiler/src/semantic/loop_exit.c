@@ -1,7 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/log.h"
 #include "odb-util/utf8.h"
@@ -11,7 +10,7 @@ find_parent_loop_with_same_implicit_name(
     const struct ast* ast,
     ast_id            exit,
     ast_id            loop,
-    const char*       filename,
+    struct ospathc    filename,
     const char*       source)
 {
     struct utf8_span name = ast->nodes[loop].loop1.implicit_name;
@@ -38,7 +37,7 @@ static int
 check_exit(
     const struct ast* ast,
     ast_id            exit,
-    const char*       filename,
+    struct ospathc    filename,
     const char*       source)
 {
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
@@ -88,8 +87,8 @@ check_loop_exit(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
@@ -97,8 +96,8 @@ check_loop_exit(
 {
     ast_id            n;
     const struct ast* ast = tus[tu_id];
-    const char*       filename = utf8_cstr(filenames[tu_id]);
-    const char*       source = sources[tu_id].text.data;
+    struct ospathc    filename = ospathc(filenames[tu_id]);
+    const char*       source = sources[tu_id].data;
 
     for (n = 0; n != ast_count(ast); ++n)
         if (ast_node_type(ast, n) == AST_LOOP_EXIT)

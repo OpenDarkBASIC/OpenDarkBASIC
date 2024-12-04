@@ -59,7 +59,7 @@ get_next_assembled_token(
     struct token_queue**   tokens,
     struct utf8*           cmd_buf,
     const struct cmd_list* cmds,
-    const char*            source_text,
+    const char*            source,
     dbscan_t               scanner,
     DBLTYPE*               scanner_location)
 {
@@ -118,7 +118,7 @@ get_next_assembled_token(
             /* Commands are stored in the command list in upper case by
              * convention. For performance reasons we do the conversion to
              * upper here */
-            if (utf8_set(cmd_buf, utf8_span_view(source_text, candidate)) != 0)
+            if (utf8_set(cmd_buf, utf8_span_view(source, candidate)) != 0)
                 return NULL;
             utf8_toupper(*cmd_buf);
 
@@ -177,7 +177,7 @@ get_next_assembled_token(
     if (token->pushed_char == TOK_IDENTIFIER)
     {
         dbtoken_kind_t keyword
-            = db_keyword_lookup(source_text, token->pushed_location);
+            = db_keyword_lookup(source, token->pushed_location);
         if (keyword != TOK_EOF)
             token->pushed_char = keyword;
     }
@@ -189,8 +189,8 @@ int
 db_parser_load_command(
     const struct ast*    ast,
     ast_id               load_command,
-    const char*          filename,
-    const char*          source,
+    struct ospathc       filename,
+    struct utf8*         source,
     struct plugin_list** plugins,
     struct cmd_list*     cmds,
     struct udt_storage*  udts)
@@ -199,7 +199,7 @@ db_parser_load_command(
     plugin_id        plugin;
     cmd_id           cmd;
     ast_id           rettype, typelist;
-    struct utf8_span cmd_name, c_symbol, filepath_span;
+    struct utf8_span cmd_name, symbol, filepath_span;
     struct utf8_view filepath_view;
     struct utf8      cmd_name_upper = empty_utf8();
     struct ospath    plugin_filepath = empty_ospath();
@@ -221,12 +221,12 @@ db_parser_load_command(
         log_err("type: %d\n", ast_node_type(ast, typelist)));
 
     cmd_name = ast->nodes[load_command].load_command.cmd_name;
-    c_symbol = ast->nodes[load_command].load_command.c_symbol;
+    symbol = ast->nodes[load_command].load_command.c_symbol;
     filepath_span = ast->nodes[load_command].load_command.filepath;
-    filepath_view = utf8_span_view(source, filepath_span);
+    filepath_view = utf8_span_view(source->data, filepath_span);
     if (ospath_set_utf8(&plugin_filepath, filepath_view) != 0)
         goto error;
-    if (utf8_set(&cmd_name_upper, utf8_span_view(source, cmd_name)) != 0)
+    if (utf8_set(&cmd_name_upper, utf8_span_view(source->data, cmd_name)) != 0)
         goto error;
 
     plugin = plugin_list_add_or_get(plugins, &plugin_filepath);
@@ -236,7 +236,7 @@ db_parser_load_command(
     if (ast_node_type(ast, rettype) == AST_AS_UDT)
     {
         struct utf8_span name = ast->nodes[rettype].as_udt.type_name;
-        type = udt_storage_add_type(udts, name, ast, filename, source);
+        type = udt_storage_add_type(udts, name, ast, filename, source->data);
         if (type_is_invalid(type))
             goto error;
     }
@@ -244,11 +244,12 @@ db_parser_load_command(
         type = ast->nodes[rettype].as_type.type;
     else
     {
-        log_flc(filename, source, ast_loc(ast, rettype));
+        log_flc(filename, source->data, ast_loc(ast, rettype));
         log_err(
             "TYPE(x) is not supported for command return types. Use AS or a "
             "User-Defined Type instead.\n");
-        log_excerpt_1(source, ast_loc(ast, rettype), empty_utf8_view(), 0);
+        log_excerpt_1(
+            source->data, ast_loc(ast, rettype), empty_utf8_view(), 0);
         goto error;
     }
 
@@ -258,7 +259,7 @@ db_parser_load_command(
         plugin,
         type,
         utf8_view(cmd_name_upper),
-        utf8_span_view(source, c_symbol));
+        utf8_span_view(source->data, symbol));
     if (cmd < 0)
         goto error;
 
@@ -266,12 +267,13 @@ db_parser_load_command(
     {
         ast_id           as = ast->nodes[typelist].typelist.as;
         struct utf8_span name_span = ast->nodes[typelist].typelist.name;
-        struct utf8_view name = utf8_span_view(source, name_span);
+        struct utf8_view name = utf8_span_view(source->data, name_span);
 
         if (ast_node_type(ast, as) == AST_AS_UDT)
         {
             struct utf8_span name = ast->nodes[as].as_udt.type_name;
-            type = udt_storage_add_type(udts, name, ast, filename, source);
+            type
+                = udt_storage_add_type(udts, name, ast, filename, source->data);
             if (type_is_invalid(type))
                 goto error;
         }
@@ -279,12 +281,13 @@ db_parser_load_command(
             type = ast->nodes[as].as_type.type;
         else
         {
-            log_flc(filename, source, ast_loc(ast, as));
+            log_flc(filename, source->data, ast_loc(ast, as));
             log_err(
                 "TYPE(x) is not supported for command return types. Use AS or "
                 "a "
                 "User-Defined Type instead.\n");
-            log_excerpt_1(source, ast_loc(ast, rettype), empty_utf8_view(), 0);
+            log_excerpt_1(
+                source->data, ast_loc(ast, rettype), empty_utf8_view(), 0);
             goto error;
         }
 
@@ -335,8 +338,8 @@ int
 db_parse(
     struct db_parser*    parser,
     struct ast**         astp,
-    const char*          filename,
-    struct db_source     source,
+    struct ospathc       filename,
+    struct utf8*         source,
     struct plugin_list** plugins,
     struct cmd_list*     cmds,
     struct udt_storage*  udts)
@@ -347,16 +350,19 @@ db_parse(
     struct utf8_span    scanner_location = empty_utf8_span();
     struct utf8         cmd_buf = empty_utf8();
     struct parse_param  parse_param
-        = {astp, filename, source.text.data, plugins, cmds, udts};
+        = {astp, filename, source, plugins, cmds, udts};
 
-    if (source.text.len == 0)
+    if (source->len == 0)
     {
-        log_warn("Source is empty: {quote:%s}\n", filename);
+        log_warn("Source is empty: {quote:%s}\n", ospathc_cstr(filename));
         return 0;
     }
 
+    ODBUTIL_STATIC_ASSERT(UTF8_APPEND_PADDING >= 2);
+    source->data[source->len] = '\0';
+    source->data[source->len + 1] = '\0';
     buffer_state = db_scan_buffer(
-        source.text.data, source.text.len + 2, parser->scanner);
+        source->data, source->len + UTF8_APPEND_PADDING, parser->scanner);
     if (buffer_state == NULL)
     {
         log_err(
@@ -374,7 +380,7 @@ db_parse(
     dbdebug = 1;
 #endif
 
-    dbset_extra(source.text.data, parser->scanner);
+    dbset_extra(source->data, parser->scanner);
 
     do
     {
@@ -382,7 +388,7 @@ db_parse(
             &tokens,
             &cmd_buf,
             cmds,
-            source.text.data,
+            source->data,
             parser->scanner,
             &scanner_location);
         if (token == NULL)
@@ -397,7 +403,7 @@ db_parse(
                 &tokens,
                 &cmd_buf,
                 cmds,
-                source.text.data,
+                source->data,
                 parser->scanner,
                 &scanner_location);
             if (expect_remend->pushed_char == TOK_REMEND)
@@ -407,7 +413,7 @@ db_parse(
             }
 
             err_unterminated_remark(
-                token->pushed_location, filename, source.text.data);
+                token->pushed_location, filename, source->data);
             parse_result = -1;
             goto parse_failed;
         }
@@ -429,11 +435,11 @@ parse_failed:
     if (*astp != NULL)
         cleanup_ast(*astp);
 #if defined(ODBCOMPILER_AST_DUMP)
-    ast_export_filename(*astp, filename, source, cmds);
+    ast_export_basename(*astp, filename, utf8_view(*source), cmds);
 #endif
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (*astp != NULL)
-        ast_sanity_check(*astp, source, cmds);
+        ast_sanity_check(*astp, source->data, cmds);
 #endif
     dbset_extra(NULL, parser->scanner);
     token_queue_deinit(tokens);

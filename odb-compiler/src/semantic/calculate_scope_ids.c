@@ -1,6 +1,5 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 
 static void
@@ -180,8 +179,8 @@ calculate_scope_ids(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,

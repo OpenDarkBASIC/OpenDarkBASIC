@@ -2,7 +2,6 @@
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/log.h"
 
@@ -82,7 +81,10 @@ read_select_expr_into_hidden_var(struct ast** astp, ast_id select)
 
 static int
 convert_select_to_primitives(
-    struct ast** astp, ast_id select, const char* filename, const char* source)
+    struct ast**   astp,
+    ast_id         select,
+    struct ospathc filename,
+    const char*    source)
 {
     ast_id select_result_decl, caselist, default_case, no, block;
 
@@ -161,7 +163,7 @@ static int
 report_duplicate_default_case(
     const struct ast* ast,
     ast_id            select,
-    const char*       filename,
+    struct ospathc    filename,
     const char*       source)
 {
     ast_id caselist, first_default_case;
@@ -198,18 +200,18 @@ select(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
     const struct globals*     globals)
 {
-    ast_id       n;
-    struct ast** astp = &tus[tu_id];
-    struct ast*  ast = *astp;
-    const char*  filename = utf8_cstr(filenames[tu_id]);
-    const char*  source = sources[tu_id].text.data;
+    ast_id         n;
+    struct ast**   astp = &tus[tu_id];
+    struct ast*    ast = *astp;
+    struct ospathc filename = ospathc(filenames[tu_id]);
+    const char*    source = sources[tu_id].data;
 
     for (n = 0; n != ast_count(ast); ++n)
     {

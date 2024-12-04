@@ -6,9 +6,9 @@
 
 struct ast;
 struct cmd_list;
-struct db_source;
 struct globals;
 struct mutex;
+struct ospath;
 struct plugin_list;
 struct udt_storage;
 
@@ -17,8 +17,8 @@ typedef int (*semantic_check_func)(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
@@ -38,8 +38,8 @@ semantic_check_run(
     int                          tu_count,
     int                          tu_id,
     struct mutex**               tu_mutexes,
-    const struct utf8*           filenames,
-    const struct db_source*      sources,
+    const struct ospath*         filenames,
+    const struct utf8*           sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
     const struct udt_storage*    udts,
@@ -51,8 +51,8 @@ semantic_run_essential_checks(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,

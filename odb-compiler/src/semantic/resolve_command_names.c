@@ -1,5 +1,4 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
@@ -16,8 +15,8 @@ resolve_command_names(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
@@ -27,7 +26,7 @@ resolve_command_names(
     struct utf8  cmd_name = empty_utf8();
     struct ast** astp = &tus[tu_id];
     struct ast*  ast = *astp;
-    const char*  source = sources[tu_id].text.data;
+    const char*  source = utf8_cstr(sources[tu_id]);
 
     for (n = 0; n != ast_count_unsafe(ast); ++n)
     {

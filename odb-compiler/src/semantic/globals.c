@@ -1,7 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/globals.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/hash.h"
@@ -158,19 +157,19 @@ globals_deinit(struct globals* globals)
 
 static int
 add_function(
-    struct globals**        globals,
-    struct ast**            tus,
-    int                     tu_id,
-    ast_id                  f1,
-    const struct utf8*      filenames,
-    const struct db_source* sources)
+    struct globals**     globals,
+    struct ast**         tus,
+    int                  tu_id,
+    ast_id               f1,
+    const struct ospath* filenames,
+    const struct utf8*   sources)
 {
     struct global*    entry;
     ast_id            identifier;
     struct utf8_span  func_span;
     struct utf8_view  func_name;
     const struct ast* ast = tus[tu_id];
-    const char*       source = sources[tu_id].text.data;
+    const char*       source = utf8_cstr(sources[tu_id]);
 
     identifier = ast->nodes[f1].func1.identifier;
     ODBUTIL_DEBUG_ASSERT(
@@ -202,9 +201,9 @@ add_function(
                 = ast_node_type(prev_ast, entry->ast_node) == AST_FUNC_POLY
                       ? prev_ast->nodes[entry->ast_node].func_poly.func
                       : entry->ast_node;
-            const char* prev_filename = utf8_cstr(filenames[entry->tu_id]);
-            const char* prev_source = sources[entry->tu_id].text.data;
-            const char* filename = utf8_cstr(filenames[tu_id]);
+            struct ospathc prev_filename = ospathc(filenames[entry->tu_id]);
+            const char*    prev_source = sources[entry->tu_id].data;
+            struct ospathc filename = ospathc(filenames[tu_id]);
             return err_func_redefinition(
                 ast,
                 f1,
@@ -222,19 +221,19 @@ add_function(
 
 static int
 add_udt_decl(
-    struct globals**        globals,
-    struct ast**            tus,
-    int                     tu_id,
-    ast_id                  udt_decl,
-    const struct utf8*      filenames,
-    const struct db_source* sources)
+    struct globals**     globals,
+    struct ast**         tus,
+    int                  tu_id,
+    ast_id               udt_decl,
+    const struct ospath* filenames,
+    const struct utf8*   sources)
 {
     struct global*    entry;
     ast_id            udt_ident;
     struct utf8_span  udt_span;
     struct utf8_view  udt_name;
     const struct ast* ast = tus[tu_id];
-    const char*       source = sources[tu_id].text.data;
+    const char*       source = utf8_cstr(sources[tu_id]);
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
@@ -254,9 +253,9 @@ add_udt_decl(
 
         case HM_EXISTS: {
             const struct ast* prev_ast = tus[entry->tu_id];
-            const char* prev_filename = utf8_cstr(filenames[entry->tu_id]);
-            const char* prev_source = sources[entry->tu_id].text.data;
-            const char* filename = utf8_cstr(filenames[tu_id]);
+            struct ospathc    prev_filename = ospathc(filenames[entry->tu_id]);
+            const char*       prev_source = sources[entry->tu_id].data;
+            struct ospathc    filename = ospathc(filenames[tu_id]);
             return err_udt_decl_redeclaration(
                 ast,
                 udt_span,
@@ -274,11 +273,11 @@ add_udt_decl(
 
 int
 globals_add_declarations_from_ast(
-    struct globals**        table,
-    struct ast**            tus,
-    int                     tu_id,
-    const struct utf8*      filenames,
-    const struct db_source* sources)
+    struct globals**     table,
+    struct ast**         tus,
+    int                  tu_id,
+    const struct ospath* filenames,
+    const struct utf8*   sources)
 {
     ast_id n;
     for (n = 0; n != ast_count(tus[tu_id]); ++n)

@@ -1,5 +1,4 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-util/log.h"
@@ -24,7 +23,7 @@ count_nodes_recurse(const struct ast* ast, ast_id n, int depth)
 
 static int
 ast_verify_connectivity(
-    const struct ast* ast, struct db_source source, const struct cmd_list* cmds)
+    const struct ast* ast, const char* source, const struct cmd_list* cmds)
 {
     ast_id count = count_nodes_recurse(ast, ast->root, 0);
     if (count < 0)
@@ -38,7 +37,7 @@ ast_verify_connectivity(
 
 static int
 check_scope_ids(
-    const struct ast* ast, struct db_source source, const struct cmd_list* cmds)
+    const struct ast* ast, const char* source, const struct cmd_list* cmds)
 {
     ast_id n;
 
@@ -60,7 +59,7 @@ check_scope_ids(
 
 int
 ast_sanity_check(
-    const struct ast* ast, struct db_source source, const struct cmd_list* cmds)
+    const struct ast* ast, const char* source, const struct cmd_list* cmds)
 {
     if (ast_verify_connectivity(ast, source, cmds) != 0)
         return -1;

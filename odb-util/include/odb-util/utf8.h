@@ -10,6 +10,8 @@
 /* All strings are padded with 2 bytes extra on the end, because
  * 1) On linux, empty paths are converted to "."
  * 2) Potential null terminator when converting to utf8_view
+ * 3) FLEX requires 2 null bytes at the end of the buffer, known as the EOB or
+ *    "end of buffer" marker.
  */
 #define UTF8_APPEND_PADDING 2
 
@@ -168,6 +170,13 @@ utf8_reserve(struct utf8* str, int len);
 
 ODBUTIL_PUBLIC_API int
 utf8_set(struct utf8* dst, struct utf8_view src);
+
+static inline int
+utf8_set_data(struct utf8* str, const char* data, utf8_idx len)
+{
+    struct utf8_view view = {data, 0, len};
+    return utf8_set(str, view);
+}
 
 static inline int
 utf8_set_cstr(struct utf8* str, const char* cstr)

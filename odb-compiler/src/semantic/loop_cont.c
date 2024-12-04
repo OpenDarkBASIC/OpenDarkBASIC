@@ -1,7 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/log.h"
 
@@ -55,7 +54,7 @@ static int
 check_cont(
     const struct ast* ast,
     ast_id            cont,
-    const char*       filename,
+    struct ospathc    filename,
     const char*       source)
 {
     ODBUTIL_DEBUG_ASSERT(cont > -1, (void)0);
@@ -98,17 +97,17 @@ check_loop_cont(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
     const struct globals*     globals)
 {
-    ast_id       n, loop;
-    struct ast** astp = &tus[tu_id];
-    const char*  filename = utf8_cstr(filenames[tu_id]);
-    const char*  source = sources[tu_id].text.data;
+    ast_id         n, loop;
+    struct ast**   astp = &tus[tu_id];
+    struct ospathc filename = ospathc(filenames[tu_id]);
+    const char*    source = sources[tu_id].data;
 
     for (n = 0; n != ast_count(*astp); ++n)
     {

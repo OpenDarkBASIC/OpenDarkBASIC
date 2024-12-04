@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.h"
 #include "odb-compiler/semantic/type.h"
+#include "odb-util/ospath.h"
 #include "odb-util/utf8.h"
 
 struct udt_storage
@@ -21,7 +22,7 @@ udt_storage_add_type(
     struct udt_storage* udts,
     struct utf8_span    type_name,
     const struct ast*   ast,
-    const char*         filename,
+    struct ospathc      filename,
     const char*         source);
 
 #if defined(ODBUTIL_MEM_DEBUGGING)

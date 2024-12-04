@@ -26,7 +26,7 @@ TEST_F(NAME, file_line_column)
           "next a\n";
 
     struct utf8_span loc = {23, 5}; /* a = 5 */
-    log_flc("some/file.dba", source, loc);
+    log_flc(cstr_ospathc("some/file.dba"), source, loc);
 
     EXPECT_THAT(log(), LogEq("{emph}some/file.dba:2:8{reset}\n"));
 }

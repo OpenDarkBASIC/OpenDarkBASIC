@@ -1,5 +1,4 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
@@ -124,7 +123,7 @@ static void
 report_duplicate_commands(
     const struct ast*         ast,
     ast_id                    cmd,
-    const char*               filename,
+    struct ospathc            filename,
     const char*               source,
     const struct udt_storage* udts,
     const struct plugin_list* plugins,
@@ -182,7 +181,7 @@ report_ambiguous_overloads(
     ast_id                    arglist,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
-    const char*               filename,
+    struct ospathc            filename,
     const char*               source,
     int                       rule_idx,
     const struct candidates*  candidates)
@@ -338,7 +337,7 @@ report_available_commands(
     const char*               msg,
     const struct ast*         ast,
     ast_id                    arglist,
-    const char*               filename,
+    struct ospathc            filename,
     const char*               source,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
@@ -435,7 +434,7 @@ static int
 typecheck_warnings(
     struct ast**              astp,
     ast_id                    cmd_node,
-    const char*               filename,
+    struct ospathc            filename,
     const char*               source,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
@@ -548,8 +547,8 @@ resolve_command_overloads(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
@@ -562,11 +561,11 @@ resolve_command_overloads(
     struct candidates* prev_candidates;
     cmd_id*            cmdp;
 
-    struct ast** astp = &tus[tu_id];
-    struct ast*  ast = *astp;
-    const char*  filename = utf8_cstr(filenames[tu_id]);
-    const char*  source = sources[tu_id].text.data;
-    struct ctx   ctx = {NULL, ast, cmds, 0, -1};
+    struct ast**   astp = &tus[tu_id];
+    struct ast*    ast = *astp;
+    struct ospathc filename = ospathc(filenames[tu_id]);
+    const char*    source = sources[tu_id].data;
+    struct ctx     ctx = {NULL, ast, cmds, 0, -1};
 
     candidates_init(&candidates);
     candidates_init(&prev_candidates);

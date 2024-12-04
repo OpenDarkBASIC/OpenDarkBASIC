@@ -32,8 +32,8 @@ ir_translate_ast(
     enum target_arch       arch,
     enum target_platform   platform,
     const struct cmd_list* cmds,
-    const char*            source_filename,
-    const char*            source_text);
+    struct ospathc         filename,
+    const char*            source);
 
 ODBCOMPILER_PUBLIC_API int
 ir_create_harness(
@@ -54,4 +54,3 @@ ir_dump(const struct ir_module* ir);
 
 ODBCOMPILER_PUBLIC_API int
 ir_emit(struct ir_module* mod, const char* output_filepath);
-

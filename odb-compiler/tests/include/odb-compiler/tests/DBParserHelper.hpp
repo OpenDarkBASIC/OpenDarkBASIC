@@ -4,9 +4,9 @@
 
 extern "C" {
 #include "odb-compiler/parser/db_parser.h"
+#include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-compiler/semantic/udt.h"
-#include "odb-compiler/sdk/cmd_list.h"
 
 struct ast;
 struct mutex;
@@ -19,18 +19,25 @@ struct DBParserHelper
     DBParserHelper();
     ~DBParserHelper();
 
-    virtual int parse(const char* code);
-    int semantic(const struct semantic_check* check);
-    int addCommand(const char* name);
-    int addCommand(enum primitive_type return_type, const char* name);
-    int addCommand(union type, const char* name);
-    int addCommand(
-        union type  return_type,
-        const char* name,
+    virtual int
+    parse(const char* code);
+    int
+    semantic(const struct semantic_check* check);
+    int
+    addCommand(const char* name);
+    int
+    addCommand(enum primitive_type return_type, const char* name);
+    int
+    addCommand(union type, const char* name);
+    int
+    addCommand(
+        union type                        return_type,
+        const char*                       name,
         std::initializer_list<union type> param_types);
-    int addCommand(
-        enum primitive_type return_type,
-        const char*         name,
+    int
+    addCommand(
+        enum primitive_type                        return_type,
+        const char*                                name,
         std::initializer_list<enum primitive_type> param_types);
 
     struct plugin_list* plugins;
@@ -38,12 +45,13 @@ struct DBParserHelper
     struct udt_storage  udts;
     struct globals*     globals;
     struct db_parser    p;
-    struct utf8         filename;
-    struct db_source    src;
+    struct ospath       filename;
+    struct utf8         src;
     struct ast*         ast;
     struct mutex*       ast_mutex;
     struct mutex*       cmd_list_mutex;
 
 private:
-    void writeAST();
+    void
+    writeAST();
 };

@@ -13,7 +13,7 @@ bool dump_ast_pre_semantic(const std::vector<std::string>& args);
 bool dump_ast_post_semantic(const std::vector<std::string>& args);
 
 struct ast* getAST();
-const char* getSourceFilepath();
+struct ospathc getSourceFilepath();
 const char* getSource();
 
 ActionHandler parseDBPro(const std::vector<std::string>& args);

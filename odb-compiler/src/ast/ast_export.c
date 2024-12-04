@@ -9,7 +9,7 @@ int
 ast_export_fp(
     const struct ast*      ast,
     FILE*                  fp,
-    struct db_source       source,
+    struct utf8_view       source,
     const struct cmd_list* cmds)
 {
     struct utf8_list* cmd_names;
@@ -74,9 +74,9 @@ ast_export_fp(
             goto error;
     }
 
-    if (fwrite(&source.text.len, sizeof(source.text.len), 1, fp) != 1)
+    if (fwrite(&source.len, sizeof(source.len), 1, fp) != 1)
         goto error;
-    if (fwrite(source.text.data, source.text.len, 1, fp) != 1)
+    if (fwrite(source.data, source.len, 1, fp) != 1)
         goto error;
 
     if (fprintf(fp, "%c%c%c%c", magic[3], magic[2], magic[1], magic[0]) < 0)
@@ -91,10 +91,10 @@ error:
 }
 
 int
-ast_export_filename(
+ast_export_basename(
     const struct ast*      ast,
-    const char*            filename,
-    struct db_source       source,
+    struct ospathc         filename,
+    struct utf8_view       source,
     const struct cmd_list* cmds)
 {
     int           result;
@@ -103,7 +103,7 @@ ast_export_filename(
     if (ast == NULL)
         return 0;
 
-    ospath_set_cstr(&fname, filename);
+    ospath_set(&fname, filename);
     ospath_filename(&fname);
     utf8_append_cstr(&fname.str, ".ast");
     result = ast_export(ast, ospathc(fname), source, cmds);
@@ -115,7 +115,7 @@ int
 ast_export(
     const struct ast*      ast,
     struct ospathc         filepath,
-    struct db_source       source,
+    struct utf8_view       source,
     const struct cmd_list* cmds)
 {
     FILE*        fp;

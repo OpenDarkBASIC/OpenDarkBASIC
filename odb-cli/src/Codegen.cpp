@@ -87,7 +87,7 @@ output(const std::vector<std::string>& args)
         arch_ = TARGET_i386;
     }
 
-    log_info("Compiling {emph:%s}\n", getSourceFilepath());
+    log_info("Compiling {emph:%s}\n", ospathc_cstr(getSourceFilepath()));
     outputExe_ = args[0];
 
     /* Path to the compiler's architecture/platform directory, e.g.
@@ -127,7 +127,7 @@ output(const std::vector<std::string>& args)
 
     /* Harness needs to know the module name of the main DBA */
     struct ospath maindbaname = empty_ospath();
-    ospath_set_cstr(&maindbaname, getSourceFilepath());
+    ospath_set(&maindbaname, getSourceFilepath());
     ospath_filename(&maindbaname);
     ospath_remove_ext(&maindbaname);
     log_dbg("maindbaname: {quote:%s}\n", ospath_cstr(maindbaname));
@@ -156,7 +156,7 @@ output(const std::vector<std::string>& args)
     cmd_ids_deinit(used_cmds_list);
 
     struct ospath  objfilepath = empty_ospath();
-    struct ospathc srcfilename = cstr_ospathc(getSourceFilepath());
+    struct ospathc srcfilename = getSourceFilepath();
     ospathc_filename(&srcfilename);
     ospath_set(&objfilepath, ospathc(tmpdir));
     ospath_join(&objfilepath, srcfilename);

@@ -2045,7 +2045,7 @@ process_node(
     const struct ast*                             ast,
     struct ir_module*                             ir,
     llvm::IRBuilder<>&                            b,
-    const char*                                   filename,
+    struct ospathc                                filename,
     const char*                                   source,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
@@ -2253,7 +2253,7 @@ ir_translate_ast(
     enum target_arch       arch,
     enum target_platform   platform,
     const struct cmd_list* cmds,
-    const char*            filename,
+    struct ospathc         filename,
     const char*            source)
 {
     llvm::StringMap<llvm::GlobalVariable*> StringTable;
@@ -2293,7 +2293,9 @@ ir_translate_ast(
         goto create_db_func_table_failed;
 
     if (ast_count(ast) == 0)
-        log_warn("AST is empty for source file {quote:%s}\n", filename);
+        log_warn(
+            "AST is empty for source file {quote:%s}\n",
+            ospathc_cstr(filename));
     else if (stack_push_node(&stack, ast->root) != 0)
         goto translation_failure;
 

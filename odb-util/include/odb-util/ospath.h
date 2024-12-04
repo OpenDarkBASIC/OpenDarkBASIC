@@ -58,6 +58,13 @@ utf8_ospathc(struct utf8 str)
 }
 
 static inline struct ospathc
+utf8c_ospathc(struct utf8c str)
+{
+    struct ospathc pathc = {str, (utf8_idx)strlen(str.data)};
+    return pathc;
+}
+
+static inline struct ospathc
 cstr_ospathc(const char* cstr)
 {
     struct ospathc pathc = {cstr_utf8c(cstr), (utf8_idx)strlen(cstr)};
@@ -110,6 +117,11 @@ ospath_set(struct ospath* path, struct ospathc newpath)
 {
     struct utf8_view view = {utf8c_cstr(newpath.str), 0, newpath.len};
     return ospath_set_utf8(path, view);
+}
+static inline int
+ospath_set_utf8c(struct ospath* path, struct utf8c str)
+{
+    return ospath_set(path, utf8c_ospathc(str));
 }
 static inline int
 ospath_set_cstr(struct ospath* path, const char* cstr)

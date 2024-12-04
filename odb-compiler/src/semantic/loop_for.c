@@ -2,7 +2,6 @@
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/log.h"
 
@@ -142,7 +141,7 @@ create_exit_stmt(
     ast_id           step,
     ast_id           loop_var_ident,
     struct utf8_span location,
-    const char*      filename,
+    struct ospathc   filename,
     const char*      source)
 {
     union expr_value begin_val, end_val, step_val = {0};
@@ -202,7 +201,7 @@ create_exit_stmt(
 
 static ast_id
 convert_for_loop_to_primitives(
-    struct ast** astp, ast_id loop, const char* filename, const char* source)
+    struct ast** astp, ast_id loop, struct ospathc filename, const char* source)
 {
     struct utf8_span loop_loc;
     ast_id           for1, for2, for3, loop_body, body;
@@ -338,18 +337,18 @@ loop_for(
     int                       tu_count,
     int                       tu_id,
     struct mutex**            tu_mutexes,
-    const struct utf8*        filenames,
-    const struct db_source*   sources,
+    const struct ospath*      filenames,
+    const struct utf8*        sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
     const struct globals*     globals)
 {
-    ast_id       n;
-    struct ast** astp = &tus[tu_id];
-    struct ast*  ast = *astp;
-    const char*  filename = utf8_cstr(filenames[tu_id]);
-    const char*  source = sources[tu_id].text.data;
+    ast_id         n;
+    struct ast**   astp = &tus[tu_id];
+    struct ast*    ast = *astp;
+    struct ospathc filename = ospathc(filenames[tu_id]);
+    const char*    source = sources[tu_id].data;
 
     for (n = 0; n != ast_count(ast); ++n)
     {

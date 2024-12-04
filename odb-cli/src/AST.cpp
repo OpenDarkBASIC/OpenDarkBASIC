@@ -11,18 +11,19 @@ extern "C" {
 #include "odb-compiler/semantic/udt.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
+#include "odb-util/mfile.h"
 #include "odb-util/mutex.h"
 #include "odb-util/thread.h"
 #include "odb-util/utf8.h"
 }
 
-VEC_DECLARE_API(static, filenames, struct utf8, 32)
-VEC_DECLARE_API(static, sources, struct db_source, 32)
+VEC_DECLARE_API(static, filenames, struct ospath, 32)
+VEC_DECLARE_API(static, sources, struct utf8, 32)
 VEC_DECLARE_API(static, tus, struct ast*, 32)
 VEC_DECLARE_API(static, ast_mutexes, struct mutex*, 32)
 
-VEC_DEFINE_API(filenames, struct utf8, 32)
-VEC_DEFINE_API(sources, struct db_source, 32)
+VEC_DEFINE_API(filenames, struct ospath, 32)
+VEC_DEFINE_API(sources, struct utf8, 32)
 VEC_DEFINE_API(tus, struct ast*, 32)
 VEC_DEFINE_API(ast_mutexes, struct mutex*, 32)
 
@@ -50,22 +51,16 @@ close_tus(struct ctx* ctx)
 {
     while (sources_count(ctx->sources) > 0)
     {
-        struct mutex*     mutex = *ast_mutexes_pop(ctx->ast_mutexes);
-        struct ast**      astp = tus_pop(ctx->tus);
-        struct db_source* source = sources_pop(ctx->sources);
-        struct utf8*      filename = filenames_pop(ctx->filenames);
+        struct mutex*  mutex = *ast_mutexes_pop(ctx->ast_mutexes);
+        struct ast**   astp = tus_pop(ctx->tus);
+        struct utf8*   source = sources_pop(ctx->sources);
+        struct ospath* filename = filenames_pop(ctx->filenames);
 
-        utf8_deinit(*filename);
+        ospath_deinit(*filename);
         mutex_unlock(mutex);
         mutex_destroy(mutex);
         ast_deinit(*astp);
-        if (filename != NULL)
-            db_source_close(source);
-        else
-        {
-            struct utf8 str = {source->text.data, 0};
-            utf8_deinit(str);
-        }
+        utf8_deinit(*source);
     }
 }
 
@@ -75,11 +70,10 @@ open_stdin_as_tu(struct ctx* ctx)
     char buf[1024];
     int  len;
 
-    struct utf8*      filename;
-    struct db_source* source;
-    struct ast**      astp;
-    struct mutex**    ast_mutex;
-    struct utf8       contents = empty_utf8();
+    struct ospath* filename;
+    struct utf8*   source;
+    struct ast**   astp;
+    struct mutex** ast_mutex;
 
     filename = filenames_emplace(&ctx->filenames);
     if (filename == NULL)
@@ -94,14 +88,15 @@ open_stdin_as_tu(struct ctx* ctx)
     if (ast_mutex == NULL)
         goto push_ast_mutex_failed;
 
-    *filename = empty_utf8();
-    if (utf8_set_cstr(filename, "<stdin>") != 0)
+    *filename = empty_ospath();
+    if (ospath_set_cstr(filename, "<stdin>") != 0)
         goto set_filename_failed;
 
+    *source = empty_utf8();
     while ((len = fread(buf, 1, 1024, stdin)) > 0)
     {
         struct utf8_view view = {buf, 0, len};
-        if (utf8_append(&contents, view) != 0)
+        if (utf8_append(source, view) != 0)
             goto read_failed;
     }
     if (!feof(stdin))
@@ -109,14 +104,13 @@ open_stdin_as_tu(struct ctx* ctx)
         log_err("Failed to read from stdin: {emph:%s}\n", strerror(errno));
         goto read_failed;
     }
-    if (db_source_ref_string(source, &contents) != 0)
-        goto read_failed;
 
     ast_init(astp);
 
     *ast_mutex = mutex_create();
     if (*ast_mutex == NULL)
         goto create_mutex_failed;
+
     mutex_lock(*ast_mutex);
 
     return true;
@@ -124,8 +118,9 @@ open_stdin_as_tu(struct ctx* ctx)
 create_mutex_failed:
     ast_deinit(*astp);
 read_failed:
+    utf8_deinit(*source);
 set_filename_failed:
-    utf8_deinit(*filename);
+    ospath_deinit(*filename);
     ast_mutexes_pop(ctx->ast_mutexes);
 push_ast_mutex_failed:
     tus_pop(ctx->tus);
@@ -134,7 +129,6 @@ push_ast_failed:
 push_source_failed:
     filenames_pop(ctx->filenames);
 push_filename_failed:
-    utf8_deinit(contents);
     return false;
 }
 
@@ -144,10 +138,11 @@ open_tus(struct ctx* ctx, const std::vector<std::string>& args)
     size_t i;
     for (i = 0; i != args.size(); ++i)
     {
-        struct utf8*      filename;
-        struct db_source* source;
-        struct ast**      astp;
-        struct mutex**    ast_mutex;
+        struct mfile   mf;
+        struct ospath* filename;
+        struct utf8*   source;
+        struct ast**   astp;
+        struct mutex** ast_mutex;
 
         filename = filenames_emplace(&ctx->filenames);
         if (filename == NULL)
@@ -162,28 +157,35 @@ open_tus(struct ctx* ctx, const std::vector<std::string>& args)
         if (ast_mutex == NULL)
             goto push_ast_mutex_failed;
 
-        *filename = empty_utf8();
-        if (utf8_set_cstr(filename, args[i].c_str()) != 0)
+        *filename = empty_ospath();
+        if (ospath_set_cstr(filename, args[i].c_str()) != 0)
             goto set_filename_failed;
 
-        if (db_source_open_file(source, cstr_ospathc(args[i].c_str())) != 0)
+        if (mfile_map_read(&mf, ospathc(*filename), 1) != 0)
             goto open_source_failed;
+        *source = empty_utf8();
+        if (utf8_set_data(source, (const char*)mf.address, mf.size) != 0)
+            goto read_source_failed;
 
         ast_init(astp);
 
         *ast_mutex = mutex_create();
         if (*ast_mutex == NULL)
             goto create_mutex_failed;
+
         mutex_lock(*ast_mutex);
+        mfile_unmap(&mf);
 
         continue;
 
     create_mutex_failed:
         ast_deinit(*astp);
-        db_source_close(source);
+        utf8_deinit(*source);
+    read_source_failed:
+        mfile_unmap(&mf);
     open_source_failed:
+        ospath_deinit(*filename);
     set_filename_failed:
-        utf8_deinit(*filename);
         ast_mutexes_pop(ctx->ast_mutexes);
     push_ast_mutex_failed:
         tus_pop(ctx->tus);
@@ -200,15 +202,15 @@ open_tus(struct ctx* ctx, const std::vector<std::string>& args)
 open_tus_failed:
     while (sources_count(ctx->sources) > 0)
     {
-        struct mutex*     mutex = *ast_mutexes_pop(ctx->ast_mutexes);
-        struct ast**      astp = tus_pop(ctx->tus);
-        struct db_source* source = sources_pop(ctx->sources);
-        struct utf8*      filename = filenames_pop(ctx->filenames);
+        struct mutex*  mutex = *ast_mutexes_pop(ctx->ast_mutexes);
+        struct ast**   astp = tus_pop(ctx->tus);
+        struct utf8*   source = sources_pop(ctx->sources);
+        struct ospath* filename = filenames_pop(ctx->filenames);
 
-        utf8_deinit(*filename);
+        ospath_deinit(*filename);
         mutex_destroy(mutex);
         ast_deinit(*astp);
-        db_source_close(source);
+        utf8_deinit(*source);
     }
     return false;
 }
@@ -216,10 +218,10 @@ open_tus_failed:
 static void*
 parse_worker(void* arg)
 {
-    int               tu_id, parse_result;
-    struct db_parser  parser;
-    struct db_source* source;
-    struct worker*    worker = (struct worker*)arg;
+    int              tu_id, parse_result;
+    struct db_parser parser;
+    struct utf8*     source;
+    struct worker*   worker = (struct worker*)arg;
 
     if (mem_init() != 0)
         goto init_mem_failed;
@@ -228,15 +230,15 @@ parse_worker(void* arg)
 
     vec_enumerate(worker->ctx->sources, tu_id, source)
     {
-        struct utf8* filename = vec_get(worker->ctx->filenames, tu_id);
-        struct ast** astp = vec_get(worker->ctx->tus, tu_id);
+        struct ospath* filename = vec_get(worker->ctx->filenames, tu_id);
+        struct ast**   astp = vec_get(worker->ctx->tus, tu_id);
 
         if (tu_id % sources_count(worker->ctx->sources) != worker->id)
             continue;
 
         log_info(
             "Parsing source file: {emph:%s}\n",
-            filename->len ? utf8_cstr(*filename) : "<stdin>");
+            filename->str.len ? ospath_cstr(*filename) : "<stdin>");
         mem_acquire_cmd_list(getCommandList());
         mem_acquire_udt_storage(getUDTStorage());
         mem_acquire_plugin_list(*getPluginList());
@@ -244,8 +246,8 @@ parse_worker(void* arg)
         parse_result = db_parse(
             &parser,
             astp,
-            filename->len ? utf8_cstr(*filename) : "<stdin>",
-            *source,
+            ospathc(*filename),
+            source,
             getPluginList(),
             getCommandList(),
             getUDTStorage());
@@ -284,24 +286,23 @@ init_mem_failed:
 static void*
 semantic_worker(void* arg)
 {
-    int               tu_id, result;
-    struct db_source* source;
-    struct worker*    worker = (struct worker*)arg;
+    int            tu_id, result;
+    struct utf8*   source;
+    struct worker* worker = (struct worker*)arg;
 
     if (mem_init() != 0)
         goto init_mem_failed;
 
     vec_enumerate(worker->ctx->sources, tu_id, source)
     {
-        struct utf8* filename = vec_get(worker->ctx->filenames, tu_id);
-        struct ast** astp = vec_get(worker->ctx->tus, tu_id);
+        struct ospath* filename = vec_get(worker->ctx->filenames, tu_id);
+        struct ast**   astp = vec_get(worker->ctx->tus, tu_id);
 
         if (tu_id % sources_count(worker->ctx->sources) != worker->id)
             continue;
 
         log_info(
-            "Running semantic checks: {emph:%s}\n",
-            filename->len ? utf8_cstr(*filename) : "<stdin>");
+            "Running semantic checks: {emph:%s}\n", ospath_cstr(*filename));
         mem_acquire_ast(*astp);
         result = semantic_run_essential_checks(
             worker->ctx->tus->data,
@@ -579,7 +580,7 @@ dump_ast(const std::vector<std::string>& args)
             ast_export(
                 *vec_get(ctx.tus, i),
                 cstr_ospathc(args[0].c_str()),
-                *vec_get(ctx.sources, i),
+                utf8_view(*vec_get(ctx.sources, i)),
                 getCommandList());
         }
     }
@@ -591,7 +592,7 @@ dump_ast(const std::vector<std::string>& args)
             ast_export_fp(
                 *vec_get(ctx.tus, i),
                 stdout,
-                *vec_get(ctx.sources, i),
+                utf8_view(*vec_get(ctx.sources, i)),
                 getCommandList());
         }
     }
@@ -650,13 +651,13 @@ getAST()
 {
     return *vec_get(ctx.tus, 0);
 }
-const char*
+struct ospathc
 getSourceFilepath()
 {
-    return utf8_cstr(*vec_get(ctx.filenames, 0));
+    return ospathc(*vec_get(ctx.filenames, 0));
 }
 const char*
 getSource()
 {
-    return vec_get(ctx.sources, 0)->text.data;
+    return vec_get(ctx.sources, 0)->data;
 }

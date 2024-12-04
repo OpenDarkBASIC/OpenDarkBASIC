@@ -18,7 +18,6 @@ struct global
 };
 
 struct globals;
-struct db_source;
 
 static inline void
 globals_init(struct globals** table)
@@ -31,11 +30,11 @@ globals_deinit(struct globals* table);
 
 ODBCOMPILER_PUBLIC_API int
 globals_add_declarations_from_ast(
-    struct globals**   table,
-    struct ast**            tus,
-    int                     tu_id,
-    const struct utf8*      filenames,
-    const struct db_source* sources);
+    struct globals**     table,
+    struct ast**         tus,
+    int                  tu_id,
+    const struct ospath* filenames,
+    const struct utf8*   sources);
 
 ODBCOMPILER_PUBLIC_API const struct global*
 globals_find(const struct globals* table, struct utf8_view key);

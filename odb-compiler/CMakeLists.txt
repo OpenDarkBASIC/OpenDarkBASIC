@@ -169,12 +169,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
 
     "include/odb-compiler/parser/db_keyword.h"
     "include/odb-compiler/parser/db_parser.h"
-    "include/odb-compiler/parser/db_source.h"
     "src/parser/db_keyword.gperf"
     "src/parser/db_scanner.lex"
     "src/parser/db_parser.y"
     "src/parser/db_parser.c"
-    "src/parser/db_source.c"
     "${Gperf_db-keyword_OUTPUTS}"
     "${BISON_db-parser_OUTPUTS}"
     "${FLEX_db-scanner_OUTPUTS}"
