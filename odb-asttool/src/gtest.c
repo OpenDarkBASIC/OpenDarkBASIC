@@ -23,7 +23,7 @@
     X(AST_LOAD_PLUGIN, "load_plugin", "load_plugin", "", "")                   \
     X(AST_LOAD_COMMAND, "load_command", "load_command", "rettype", "typelist") \
     X(AST_COMMAND_NAME, "command_name", "command_name", "arglist", "")         \
-    X(AST_COMMAND, "cmd", "cmd", "arglist", "")                                \
+    X(AST_COMMAND, "cmd", "command", "arglist", "")                            \
     X(AST_ASSIGNMENT, "ass", "assignment", "lvalue", "expr")                   \
     X(AST_VAR_DECL1, "decl1", "var_decl1", "var_decl2", "init_expr")           \
     X(AST_VAR_DECL2, "decl2", "var_decl2", "identifier", "as")                 \
@@ -379,7 +379,7 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
         case AST_COMMAND:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");
             write_var_name(fp, ast, n);
-            fprintf(fp, "].cmd.id, Eq(%d));\n", ast->nodes[n].command.id);
+            fprintf(fp, "].command.id, Eq(%d));\n", ast->nodes[n].command.id);
             break;
         case AST_ASSIGNMENT:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");

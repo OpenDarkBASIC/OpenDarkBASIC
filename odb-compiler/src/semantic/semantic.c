@@ -235,7 +235,7 @@ semantic_run_essential_checks(
 {
     static const struct semantic_check* essential_checks[]
         = {&semantic_type_check,
-           &semantic_resolve_cmd_overloads,
+           &semantic_resolve_command_overloads,
            &semantic_loop_exit,
            &semantic_loop_cont,
            &semantic_loop_for,

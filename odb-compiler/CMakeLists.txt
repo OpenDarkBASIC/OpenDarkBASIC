@@ -198,7 +198,8 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/loop_for.c"
     "src/semantic/loop_name.c"
     "src/semantic/post.c"
-    "src/semantic/resolve_cmd_overloads.c"
+    "src/semantic/resolve_command_names.c"
+    "src/semantic/resolve_command_overloads.c"
     "src/semantic/semantic.c"
     "src/semantic/select.c"
     "src/semantic/type.c"
@@ -527,9 +528,10 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_type_check_select.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_udt.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_udt_errors.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_command_names.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_command_overloads.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_command_overloads_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_command_overloads_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_variable_initialization.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests

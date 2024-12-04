@@ -78,7 +78,9 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_type_check;
  * signature.
  */
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_resolve_cmd_overloads;
+    semantic_resolve_command_names;
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check
+    semantic_resolve_command_overloads;
 
 /*!
  * The parser does not create negative integer/float literals. Instead, it

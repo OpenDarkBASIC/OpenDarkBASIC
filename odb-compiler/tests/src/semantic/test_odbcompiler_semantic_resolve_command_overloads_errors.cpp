@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_resolve_cmd_overloads_errors
+#define NAME odbcompiler_semantic_resolve_command_overloads_errors
 
 using namespace testing;
 
@@ -22,7 +22,7 @@ TEST_F(NAME, ambiguous_overloads_1)
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32, TYPE_U8, TYPE_F32});
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32, TYPE_U8});
     ASSERT_THAT(parse("print 5, 6"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(-1));
     EXPECT_THAT(
         log(),
         LogEq("test:1:7\n"
@@ -46,7 +46,7 @@ TEST_F(NAME, ambiguous_overloads_2)
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32, TYPE_I32});
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32, TYPE_I32});
     ASSERT_THAT(parse("print 5, 6"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(-1));
     EXPECT_THAT(
         log(),
         LogEq("test:1:7\n"
@@ -70,7 +70,7 @@ TEST_F(NAME, ambiguous_overloads_no_params)
     addCommand(TYPE_VOID, "PRINT", {});
     addCommand(TYPE_VOID, "PRINT", {});
     ASSERT_THAT(parse("print"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(-1));
     EXPECT_THAT(
         log(),
         LogEq("test:1:1\n"
@@ -93,7 +93,7 @@ TEST_F(NAME, multi_arg_ambiguous_overloads)
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32, TYPE_U8, TYPE_U8, TYPE_U8, TYPE_I32});
     /* clang-format on */
     ASSERT_THAT(parse("print 5, 6, 7, 8, 9"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(-1));
     EXPECT_THAT(
         log(),
         /* clang-format off */
@@ -119,7 +119,7 @@ TEST_F(NAME, dont_highlight_brackets_in_expr)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(parse("print(\"test\")"), Eq(0)) << log().text;
-    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1))
+    ASSERT_THAT(semantic(&semantic_resolve_command_overloads), Eq(-1))
         << log().text;
     ASSERT_THAT(
         log(),
@@ -137,7 +137,7 @@ TEST_F(NAME, too_many_arguments)
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8, TYPE_U8});
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32, TYPE_F32, TYPE_F32});
     ASSERT_THAT(parse("print 5, 6, 7, 8"), Eq(0)) << log().text;
-    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1))
+    ASSERT_THAT(semantic(&semantic_resolve_command_overloads), Eq(-1))
         << log().text;
     ASSERT_THAT(
         log(),
@@ -156,7 +156,7 @@ TEST_F(NAME, too_few_arguments)
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8, TYPE_U8, TYPE_U8});
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32, TYPE_F32, TYPE_F32});
     ASSERT_THAT(parse("print 5"), Eq(0)) << log().text;
-    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1))
+    ASSERT_THAT(semantic(&semantic_resolve_command_overloads), Eq(-1))
         << log().text;
     ASSERT_THAT(
         log(),

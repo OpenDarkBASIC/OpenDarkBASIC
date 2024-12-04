@@ -284,7 +284,7 @@ write_node(
         }
         case AST_COMMAND_NAME: {
             struct utf8_span cmd_name = ast->nodes[n].command_name.name;
-            fprintf(fp, "%.*s", cmd_name.len, source + cmd_name.off);
+            fprintf(fp, "(name) %.*s", cmd_name.len, source + cmd_name.off);
             break;
         }
         case AST_COMMAND: {

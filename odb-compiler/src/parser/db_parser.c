@@ -225,7 +225,6 @@ db_parser_load_command(
         goto error;
     if (utf8_set(&cmd_name_upper, utf8_span_view(source, cmd_name)) != 0)
         goto error;
-    log_dbg("#load command %.*s\n", cmd_name.len, source + cmd_name.off);
 
     plugin = plugin_list_add_or_get(plugins, &plugin_filepath);
     if (plugin < 0)
@@ -274,6 +273,35 @@ error:
     utf8_deinit(cmd_name_upper);
     ospath_deinit(plugin_filepath);
     return -1;
+}
+
+static void
+cleanup_ast(struct ast* ast)
+{
+    ast_id n;
+    for (n = 0; n != ast_count(ast); ++n)
+    {
+        if (ast_node_type(ast, n) == AST_LOAD_PLUGIN
+            || ast_node_type(ast, n) == AST_LOAD_COMMAND)
+        {
+            ast_id parent, block;
+            block = ast_find_parent(ast, n);
+            ODBUTIL_DEBUG_ASSERT(
+                ast_node_type(ast, block) == AST_BLOCK,
+                log_err("type: %d\n", ast_node_type(ast, block)));
+            parent = ast_find_parent(ast, block);
+            if (parent == -1)
+                ast->root = ast->nodes[block].block.next;
+            else if (ast->nodes[parent].base.left == block)
+                ast->nodes[parent].base.left = ast->nodes[block].block.next;
+            else if (ast->nodes[parent].base.right == block)
+                ast->nodes[parent].base.right = ast->nodes[block].block.next;
+            ast->nodes[block].block.next = -1;
+            ast_delete_tree(ast, block);
+        }
+    }
+
+    ast_gc(ast);
 }
 
 int
@@ -371,7 +399,7 @@ parse_failed:
         *astp = NULL;
     }
     if (*astp != NULL)
-        ast_gc(*astp);
+        cleanup_ast(*astp);
 #if defined(ODBCOMPILER_AST_DUMP)
     ast_export_filename(*astp, filename, source, cmds);
 #endif

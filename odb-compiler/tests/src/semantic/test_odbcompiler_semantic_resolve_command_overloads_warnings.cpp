@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_resolve_cmd_overloads_warnings
+#define NAME odbcompiler_semantic_resolve_command_overloads_warnings
 
 using namespace testing;
 
@@ -19,7 +19,7 @@ TEST_F(NAME, float_accepts_byte)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     ASSERT_THAT(parse("print 5"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:7\n"
@@ -34,7 +34,7 @@ TEST_F(NAME, float_accepts_byte_2)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8, TYPE_F32, TYPE_U8});
     ASSERT_THAT(parse("print 5, 6, 7"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:10\n"
@@ -50,16 +50,15 @@ TEST_F(NAME, integer_accepts_float_with_warning)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq(
-            "test:1:7\n"
-            "warning: Argument 1 is truncated in conversion from FLOAT to "
-            "INTEGER in command call.\n"
-            " 1 | print 5.5f\n"
-            "   |       ^~~< FLOAT\n"
-            "note: Calling command: PRINT INTEGER AS INTEGER  [test]\n"));
+        LogEq("test:1:7\n"
+              "warning: Argument 1 is truncated in conversion from FLOAT to "
+              "INTEGER in command call.\n"
+              " 1 | print 5.5f\n"
+              "   |       ^~~< FLOAT\n"
+              "note: Calling command: PRINT INTEGER AS INTEGER  [test]\n"));
 }
 
 TEST_F(NAME, dword_accepts_integer_with_warning)
@@ -68,7 +67,7 @@ TEST_F(NAME, dword_accepts_integer_with_warning)
     addCommand(TYPE_VOID, "PRINT", {TYPE_U32});
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     ASSERT_THAT(parse("print n"), Eq(0));
-    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0));
+    EXPECT_THAT(semantic(&semantic_resolve_command_overloads), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:7\n"

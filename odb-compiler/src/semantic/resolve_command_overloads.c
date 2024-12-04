@@ -529,7 +529,7 @@ create_candidates_list(
 }
 
 static int
-resolve_cmd_overloads(
+resolve_command_overloads(
     struct ast**              tus,
     int                       tu_count,
     int                       tu_id,
@@ -713,5 +713,5 @@ fail:
 
 static const struct semantic_check* depends[] = {&semantic_type_check, NULL};
 
-const struct semantic_check semantic_resolve_cmd_overloads
-    = {resolve_cmd_overloads, depends, "resolve_cmd_overloads"};
+const struct semantic_check semantic_resolve_command_overloads
+    = {resolve_command_overloads, depends, "resolve_command_overloads"};
