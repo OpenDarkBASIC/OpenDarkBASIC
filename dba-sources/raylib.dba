@@ -2,6 +2,11 @@ rem ---------------------------------------------------------------------------
 rem Define raylib commands, types and constants
 rem ---------------------------------------------------------------------------
 
+type Vector2
+    x# as float
+    y# as float
+endtype
+
 #load command "init window", "libraylib.so", "InitWindow", void, integer, integer, string
 #load command "close window", "libraylib.so", "CloseWindow", void
 #load command "sync rate", "libraylib.so", "SetTargetFPS", void, integer
@@ -12,7 +17,7 @@ rem ---------------------------------------------------------------------------
 #load command "text", "libraylib.so", "DrawText", void, string, integer, integer, integer, dword
 #load command "text width", "libraylib.so", "MeasureText", integer, string, integer
 #load command "keystate", "libraylib.so", "IsKeyDown", boolean, integer
-rem #load command "circle", "libraylib.so", "DrawCircleV", void, Vector2, float, dword
+#load command "circle", "libraylib.so", "DrawCircleV", void, Vector2, float, dword
 
 KEY_RIGHT = 262
 KEY_LEFT = 263
@@ -36,11 +41,6 @@ rem screen as Screen = Screen(1920, 1280)
 screen as Screen = Screen(800, 600)
 init window screen.width, screen.height, "raylib hello world"
 sync rate 60
-
-type Vector2
-    x# as float
-    y# as float
-endtype
 
 type Player
     id as integer
@@ -74,6 +74,7 @@ while window should close() = 0
         cls 0xFF502020
         CenterText("Use WASD to move", Vector2(screen.width / 2, 50))
         DrawText(player.pos, player.dims)
+        circle player.pos, 10, 0xFF00FF00
     end draw
 endwhile
 

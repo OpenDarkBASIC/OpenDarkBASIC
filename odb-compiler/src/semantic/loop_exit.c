@@ -88,7 +88,7 @@ check_loop_exit(
     int                       tu_id,
     struct mutex**            tu_mutexes,
     const struct ospath*      filenames,
-    const struct utf8*        sources,
+    struct utf8*              sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,

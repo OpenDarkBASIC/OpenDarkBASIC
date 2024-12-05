@@ -22,7 +22,7 @@ count_nodes_recurse(const struct ast* ast, ast_id n, int depth)
 }
 
 static int
-ast_verify_connectivity(
+verify_connectivity(
     const struct ast* ast, const char* source, const struct cmd_list* cmds)
 {
     ast_id count = count_nodes_recurse(ast, ast->root, 0);
@@ -32,7 +32,30 @@ ast_verify_connectivity(
         return -1;
     }
 
+    if (count != ast_count(ast))
+        return log_err(
+            "There are %d unconnected nodes left in the AST\n",
+            ast_count(ast) - count);
+
     return 0;
+}
+
+static int
+find_gc_nodes(const struct ast* ast, const char* source)
+{
+    ast_id n;
+    int    result = 0;
+    for (n = 0; n != ast_count(ast); ++n)
+        if (ast->nodes[n].info.node_type == AST_GC)
+        {
+            log_err(
+                "Node %d type %d is marked for garbage collection\n",
+                n,
+                ast_node_type(ast, n));
+            log_excerpt_1(source, ast_loc(ast, n), empty_utf8_view(), 0);
+            result = -1;
+        }
+    return result;
 }
 
 static int
@@ -61,9 +84,10 @@ int
 ast_sanity_check(
     const struct ast* ast, const char* source, const struct cmd_list* cmds)
 {
-    if (ast_verify_connectivity(ast, source, cmds) != 0)
+    if (find_gc_nodes(ast, source) != 0)
         return -1;
-
+    if (verify_connectivity(ast, source, cmds) != 0)
+        return -1;
     if (check_scope_ids(ast, source, cmds) != 0)
         return -1;
 

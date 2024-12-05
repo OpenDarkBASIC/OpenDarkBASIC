@@ -42,7 +42,8 @@ udt_storage_add_type(
         if (!utf8_equal(name, utf8_span_view(source, type_name)))
             continue;
 
-        udt_decl = ast_dup_subtree_into(&udts->ast, ast, n);
+        udt_decl
+            = ast_dup_subtree_into(&udts->ast, &udts->source, ast, n, source);
         if (udt_decl < 0)
             return type_invalid();
 

@@ -82,3 +82,4 @@ TEST_F(NAME, replace_root_node)
     ASSERT_THAT(ast->nodes[1].block.stmt, Eq(0));
     ASSERT_THAT(ast->nodes[1].block.next, Eq(-1));
 }
+

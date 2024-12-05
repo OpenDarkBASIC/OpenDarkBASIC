@@ -136,5 +136,8 @@ type_convert(union type from, union type to)
     if (type_is_primitive(from) && type_is_primitive(to))
         return rules[from.id - 1][to.id - 1];
 
+    if (from.id == to.id)
+        return TC_ALLOW;
+
     return TC_DISALLOW;
 }

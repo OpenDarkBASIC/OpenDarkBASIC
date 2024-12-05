@@ -93,7 +93,7 @@ struct ctx
     int                       tu_id;
     struct mutex**            tu_mutexes;
     const struct ospath*      filenames;
-    const struct utf8*        sources;
+    struct utf8*              sources;
     const struct plugin_list* plugins;
     const struct cmd_list*    cmds;
     const struct globals*     globals;
@@ -171,7 +171,7 @@ semantic_check_run(
     int                          tu_id,
     struct mutex**               tu_mutexes,
     const struct ospath*         filenames,
-    const struct utf8*           sources,
+    struct utf8*                 sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
     const struct udt_storage*    udts,
@@ -220,7 +220,7 @@ dummy_check(
     int                       tu_id,
     struct mutex**            tu_mutexes,
     const struct ospath*      filenames,
-    const struct utf8*        sources,
+    struct utf8*              sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,
@@ -236,7 +236,7 @@ semantic_run_essential_checks(
     int                       tu_id,
     struct mutex**            tu_mutexes,
     const struct ospath*      filenames,
-    const struct utf8*        sources,
+    struct utf8*              sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,

@@ -142,7 +142,7 @@ union ast_node
         enum ast_type node_type;
     } info;
 
-    struct base{
+    struct base {
         struct info info;
         ast_id left;
         ast_id right;
@@ -580,7 +580,7 @@ ast_scope(const struct ast* ast, ast_id n)
     { return ast->nodes[n].info.scope_id; }
 
 ast_id ast_dup_node(struct ast** astp, ast_id n);
-ast_id ast_dup_node_into(struct ast** dst_astp, const struct ast* src_ast, ast_id n);
+ast_id ast_dup_node_into(struct ast** dst_astp, struct utf8* dst_source, const struct ast* src_ast, ast_id n, const char* src_source);
 
 ODBCOMPILER_PUBLIC_API ast_id ast_block(struct ast** astp, ast_id stmt, struct utf8_span location);
 void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);

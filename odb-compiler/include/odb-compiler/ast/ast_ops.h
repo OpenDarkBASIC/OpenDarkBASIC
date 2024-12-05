@@ -25,7 +25,11 @@ ast_id
 ast_dup_subtree(struct ast** ast, ast_id node);
 ast_id
 ast_dup_subtree_into(
-    struct ast** dst_astp, const struct ast* src_ast, ast_id node);
+    struct ast**      dst_astp,
+    struct utf8*      dst_source,
+    const struct ast* src_ast,
+    ast_id            node,
+    const char*       src_source);
 
 ODBCOMPILER_PUBLIC_API void
 ast_delete_node(struct ast* ast, ast_id node);

@@ -3158,7 +3158,7 @@ process_as_udt(
     struct mutex**        tu_mutexes,
     ast_id                as_udt,
     const struct ospath*  filenames,
-    const struct utf8*    sources,
+    struct utf8*          sources,
     struct locals**       locals,
     const struct globals* globals)
 {
@@ -3168,7 +3168,7 @@ process_as_udt(
 
     struct ast**   astp = &tus[tu_id];
     struct ospathc filename = ospathc(filenames[tu_id]);
-    const char*    source = sources[tu_id].data;
+    struct utf8*   source = &sources[tu_id];
 
     ODBUTIL_DEBUG_ASSERT(as_udt > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -3177,7 +3177,8 @@ process_as_udt(
 
     type_name = (*astp)->nodes[as_udt].as_udt.type_name;
     scope_id = (*astp)->nodes[as_udt].info.scope_id;
-    switch (find_or_declare_local(locals, source, type_name, scope_id, &local))
+    switch (find_or_declare_local(
+        locals, source->data, type_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_EXISTS: break;
@@ -3185,16 +3186,20 @@ process_as_udt(
             ast_id               udt_decl;
             const struct ast*    their_ast;
             struct mutex*        their_mutex;
-            struct utf8_view     key = utf8_span_view(source, type_name);
+            const char*          their_source;
+            struct utf8_view     key = utf8_span_view(source->data, type_name);
             const struct global* global = globals_find(globals, key);
             if (global == NULL)
-                return err_udt_not_found(*astp, type_name, filename, source);
+                return err_udt_not_found(
+                    *astp, type_name, filename, source->data);
 
             ODBUTIL_DEBUG_ASSERT(global->tu_id != tu_id, (void)0);
             their_mutex = tu_mutexes[global->tu_id];
             their_ast = tus[global->tu_id];
+            their_source = sources[global->tu_id].data;
             mutex_lock(their_mutex);
-            udt_decl = ast_dup_subtree_into(astp, their_ast, global->ast_node);
+            udt_decl = ast_dup_subtree_into(
+                astp, source, their_ast, global->ast_node, their_source);
             if (udt_decl < 0)
                 return DEP_ERROR;
             mutex_unlock(their_mutex);
@@ -3222,7 +3227,7 @@ process_node(
     int                    tu_id,
     struct mutex**         tu_mutexes,
     const struct ospath*   filenames,
-    const struct utf8*     sources,
+    struct utf8*           sources,
     const struct cmd_list* cmds,
     const struct globals*  globals)
 {
@@ -3452,7 +3457,7 @@ type_check(
     int                       tu_id,
     struct mutex**            tu_mutexes,
     const struct ospath*      filenames,
-    const struct utf8*        sources,
+    struct utf8*              sources,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct udt_storage* udts,

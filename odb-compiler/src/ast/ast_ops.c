@@ -124,17 +124,38 @@ ast_dup_subtree(struct ast** astp, int n)
 }
 
 ast_id
-ast_dup_subtree_into(struct ast** dst_astp, const struct ast* src_ast, ast_id n)
+ast_dup_subtree_into(
+    struct ast**      dst_astp,
+    struct utf8*      dst_source,
+    const struct ast* src_ast,
+    ast_id            n,
+    const char*       src_source)
 {
     ast_id dup, lhs = -1, rhs = -1;
     if (src_ast->nodes[n].base.left > -1)
+    {
         lhs = ast_dup_subtree_into(
-            dst_astp, src_ast, src_ast->nodes[n].base.left);
+            dst_astp,
+            dst_source,
+            src_ast,
+            src_ast->nodes[n].base.left,
+            src_source);
+        if (lhs < 0)
+            return -1;
+    }
     if (src_ast->nodes[n].base.right > -1)
+    {
         rhs = ast_dup_subtree_into(
-            dst_astp, src_ast, src_ast->nodes[n].base.right);
+            dst_astp,
+            dst_source,
+            src_ast,
+            src_ast->nodes[n].base.right,
+            src_source);
+        if (rhs < 0)
+            return -1;
+    }
 
-    dup = ast_dup_node_into(dst_astp, src_ast, n);
+    dup = ast_dup_node_into(dst_astp, dst_source, src_ast, n, src_source);
     if (dup < 0)
         return -1;
 
@@ -188,20 +209,41 @@ ast_gc(struct ast* ast)
 {
     ast_id n, p;
     for (n = 0; n < ast_count(ast); ++n)
+    {
+        /* Ensure we're swap-n-popping with a valid node */
+        while (ast->nodes[ast->count - 1].info.node_type == AST_GC)
+            if (--ast->count == 0)
+            {
+                ast->root = -1;
+                return;
+            }
+        if (n >= ast->count)
+            break;
+
         if (ast->nodes[n].info.node_type == AST_GC)
         {
             ast_id last = --ast->count;
+            ODBUTIL_DEBUG_ASSERT(
+                ast_node_type(ast, last) != AST_GC,
+                log_err("type: %d\n", ast_node_type(ast, last)));
             for (p = 0; p != ast_count_unsafe(ast); ++p)
             {
                 if (ast->nodes[p].base.left == last)
+                {
                     ast->nodes[p].base.left = n;
+                    break;
+                }
                 if (ast->nodes[p].base.right == last)
+                {
                     ast->nodes[p].base.right = n;
+                    break;
+                }
             }
             ast->nodes[n] = ast->nodes[last];
             if (ast->root == last)
                 ast->root = n;
         }
+    }
 }
 
 ast_id

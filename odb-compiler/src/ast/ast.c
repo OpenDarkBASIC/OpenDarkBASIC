@@ -93,16 +93,130 @@ ast_dup_node(struct ast** astp, ast_id n)
     return dup;
 }
 
-ast_id
-ast_dup_node_into(struct ast** dst_astp, const struct ast* src_ast, ast_id n)
+static int
+dup_node_source_references(
+    struct ast*       dst_ast,
+    ast_id            dst,
+    struct utf8*      dst_source,
+    const struct ast* src_ast,
+    ast_id            src,
+    const char*       src_source)
 {
-    ast_id dup = ast_grow(dst_astp);
-    if (dup < 0)
-        return -1;
+    struct utf8_view src_view;
+    struct utf8_span dst_span;
 
+#define DUP_REF(node, property)                                                \
+    src_view = utf8_span_view(src_source, src_ast->nodes[src].node.property);  \
+    dst_span.off = dst_source->len;                                            \
+    dst_span.len = src_view.len;                                               \
+    if (dst_span.len > 0 && utf8_append(dst_source, src_view) != 0)            \
+        return -1;                                                             \
+    dst_ast->nodes[dst].node.property = dst_span
+
+    /* Location info */
+    DUP_REF(info, location);
+
+    switch (ast_node_type(src_ast, src))
+    {
+        case AST_GC: break;
+        case AST_BLOCK: return 0;
+        case AST_END: return 0;
+        case AST_ARGLIST:
+        case AST_PARAMLIST: DUP_REF(paramlist, combined_location); return 0;
+        case AST_TYPELIST: DUP_REF(typelist, name); return 0;
+        case AST_LOAD_PLUGIN: DUP_REF(load_plugin, filepath); return 0;
+        case AST_LOAD_COMMAND:
+            DUP_REF(load_command, cmd_name);
+            DUP_REF(load_command, filepath);
+            DUP_REF(load_command, c_symbol);
+            return 0;
+        case AST_COMMAND_NAME: DUP_REF(command_name, name); return 0;
+        case AST_COMMAND: return 0;
+        case AST_ASSIGNMENT: DUP_REF(assignment, op_location); return 0;
+        case AST_VAR_DECL1: DUP_REF(var_decl1, scope_location); return 0;
+        case AST_VAR_DECL2: DUP_REF(var_decl2, op_location); return 0;
+        case AST_VAR_READ: return 0;
+        case AST_VAR_WRITE: return 0;
+        case AST_UDT_DECL: return 0;
+        case AST_UDT_INIT: DUP_REF(udt_init, type_name); return 0;
+        case AST_UDT_READ: return 0;
+        case AST_UDT_WRITE: return 0;
+        case AST_PARAM: return 0;
+        case AST_IDENTIFIER: DUP_REF(identifier, name); return 0;
+        case AST_BINOP: DUP_REF(binop, op_location); return 0;
+        case AST_UNOP: return 0;
+        case AST_COND: return 0;
+        case AST_COND_BRANCHES: return 0;
+        case AST_SELECT: return 0;
+        case AST_CASELIST: return 0;
+        case AST_CASE: DUP_REF(case_, case_loc); return 0;
+        case AST_LOOP1:
+            DUP_REF(loop1, name);
+            DUP_REF(loop1, implicit_name);
+            return 0;
+        case AST_LOOP2: return 0;
+        case AST_LOOP_FOR1: return 0;
+        case AST_LOOP_FOR2: return 0;
+        case AST_LOOP_FOR3: return 0;
+        case AST_LOOP_CONT: DUP_REF(cont, name); return 0;
+        case AST_LOOP_EXIT: DUP_REF(loop_exit, name); return 0;
+        case AST_FUNC_POLY: return 0;
+        case AST_FUNC1: DUP_REF(func1, endfunction_location); return 0;
+        case AST_FUNC2: return 0;
+        case AST_FUNC3: return 0;
+        case AST_FUNC4: return 0;
+        case AST_FUNC_EXIT: return 0;
+        case AST_FUNC_CALL: return 0;
+        case AST_CALL_LIKE: return 0;
+        case AST_CONTAINER_WRITE: return 0;
+        case AST_BOOLEAN_LITERAL: return 0;
+        case AST_BYTE_LITERAL: return 0;
+        case AST_WORD_LITERAL: return 0;
+        case AST_DWORD_LITERAL: return 0;
+        case AST_INTEGER_LITERAL: return 0;
+        case AST_DOUBLE_INTEGER_LITERAL: return 0;
+        case AST_FLOAT_LITERAL: return 0;
+        case AST_DOUBLE_LITERAL: return 0;
+        case AST_STRING_LITERAL: DUP_REF(string_literal, str); return 0;
+        case AST_CAST: return 0;
+        case AST_AS_TYPE: return 0;
+        case AST_AS_EXPR: return 0;
+        case AST_AS_UDT: DUP_REF(as_udt, type_name); return 0;
+        case AST_AS_AUTO: return 0;
+    }
+#undef DUP_REF
+
+    return -1;
+}
+
+ast_id
+ast_dup_node_into(
+    struct ast**      dst_astp,
+    struct utf8*      dst_source,
+    const struct ast* src_ast,
+    ast_id            src,
+    const char*       src_source)
+{
+    ast_id dst = ast_grow(dst_astp);
+    if (dst < 0)
+        return -1;
     memcpy(
-        &(*dst_astp)->nodes[dup], &src_ast->nodes[n], sizeof(union ast_node));
-    return dup;
+        &(*dst_astp)->nodes[dst],
+        &src_ast->nodes[src],
+        sizeof(src_ast->nodes[src]));
+
+    /* XXX: TODO: This is pretty horrible, as we make a bunch of source code
+     * copies for every single node when we know it's very likelty that the span
+     * union of all nodes in the subtree is all that needs to be copied. */
+
+    if (dup_node_source_references(
+            *dst_astp, dst, dst_source, src_ast, src, src_source)
+        != 0)
+    {
+        return -1;
+    }
+
+    return dst;
 }
 
 ast_id
