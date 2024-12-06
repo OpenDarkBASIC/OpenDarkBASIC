@@ -42,6 +42,7 @@ section: sdk {
                "\"C:\\Program Files\\Dark Basic Professional Online\". In the "
                "case of ODB this should be a path to the \"odb-sdk\" "
                "directory. This is the default setting."
+        short: 'r'
         args: <path>
         func: set_sdk_root
     }
@@ -51,6 +52,7 @@ section: sdk {
                "ODB reimplementation. --sdk-root will autodetect the type so "
                "this is usually not necessary. If specified, it will override "
                "the autodetected value."
+        short: 't'
         args: <odb|dbpro>
         func: set_sdk_type
     }
@@ -59,6 +61,7 @@ section: sdk {
         en_US: "Add additional directories to scan for thirdparty plugins. "
                "Note that ODB and DBPro plugins are not compatible with each "
                "other."
+        short: 'p'
         args: <path|file> [path|file...]
         func: set_sdk_plugins
     }
@@ -68,7 +71,7 @@ section: sdk {
         runafter: { sdk-root, sdk-type, plugins }
     }
 
-    option: print-sdk {
+    option: sdk {
         en_US: "Print the SDK root, type and plugin paths."
         func: print_sdk
         runafter: setup-sdk
@@ -79,7 +82,7 @@ section: sdk {
         runafter: setup-sdk
     }
 
-    option: dump-commands {
+    option: commands {
         en_US: "Write out all command names in alphabetical order."
         args: [file]
         func: dump_commands
@@ -109,7 +112,7 @@ section: parser {
 
     option: dbpro {
         en_US: "Load a DBPro project file (.dbpro) and parse all DBA "
-               "files listen within."
+               "files listed within."
         args: <file>
         func: set_dbpro
     }
@@ -173,12 +176,13 @@ section: codegen {
 
     option: output {
         en_US: "Compile to executable code."
+        short: 'o'
         args: [file]
         func: generate_output
         runafter: generate-ir
     }
 
-    option: list-warnings {
+    option: warnings {
         en_US: "Lists all possible warnings and their default values. These "
                 "can be passed to -W<warning> or -Wno-<warning> to "
                 "enable/disable the warning."

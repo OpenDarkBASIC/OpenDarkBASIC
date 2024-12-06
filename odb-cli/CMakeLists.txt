@@ -14,7 +14,7 @@ odb_cligen_target (odb-cli_depgen
     OUTPUT "${odb-cli_DEPGEN_OUTPUT}")
 
 add_executable (odb-cli
-    ${cli_DEPGEN_OUTPUT}
+    ${odb-cli_DEPGEN_OUTPUT}
     "src/main.c")
 target_include_directories (odb-cli
     PUBLIC

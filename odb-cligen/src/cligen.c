@@ -959,7 +959,6 @@ struct parser
     {
         struct str_view str;
         int             integer;
-        char            chr;
     } value;
     const char* filename;
     const char* data;
@@ -1084,11 +1083,11 @@ peek_next(struct parser* p)
         /* Character literal '.' */
         if (p->data[p->head] == '\'')
         {
-            ++p->head;
+            p->value.str.off = ++p->head;
+            p->value.str.len = 1;
             if (p->head == p->end || p->data[p->head] == '\'')
                 return p->token = print_parser_error(
                            p, "Missing character in character literal\n");
-            p->value.chr = p->data[p->head];
             ++p->head;
             if (p->head == p->end || p->data[p->head] != '\'')
                 return p->token = print_parser_error(
@@ -1181,7 +1180,7 @@ struct option
     struct strlist*  require;
     struct str_view  name;
     struct str_view  func;
-    char             short_name;
+    struct str_view  short_name;
 };
 
 struct task
@@ -1226,7 +1225,7 @@ new_option(struct str_view name)
     o->require = NULL;
     o->name = name;
     o->func = empty_str_view();
-    o->short_name = '\0';
+    o->short_name = empty_str_view();
     return o;
 }
 
@@ -1364,7 +1363,7 @@ parse_option(struct parser* p, struct option* option)
             }
 
             case TOK_SHORT: {
-                if (option->short_name)
+                if (option->short_name.len)
                     return print_parser_error(
                         p, "Duplicate 'short' in option block\n");
 
@@ -1375,7 +1374,7 @@ parse_option(struct parser* p, struct option* option)
                 if (scan_next(p) != TOK_CHAR)
                     return print_parser_error(
                         p, "Expected character after 'short'\n");
-                option->short_name = p->value.chr;
+                option->short_name = p->value.str;
 
                 break;
             }
@@ -1799,6 +1798,18 @@ node_name(const struct node* node)
 }
 
 static struct str_view
+node_short_name(const struct node* node)
+{
+    switch (node->type)
+    {
+        case NODE_OPTION: return node->ref.option->short_name;
+        case NODE_TASK: break;
+    }
+
+    return empty_str_view();
+}
+
+static struct str_view
 node_func(const struct node* node)
 {
     switch (node->type)
@@ -1929,6 +1940,8 @@ find_duplicate_names(
         {
             struct str_view name1 = node_name(&graph->nodes[n1]);
             struct str_view name2 = node_name(&graph->nodes[n2]);
+            struct str_view short_name1 = node_short_name(&graph->nodes[n1]);
+            struct str_view short_name2 = node_short_name(&graph->nodes[n2]);
             if (str_equal(name1, name2, source))
             {
                 print_loc_error(
@@ -1941,7 +1954,50 @@ find_duplicate_names(
                 return print_loc_error(
                     filename, source, name2, "Previously defined here.\n");
             }
+            if (short_name1.len && str_equal(short_name1, short_name2, source))
+            {
+                print_loc_error(
+                    filename,
+                    source,
+                    short_name1,
+                    "Duplicate short name \"%.*s\".\n",
+                    short_name1.len,
+                    source + short_name1.off);
+                return print_loc_error(
+                    filename,
+                    source,
+                    short_name2,
+                    "Previously defined here.\n");
+            }
         }
+
+    return 0;
+}
+
+static int
+calculate_priorities_recurse(
+    struct graph* graph, int node, int depth, int* visited)
+{
+    if (visited[node])
+        return print_error("Circular dependency detected\n");
+
+    if (graph->nodes[node].priority < depth)
+        graph->nodes[node].priority = depth;
+
+    visited[node] = 1;
+}
+
+static int
+calculate_priorities(struct graph* graph)
+{
+    int  n;
+    int* visited = malloc(sizeof(*visited) * graph->count);
+    for (n = 0; n != graph->count; ++n)
+    {
+        memset(visited, 0, sizeof(*visited) * graph->count);
+        if (calculate_priorities_recurse(graph, n, 0) != 0)
+            return -1;
+    }
 
     return 0;
 }
@@ -1988,8 +2044,9 @@ create_dependency_graph_from_ast(
 
     if (find_duplicate_names(graph, filename, source) != 0)
         return NULL;
-
     if (add_dependencies(graph, filename, source) != 0)
+        return NULL;
+    if (calculate_priorities(graph) != 0)
         return NULL;
 
     return graph;
@@ -2198,6 +2255,31 @@ gen_dep_tables(struct mstream* ms, const struct graph* graph, const char* data)
 }
 
 static void
+gen_property(
+    struct mstream*    ms,
+    const char*        property_name,
+    const struct node* node,
+    const char*        data)
+{
+    const struct property* prop;
+    if (node->type != NODE_OPTION)
+        return;
+
+    prop = node->ref.option->properties;
+    for (; prop; prop = prop->next)
+    {
+        struct strlist* strs;
+        if (!cstr_equal(property_name, prop->name, data))
+            continue;
+
+        strs = prop->strings;
+        for (; strs; strs = strs->next)
+            mstream_str(ms, strs->string, data);
+        break;
+    }
+}
+
+static void
 gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
 {
     int n;
@@ -2208,8 +2290,8 @@ gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
     mstream_cstr(ms, "    const int* runafter;" NL);
     mstream_cstr(ms, "    const int* require;" NL);
     mstream_cstr(ms, "    const char* en_US;" NL);
-    mstream_cstr(ms, "    int (*func)(int, char**);" NL);
-    mstream_cstr(ms, "    const char* full_option;" NL);
+    mstream_cstr(ms, "    int (*func)(struct cli_ctx*, int, char**);" NL);
+    mstream_cstr(ms, "    const char* long_option;" NL);
     mstream_cstr(ms, "    int arg_min;" NL);
     mstream_cstr(ms, "    int arg_max;" NL);
     mstream_cstr(ms, "    char short_option;" NL);
@@ -2228,13 +2310,17 @@ gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
         gen_dep_table_name(ms, name, "require", data);
         mstream_cstr(ms, ", ");
 
-        mstream_cstr(ms, "\"\"");
-        mstream_cstr(ms, ", ");
+        mstream_cstr(ms, "\"");
+        gen_property(ms, "en_US", &graph->nodes[n], data);
+        mstream_cstr(ms, "\", ");
 
         mstream_str(ms, func, data);
         mstream_cstr(ms, ", ");
 
-        mstream_fmt(ms, "\"%S\"", name, data);
+        if (graph->nodes[n].type == NODE_OPTION)
+            mstream_fmt(ms, "\"%S\"", name, data);
+        else
+            mstream_cstr(ms, "NULL");
         mstream_cstr(ms, ", ");
 
         mstream_cstr(ms, "0, 0");
@@ -2243,8 +2329,8 @@ gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
         if (graph->nodes[n].type == NODE_OPTION)
         {
             const struct option* opt = graph->nodes[n].ref.option;
-            if (opt->short_name)
-                mstream_fmt(ms, "'%c'", opt->short_name);
+            if (opt->short_name.len)
+                mstream_fmt(ms, "'%S'", opt->short_name, data);
             else
                 mstream_cstr(ms, "'\\0'");
         }
@@ -2253,7 +2339,9 @@ gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
 
         mstream_cstr(ms, "}," NL);
     }
-    mstream_fmt(ms, "};" NL);
+    mstream_fmt(ms, "};" NL NL);
+
+    mstream_fmt(ms, "static const int task_count = %d;" NL, graph->count);
 }
 
 static void
