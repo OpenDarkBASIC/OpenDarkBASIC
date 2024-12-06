@@ -1166,22 +1166,22 @@ struct strlist
     struct str_view string;
 };
 
-struct help_lang
+struct property
 {
-    struct help_lang* next;
-    struct strlist*   strings;
-    struct str_view   lang;
+    struct property* next;
+    struct str_view  name;
+    struct strlist*  strings;
 };
 
 struct option
 {
-    struct option*    next;
-    struct help_lang* help;
-    struct strlist*   runafter;
-    struct strlist*   require;
-    struct str_view   name;
-    struct str_view   func;
-    char              short_name;
+    struct option*   next;
+    struct property* properties;
+    struct strlist*  runafter;
+    struct strlist*  require;
+    struct str_view  name;
+    struct str_view  func;
+    char             short_name;
 };
 
 struct task
@@ -1194,11 +1194,11 @@ struct task
 
 struct section
 {
-    struct section*   next;
-    struct option*    options;
-    struct task*      tasks;
-    struct help_lang* help;
-    struct str_view   name;
+    struct section*  next;
+    struct option*   options;
+    struct task*     tasks;
+    struct property* properties;
+    struct str_view  name;
 };
 
 struct root
@@ -1206,13 +1206,13 @@ struct root
     struct section* sections;
 };
 
-static struct help_lang*
+static struct property*
 new_help_lang(struct str_view lang)
 {
-    struct help_lang* hl = malloc(sizeof *hl);
+    struct property* hl = malloc(sizeof *hl);
     hl->next = NULL;
     hl->strings = NULL;
-    hl->lang = lang;
+    hl->name = lang;
     return hl;
 }
 
@@ -1221,7 +1221,7 @@ new_option(struct str_view name)
 {
     struct option* o = malloc(sizeof *o);
     o->next = NULL;
-    o->help = NULL;
+    o->properties = NULL;
     o->runafter = NULL;
     o->require = NULL;
     o->name = name;
@@ -1248,7 +1248,7 @@ new_section(struct str_view name)
     s->next = NULL;
     s->options = NULL;
     s->tasks = NULL;
-    s->help = NULL;
+    s->properties = NULL;
     s->name = name;
     return s;
 }
@@ -1335,14 +1335,14 @@ parse_option(struct parser* p, struct option* option)
             case TOK_END: return 0;
 
             case TOK_HELP: {
-                struct help_lang* help_lang = option->help;
+                struct property* help_lang = option->properties;
                 for (; help_lang; help_lang = help_lang->next)
-                    if (str_equal(help_lang->lang, p->value.str, p->data))
+                    if (str_equal(help_lang->name, p->value.str, p->data))
                         return print_parser_error(
                             p, "Duplicate 'help' entry for language\n");
                 help_lang = new_help_lang(p->value.str);
-                help_lang->next = option->help;
-                option->help = help_lang;
+                help_lang->next = option->properties;
+                option->properties = help_lang;
                 consume(p);
 
                 if (scan_next(p) != ':')
@@ -1544,14 +1544,14 @@ parse_section(struct parser* p, struct section* section)
             }
 
             case TOK_HELP: {
-                struct help_lang* help_lang = section->help;
+                struct property* help_lang = section->properties;
                 for (; help_lang; help_lang = help_lang->next)
-                    if (str_equal(help_lang->lang, p->value.str, p->data))
+                    if (str_equal(help_lang->name, p->value.str, p->data))
                         return print_parser_error(
                             p, "Duplicate 'help' entry for language\n");
                 help_lang = new_help_lang(p->value.str);
-                help_lang->next = section->help;
-                section->help = help_lang;
+                help_lang->next = section->properties;
+                section->properties = help_lang;
                 consume(p);
 
                 if (scan_next(p) != ':')
@@ -1995,16 +1995,79 @@ create_dependency_graph_from_ast(
     return graph;
 }
 
+struct node_style
+{
+    const char* shape;
+    const char* color;
+    const char* fontcolor;
+};
+
+struct style
+{
+    /* global settings */
+    const char* bgcolor;
+    const char* edgecolor;
+
+    struct node_style option;
+    struct node_style task;
+};
+
+/* clang-format off */
+static const struct style catpuccin = {
+    "#1e1e2e",
+    "#6c7086",
+    {"record",        "#f9e2af", "#f9e2af",},
+    {"diamond",       "#cba6f7", "#cba6f7",},
+};
+static const struct style dark_nightfly = {
+    "#011627",
+    "#8792a7",
+    {"record",        "#21c7a8", "#21c7a8",},
+    {"diamond",       "#a57dc9", "#a57dc9",},
+};
+/* clang-format on */
+
 static int
-export_depgraph(FILE* fp, const struct graph* graph, const char* source)
+export_depgraph(
+    FILE*               fp,
+    const struct graph* graph,
+    const char*         source,
+    const struct style* style)
 {
     int node;
     fprintf(fp, "digraph depgraph {\n");
+    fprintf(fp, "  bgcolor=\"%s\";\n", style->bgcolor);
     for (node = 0; node != graph->count; ++node)
     {
-        struct str_view name = node_name(&graph->nodes[node]);
-        fprintf(
-            fp, "  n%d [label=\"%.*s\"];\n", node, name.len, source + name.off);
+        const struct node* n = &graph->nodes[node];
+        struct str_view    name = node_name(n);
+        switch (n->type)
+        {
+            case NODE_OPTION:
+                fprintf(
+                    fp,
+                    "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                    "label=\"%.*s\"];\n",
+                    node,
+                    style->option.color,
+                    style->option.fontcolor,
+                    style->option.shape,
+                    name.len,
+                    source + name.off);
+                break;
+            case NODE_TASK:
+                fprintf(
+                    fp,
+                    "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                    "label=\"%.*s\"];\n",
+                    node,
+                    style->task.color,
+                    style->task.fontcolor,
+                    style->task.shape,
+                    name.len,
+                    source + name.off);
+                break;
+        }
     }
 
     for (node = 0; node != graph->count; ++node)
@@ -2012,7 +2075,12 @@ export_depgraph(FILE* fp, const struct graph* graph, const char* source)
         int                   child;
         const struct intlist* runafter = graph->nodes[node].runafter;
         for (child = 0; child != intlist_count(runafter); ++child)
-            fprintf(fp, "  n%d -> n%d;\n", node, runafter->data[child]);
+            fprintf(
+                fp,
+                "  n%d -> n%d [color=\"%s\"];\n",
+                node,
+                runafter->data[child],
+                style->edgecolor);
     }
 
     for (node = 0; node != graph->count; ++node)
@@ -2036,38 +2104,163 @@ export_depgraph(FILE* fp, const struct graph* graph, const char* source)
  * -------------------------------------------------------------------------
  */
 
-static void
-gen_table(struct mstream* ms, const struct root* root, const char* data)
-{
 #if defined(_WIN32)
 #define NL "\r\n"
 #else
 #define NL "\n"
 #endif
-    struct section* section;
 
-    mstream_fmt(ms, "static const int commands[] = {" NL);
-    for (section = root->sections; section; section = section->next)
+static void
+gen_section_table(
+    struct mstream* ms, const struct graph* graph, const char* data)
+{
+    //     struct section* section;
+    //
+    //     mstream_cstr(ms, "struct section {" NL);
+    //     mstream_cstr(ms, "    const char* name;" NL);
+    //     mstream_cstr(ms, "    const char* en_US;" NL);
+    //     mstream_cstr(ms, "};" NL NL);
+    //
+    //     mstream_cstr(ms, "static const struct section sections[] = {" NL);
+    //     for (section = graph->sections; section; section = section->next)
+    //     {
+    //         struct property* prop;
+    //         mstream_fmt(ms, "    {\"%S\", \"", section->name, data);
+    //         for (prop = section->properties; prop; prop = prop->next)
+    //         {
+    //             struct strlist* strs;
+    //             if (!cstr_equal("en_US", prop->name, data))
+    //                 continue;
+    //
+    //             strs = prop->strings;
+    //             for (; strs; strs = strs->next)
+    //                 mstream_str(ms, strs->string, data);
+    //         }
+    //         mstream_cstr(ms, "\"}," NL);
+    //     }
+    //     mstream_cstr(ms, "};" NL NL);
+}
+
+static void
+gen_dep_table_name(
+    struct mstream* ms,
+    struct str_view name,
+    const char*     suffix,
+    const char*     data)
+{
+    int idx;
+    mstream_grow(ms, name.len);
+    for (idx = name.off; idx != name.off + name.len; ++idx)
     {
-        struct option* option;
-        for (option = section->options; option; option = option->next)
-        {
-            struct help_lang* help_lang = option->help;
-            for (; help_lang; help_lang = help_lang->next)
-            {
-                struct strlist* strs;
-                if (!cstr_equal("en_US", help_lang->lang, data))
-                    continue;
+        if (data[idx] == '-')
+            mstream_cstr(ms, "_");
+        else
+            mstream_putc(ms, data[idx]);
+    }
 
-                mstream_cstr(ms, "    .en_US = \"");
-                strs = help_lang->strings;
-                for (; strs; strs = strs->next)
-                    mstream_str(ms, strs->string, data);
-                mstream_cstr(ms, "\"," NL);
-            }
+    mstream_cstr(ms, "_");
+    mstream_cstr(ms, suffix);
+}
+
+static void
+gen_dep_table(
+    struct mstream*       ms,
+    struct str_view       name,
+    const char*           suffix,
+    const struct intlist* list,
+    const char*           data)
+{
+    mstream_cstr(ms, "static const int ");
+    gen_dep_table_name(ms, name, suffix, data);
+    mstream_cstr(ms, "[] = {");
+    if (list)
+    {
+        int i;
+        for (i = 0; i != list->count; ++i)
+            mstream_fmt(ms, "%d, ", list->data[i]);
+    }
+    mstream_cstr(ms, "-1};" NL);
+}
+
+static void
+gen_dep_tables(struct mstream* ms, const struct graph* graph, const char* data)
+{
+    int n;
+    for (n = 0; graph && n != graph->count; ++n)
+    {
+        struct str_view       name = node_name(&graph->nodes[n]);
+        const struct intlist* runafter = graph->nodes[n].runafter;
+        const struct intlist* require = graph->nodes[n].require;
+        gen_dep_table(ms, name, "runafter", runafter, data);
+        gen_dep_table(ms, name, "require", require, data);
+    }
+    mstream_cstr(ms, NL);
+}
+
+static void
+gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
+{
+    int n;
+
+    gen_dep_tables(ms, graph, data);
+
+    mstream_cstr(ms, "struct task {" NL);
+    mstream_cstr(ms, "    const int* runafter;" NL);
+    mstream_cstr(ms, "    const int* require;" NL);
+    mstream_cstr(ms, "    const char* en_US;" NL);
+    mstream_cstr(ms, "    int (*func)(int, char**);" NL);
+    mstream_cstr(ms, "    const char* full_option;" NL);
+    mstream_cstr(ms, "    int arg_min;" NL);
+    mstream_cstr(ms, "    int arg_max;" NL);
+    mstream_cstr(ms, "    char short_option;" NL);
+    mstream_cstr(ms, "};" NL NL);
+
+    mstream_cstr(ms, "static const struct task tasks[] = {" NL);
+    for (n = 0; graph && n != graph->count; ++n)
+    {
+        struct str_view name = node_name(&graph->nodes[n]);
+        struct str_view func = node_func(&graph->nodes[n]);
+        mstream_cstr(ms, "    {");
+
+        gen_dep_table_name(ms, name, "runafter", data);
+        mstream_cstr(ms, ", ");
+
+        gen_dep_table_name(ms, name, "require", data);
+        mstream_cstr(ms, ", ");
+
+        mstream_cstr(ms, "\"\"");
+        mstream_cstr(ms, ", ");
+
+        mstream_str(ms, func, data);
+        mstream_cstr(ms, ", ");
+
+        mstream_fmt(ms, "\"%S\"", name, data);
+        mstream_cstr(ms, ", ");
+
+        mstream_cstr(ms, "0, 0");
+        mstream_cstr(ms, ", ");
+
+        if (graph->nodes[n].type == NODE_OPTION)
+        {
+            const struct option* opt = graph->nodes[n].ref.option;
+            if (opt->short_name)
+                mstream_fmt(ms, "'%c'", opt->short_name);
+            else
+                mstream_cstr(ms, "'\\0'");
         }
+        else
+            mstream_cstr(ms, "'\\0'");
+
+        mstream_cstr(ms, "}," NL);
     }
     mstream_fmt(ms, "};" NL);
+}
+
+static void
+gen_tables(struct mstream* ms, const struct graph* graph, const char* data)
+{
+    gen_section_table(ms, graph, data);
+    gen_task_table(ms, graph, data);
 }
 
 static int
@@ -2139,13 +2332,14 @@ main(int argc, char** argv)
 
     if (cfg.export_depgraph)
     {
-        if (export_depgraph(stdout, graph, mf.address) != 0)
+        (void)dark_nightfly;
+        if (export_depgraph(stdout, graph, mf.address, &catpuccin) != 0)
             return -1;
         return 0;
     }
 
     ms = mstream_init_writeable();
-    gen_table(&ms, &root, mf.address);
+    gen_tables(&ms, graph, mf.address);
 
     if (cfg.output_fname == NULL)
         fwrite(ms.address, ms.write_ptr, 1, stdout);

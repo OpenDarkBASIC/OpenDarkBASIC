@@ -1,34 +1,21 @@
 include (GNUInstallDirs)
 
 project ("odb-cli"
-    LANGUAGES CXX
+    LANGUAGES C
     VERSION 0.0.1)
-
-# These may not exist
-file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src")
-file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-cli")
-
-add_subdirectory ("argdefgen")
-argdefgen_target (odb-cli_argdef
-    "${PROJECT_SOURCE_DIR}/src/Actions.argdef"
-    "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp")
 
 ###############################################################################
 # Executable
 ###############################################################################
 
+set (odb-cli_DEPGEN_OUTPUT "${PROJECT_BINARY_DIR}/include/odb-cli/args.cli.h")
+odb_cligen_target (odb-cli_depgen
+    INPUT "${PROJECT_SOURCE_DIR}/src/args.cli"
+    OUTPUT "${odb-cli_DEPGEN_OUTPUT}")
+
 add_executable (odb-cli
-    ${argdefgen_odb-cli_argdef_OUTPUTS}
-    "src/AST.cpp"
-    "src/Banner.cpp"
-    "src/BuildInfo.cpp"
-    "src/Codegen.cpp"
-    "src/Commands.cpp"
-    "src/Log.cpp"
-    "src/SDK.cpp"
-    #"src/Warnings.cpp"
-    "src/main.cpp")
+    ${cli_DEPGEN_OUTPUT}
+    "src/main.c")
 target_include_directories (odb-cli
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

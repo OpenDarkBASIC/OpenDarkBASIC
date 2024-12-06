@@ -22,7 +22,6 @@ install (
 macro (odb_cligen_target name)
     set (odb_cligen_target_PARAM_OPTIONS)
     set (odb_cligen_target_PARAM_ONE_VALUE_KEYWORDS
-        NAME
         INPUT
         OUTPUT)
     set (odb_cligen_target_PARAM_MULTI_VALUE_KEYWORDS)
@@ -38,7 +37,14 @@ macro (odb_cligen_target name)
         message (FATAL_ERROR "odb_cligen_target <name> <input> <output>")
     endif ()
 
-    add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres.rc
+    get_filename_component (
+        odb_cligen_target_OUTPUT_DIR
+        ${odb_cligen_target_arg_OUTPUT}
+        DIRECTORY)
+
+    add_custom_command (
+        OUTPUT ${odb_cligen_target_arg_OUTPUT}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${odb_cligen_target_OUTPUT_DIR}
         COMMAND odb-cligen
         ARGS
             -i ${odb_cligen_target_arg_INPUT}
@@ -49,7 +55,4 @@ macro (odb_cligen_target name)
             ${odb_cligen_target_arg_INPUT}
         COMMENT "[odb-cligen] Generating CLI dependencies ${name}"
         VERBATIM)
-
-    set (ODB_CLIGEN_${name}_OUTPUTS ${odb_cligen_target_arg_OUTPUT})
-    set (ODB_CLIGEN_${name}_DEFINED TRUE)
 endmacro ()
