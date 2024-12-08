@@ -25,9 +25,9 @@ DBParserHelper::DBParserHelper()
     cmd_list_init(&cmds);
     globals_init(&globals);
     db_parser_init(&p);
+    ospath_list_init(&filenames);
 
-    filename = empty_ospath();
-    ospath_set_cstr(&filename, "test");
+    ospath_list_add_cstr(&filenames, "test");
 
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
@@ -57,7 +57,7 @@ DBParserHelper::~DBParserHelper()
 
     db_parser_deinit(&p);
     utf8_deinit(src);
-    ospath_deinit(filename);
+    ospath_list_deinit(filenames);
     globals_deinit(globals);
     cmd_list_deinit(&cmds);
     udt_storage_deinit(&udts);
@@ -77,8 +77,8 @@ DBParserHelper::parse(const char* code)
         ast_init(&ast);
     }
 
-    int result
-        = db_parse(&p, &ast, ospathc(filename), &src, &plugins, &cmds, &udts);
+    int result = db_parse(
+        &p, &ast, ospath_list_get(filenames, 0), &src, &plugins, &cmds, &udts);
     if (result != 0)
         return result;
 
@@ -92,7 +92,7 @@ DBParserHelper::parse(const char* code)
 #endif
 
     return globals_add_declarations_from_ast(
-        &globals, &ast, 0, &filename, &src);
+        &globals, &ast, 0, ospath_list_ospathc(filenames), &src);
 }
 
 int
@@ -104,7 +104,7 @@ DBParserHelper::semantic(const struct semantic_check* check)
         1,
         0,
         &ast_mutex,
-        &filename,
+        ospath_list_ospathc(filenames),
         &src,
         plugins,
         &cmds,

@@ -88,16 +88,16 @@ HM_DEFINE_API_FULL(
 
 struct ctx
 {
-    struct ast**              tus;
-    int                       tu_count;
-    int                       tu_id;
-    struct mutex**            tu_mutexes;
-    const struct ospath*      filenames;
-    struct utf8*              sources;
-    const struct plugin_list* plugins;
-    const struct cmd_list*    cmds;
-    const struct globals*     globals;
-    const struct udt_storage* udts;
+    struct ast**               tus;
+    int                        tu_count;
+    int                        tu_id;
+    struct mutex**             tu_mutexes;
+    const struct ospathc_list* filenames;
+    struct utf8*               sources;
+    const struct plugin_list*  plugins;
+    const struct cmd_list*     cmds;
+    const struct globals*      globals;
+    const struct udt_storage*  udts;
 };
 
 static int
@@ -132,8 +132,9 @@ run_check(
 #if defined(ODBCOMPILER_AST_DUMP)
         {
             const struct ast* ast = ctx->tus[ctx->tu_id];
-            struct ospathc    filename = ospathc(ctx->filenames[ctx->tu_id]);
-            struct utf8_view  source = utf8_view(ctx->sources[ctx->tu_id]);
+            struct ospathc    filename
+                = ospathc_list_get(ctx->filenames, ctx->tu_id);
+            struct utf8_view source = utf8_view(ctx->sources[ctx->tu_id]);
             ast_export_basename(ast, filename, source, ctx->cmds);
         }
 #endif
@@ -170,7 +171,7 @@ semantic_check_run(
     int                          tu_count,
     int                          tu_id,
     struct mutex**               tu_mutexes,
-    const struct ospath*         filenames,
+    const struct ospathc_list*   filenames,
     struct utf8*                 sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
@@ -179,7 +180,7 @@ semantic_check_run(
 {
     struct ptr_set* check_visited;
     struct ast**    astp = &tus[tu_id];
-    struct ospathc  filename = ospathc(filenames[tu_id]);
+    struct ospathc  filename = ospathc_list_get(filenames, tu_id);
     struct ctx      ctx
         = {tus,
            tu_count,
@@ -215,32 +216,32 @@ semantic_check_run(
 
 static int
 dummy_check(
-    struct ast**              tus,
-    int                       tu_count,
-    int                       tu_id,
-    struct mutex**            tu_mutexes,
-    const struct ospath*      filenames,
-    struct utf8*              sources,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
-    const struct globals*     globals)
+    struct ast**               tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct udt_storage*  udts,
+    const struct globals*      globals)
 {
     return 0;
 }
 
 int
 semantic_run_essential_checks(
-    struct ast**              tus,
-    int                       tu_count,
-    int                       tu_id,
-    struct mutex**            tu_mutexes,
-    const struct ospath*      filenames,
-    struct utf8*              sources,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
-    const struct globals*     globals)
+    struct ast**               tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct udt_storage*  udts,
+    const struct globals*      globals)
 {
     static const struct semantic_check* essential_checks[]
         = {&semantic_type_check,

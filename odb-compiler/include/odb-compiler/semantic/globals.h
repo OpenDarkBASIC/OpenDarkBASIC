@@ -3,6 +3,8 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-util/utf8.h"
 
+struct ospathc_list;
+
 struct global
 {
     /* Index into the list of TUs (translation units) of the AST in which this
@@ -30,11 +32,11 @@ globals_deinit(struct globals* table);
 
 ODBCOMPILER_PUBLIC_API int
 globals_add_declarations_from_ast(
-    struct globals**     table,
-    struct ast**         tus,
-    int                  tu_id,
-    const struct ospath* filenames,
-    const struct utf8*   sources);
+    struct globals**           table,
+    struct ast**               tus,
+    int                        tu_id,
+    const struct ospathc_list* filenames,
+    const struct utf8*         sources);
 
 ODBCOMPILER_PUBLIC_API const struct global*
 globals_find(const struct globals* table, struct utf8_view key);

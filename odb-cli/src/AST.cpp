@@ -19,19 +19,19 @@ extern "C" {
 
 VEC_DECLARE_API(static, filenames, struct ospath, 32)
 VEC_DECLARE_API(static, sources, struct utf8, 32)
-VEC_DECLARE_API(static, tus, struct ast*, 32)
+VEC_DECLARE_API(static, asts, struct ast*, 32)
 VEC_DECLARE_API(static, ast_mutexes, struct mutex*, 32)
 
 VEC_DEFINE_API(filenames, struct ospath, 32)
 VEC_DEFINE_API(sources, struct utf8, 32)
-VEC_DEFINE_API(tus, struct ast*, 32)
+VEC_DEFINE_API(asts, struct ast*, 32)
 VEC_DEFINE_API(ast_mutexes, struct mutex*, 32)
 
 struct ctx
 {
     struct filenames*   filenames;
     struct sources*     sources;
-    struct tus*         tus;
+    struct asts*         tus;
     struct ast_mutexes* ast_mutexes;
     struct globals*     globals;
 };

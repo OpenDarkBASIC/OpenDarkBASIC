@@ -7,7 +7,16 @@
 struct ast;
 struct cmd_ids;
 struct cmd_list;
+struct plugin_list;
 struct ir_module;
+
+enum optimization_level
+{
+    OPTIMIZE_NONE,
+    OPTIMIZE_1,
+    OPTIMIZE_2,
+    OPTIMIZE_3,
+};
 
 ODBCOMPILER_PUBLIC_API int
 ir_global_init(void);
@@ -47,7 +56,7 @@ ir_create_harness(
     enum target_platform      platform);
 
 ODBCOMPILER_PUBLIC_API int
-ir_optimize(struct ir_module* ir);
+ir_optimize(struct ir_module* ir, enum optimization_level level);
 
 ODBCOMPILER_PUBLIC_API int
 ir_dump(const struct ir_module* ir);

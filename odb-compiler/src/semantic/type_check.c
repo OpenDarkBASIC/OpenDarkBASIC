@@ -973,15 +973,15 @@ create_default_initializer_udt(
 
 static enum process_result
 process_var_decl(
-    struct stack**        stack,
-    struct ast**          tus,
-    int                   tu_id,
-    struct mutex**        tu_mutexes,
-    ast_id                var_decl,
-    const struct ospath*  filenames,
-    const struct utf8*    sources,
-    struct locals**       locals,
-    const struct globals* globals)
+    struct stack**             stack,
+    struct ast**               tus,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    ast_id                     var_decl,
+    const struct ospathc_list* filenames,
+    const struct utf8*         sources,
+    struct locals**            locals,
+    const struct globals*      globals)
 {
     ast_id           decl1, decl2, identifier, as, init_expr;
     struct local*    local;
@@ -989,7 +989,7 @@ process_var_decl(
     int32_t          scope_id;
 
     struct ast**   astp = &tus[tu_id];
-    struct ospathc filename = ospathc(filenames[tu_id]);
+    struct ospathc filename = ospathc_list_get(filenames, tu_id);
     const char*    source = sources[tu_id].data;
     int32_t        top = stack_count(*stack);
 
@@ -1208,15 +1208,15 @@ process_var_write(
 
 static enum process_result
 process_udt_decl(
-    struct stack**        stack,
-    struct ast**          tus,
-    int                   tu_id,
-    struct mutex**        tu_mutexes,
-    ast_id                udt_decl,
-    const struct ospath*  filenames,
-    const struct utf8*    sources,
-    struct locals**       locals,
-    const struct globals* globals)
+    struct stack**             stack,
+    struct ast**               tus,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    ast_id                     udt_decl,
+    const struct ospathc_list* filenames,
+    const struct utf8*         sources,
+    struct locals**            locals,
+    const struct globals*      globals)
 {
     ast_id               members, type_identifier;
     struct utf8_span     type_name;
@@ -1226,7 +1226,7 @@ process_udt_decl(
     const struct global* global;
 
     struct ast*    ast = tus[tu_id];
-    struct ospathc filename = ospathc(filenames[tu_id]);
+    struct ospathc filename = ospathc_list_get(filenames, tu_id);
     const char*    source = sources[tu_id].data;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1256,9 +1256,10 @@ process_udt_decl(
     if (global != NULL && global->tu_id != tu_id)
     {
         const struct ast* first_ast = tus[global->tu_id];
-        struct ospathc    first_filename = ospathc(filenames[global->tu_id]);
-        const char*       first_source = sources[global->tu_id].data;
-        struct mutex*     their_mutex = tu_mutexes[global->tu_id];
+        struct ospathc    first_filename
+            = ospathc_list_get(filenames, global->tu_id);
+        const char*   first_source = sources[global->tu_id].data;
+        struct mutex* their_mutex = tu_mutexes[global->tu_id];
 
         mutex_lock(their_mutex);
         err_udt_decl_redeclaration(
@@ -2856,14 +2857,14 @@ find_func_instantiation(
 
 static enum process_result
 process_call_like(
-    struct stack**        stack,
-    struct ast**          tus,
-    int                   tu_id,
-    struct mutex**        tu_mutexes,
-    ast_id                n,
-    const struct ospath*  filenames,
-    const struct utf8*    sources,
-    const struct globals* globals)
+    struct stack**             stack,
+    struct ast**               tus,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    ast_id                     n,
+    const struct ospathc_list* filenames,
+    const struct utf8*         sources,
+    const struct globals*      globals)
 {
     ast_id ident, arglist;
 
@@ -2871,7 +2872,7 @@ process_call_like(
     const struct global* global;
 
     struct ast**   astp = &tus[tu_id];
-    struct ospathc filename = ospathc(filenames[tu_id]);
+    struct ospathc filename = ospathc_list_get(filenames, tu_id);
     const char*    source = sources[tu_id].data;
 
     /* NOTE: The function has an identifier, but the type of it is set only
@@ -3152,22 +3153,22 @@ process_as_expr(struct stack** stack, struct ast* ast, ast_id as_expr)
 
 static enum process_result
 process_as_udt(
-    struct stack**        stack,
-    struct ast**          tus,
-    int                   tu_id,
-    struct mutex**        tu_mutexes,
-    ast_id                as_udt,
-    const struct ospath*  filenames,
-    struct utf8*          sources,
-    struct locals**       locals,
-    const struct globals* globals)
+    struct stack**             stack,
+    struct ast**               tus,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    ast_id                     as_udt,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    struct locals**            locals,
+    const struct globals*      globals)
 {
     struct utf8_span type_name;
     int32_t          scope_id;
     struct local*    local;
 
     struct ast**   astp = &tus[tu_id];
-    struct ospathc filename = ospathc(filenames[tu_id]);
+    struct ospathc filename = ospathc_list_get(filenames, tu_id);
     struct utf8*   source = &sources[tu_id];
 
     ODBUTIL_DEBUG_ASSERT(as_udt > -1, (void)0);
@@ -3221,18 +3222,18 @@ process_as_udt(
 
 static enum process_result
 process_node(
-    struct stack**         stack,
-    struct locals**        locals,
-    struct ast**           tus,
-    int                    tu_id,
-    struct mutex**         tu_mutexes,
-    const struct ospath*   filenames,
-    struct utf8*           sources,
-    const struct cmd_list* cmds,
-    const struct globals*  globals)
+    struct stack**             stack,
+    struct locals**            locals,
+    struct ast**               tus,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct cmd_list*     cmds,
+    const struct globals*      globals)
 {
     struct ast**        astp = &tus[tu_id];
-    struct ospathc      filename = ospathc(filenames[tu_id]);
+    struct ospathc      filename = ospathc_list_get(filenames, tu_id);
     const char*         source = sources[tu_id].data;
     struct stack_entry* entry = vec_last(*stack);
     ast_id              n = entry->node;
@@ -3452,16 +3453,16 @@ sanity_check(
 
 static int
 type_check(
-    struct ast**              tus,
-    int                       tu_count,
-    int                       tu_id,
-    struct mutex**            tu_mutexes,
-    const struct ospath*      filenames,
-    struct utf8*              sources,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
-    const struct globals*     globals)
+    struct ast**               tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct udt_storage*  udts,
+    const struct globals*      globals)
 {
     struct locals* locals;
     struct stack*  stack;
@@ -3515,8 +3516,9 @@ type_check(
             case DEP_REQUIRE_ADJACENT:
                 if (bm_set(visited, n))
                 {
-                    struct ospathc filename = ospathc(filenames[tu_id]);
-                    const char*    source = sources[tu_id].data;
+                    struct ospathc filename
+                        = ospathc_list_get(filenames, tu_id);
+                    const char* source = sources[tu_id].data;
                     log_flc(filename, source, ast_loc(*astp, n));
                     log_err(
                         "Type depends on itself. Cannot resolve type "
@@ -3537,7 +3539,10 @@ type_check(
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
         ast_export_basename(
-            *astp, ospathc(filenames[tu_id]), utf8_view(sources[tu_id]), cmds);
+            *astp,
+            ospathc_list_get(filenames, tu_id),
+            utf8_view(sources[tu_id]),
+            cmds);
 #endif
     }
 
@@ -3549,9 +3554,15 @@ type_check(
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (return_code == 0)
         return_code = sanity_check(
-            *astp, cmds, ospathc(filenames[tu_id]), utf8_cstr(sources[tu_id]));
+            *astp,
+            cmds,
+            ospathc_list_get(filenames, tu_id),
+            utf8_cstr(sources[tu_id]));
     ast_export_basename(
-        *astp, ospathc(filenames[tu_id]), utf8_view(sources[tu_id]), cmds);
+        *astp,
+        ospathc_list_get(filenames, tu_id),
+        utf8_view(sources[tu_id]),
+        cmds);
 #endif
 
     return return_code;

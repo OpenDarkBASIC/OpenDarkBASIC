@@ -78,6 +78,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     "include/odb-util/process.h"
     "include/odb-util/rb.h"
     "include/odb-util/thread.h"
+    "include/odb-util/system.h"
     "include/odb-util/utf8.h"
     "include/odb-util/vec.h"
 
@@ -100,6 +101,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     $<$<PLATFORM_ID:Linux>:src/mutex_linux.c>
     $<$<PLATFORM_ID:Linux>:src/ospath_linux.c>
     $<$<PLATFORM_ID:Linux>:src/process_linux.c>
+    $<$<PLATFORM_ID:Linux>:src/system_linux.c>
     $<$<PLATFORM_ID:Linux>:src/thread_linux.c>
     $<$<PLATFORM_ID:Linux>:src/utf8_linux.c>
 

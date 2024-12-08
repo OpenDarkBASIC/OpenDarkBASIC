@@ -95,6 +95,12 @@ used_cmds_init(struct used_cmds** hm)
     used_cmds_hm_init((struct used_cmds_hm**)hm);
 }
 
+void
+used_cmds_deinit(struct used_cmds* hm)
+{
+    used_cmds_hm_deinit(&hm->hm);
+}
+
 int
 used_cmds_append(struct used_cmds** used_cmds, const struct ast* ast)
 {
@@ -103,7 +109,9 @@ used_cmds_append(struct used_cmds** used_cmds, const struct ast* ast)
     for (n = 0; n != ast_count(ast); n++)
         if (ast_node_type(ast, n) == AST_COMMAND)
             if (used_cmds_hm_emplace_or_get(
-                    (struct used_cmds_hm**)used_cmds, ast->nodes[n].command.id, &c)
+                    (struct used_cmds_hm**)used_cmds,
+                    ast->nodes[n].command.id,
+                    &c)
                 == HM_OOM)
             {
                 return -1;

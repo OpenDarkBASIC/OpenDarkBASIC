@@ -52,9 +52,26 @@ ir_optimize_old(struct ir_module* ir)
     return 0;
 }
 
-int
-ir_optimize(struct ir_module* ir)
+static llvm::OptimizationLevel
+to_llvm_optimization_level(enum optimization_level level)
 {
+    switch (level)
+    {
+        case OPTIMIZE_NONE: return llvm::OptimizationLevel::O0;
+        case OPTIMIZE_1: return llvm::OptimizationLevel::O1;
+        case OPTIMIZE_2: return llvm::OptimizationLevel::O2;
+        case OPTIMIZE_3: return llvm::OptimizationLevel::O3;
+    }
+
+    return llvm::OptimizationLevel::O0;
+}
+
+int
+ir_optimize(struct ir_module* ir, enum optimization_level level)
+{
+    if (level == OPTIMIZE_NONE)
+        return 0;
+
     // Create the analysis managers.
     // These must be declared in this order so that they are destroyed in the
     // correct order due to inter-analysis-manager references.
@@ -74,7 +91,7 @@ ir_optimize(struct ir_module* ir)
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
     MPM = PB.buildModuleOptimizationPipeline(
-        llvm::OptimizationLevel::O3, llvm::ThinOrFullLTOPhase::None);
+        to_llvm_optimization_level(level), llvm::ThinOrFullLTOPhase::None);
 
     MPM.run(ir->Mod, MAM);
 

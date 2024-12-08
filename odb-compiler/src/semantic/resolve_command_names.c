@@ -11,16 +11,16 @@
 
 static int
 resolve_command_names(
-    struct ast**              tus,
-    int                       tu_count,
-    int                       tu_id,
-    struct mutex**            tu_mutexes,
-    const struct ospath*      filenames,
-    struct utf8*              sources,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
-    const struct globals*     globals)
+    struct ast**               tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct udt_storage*  udts,
+    const struct globals*      globals)
 {
     ast_id       n;
     struct utf8  cmd_name = empty_utf8();

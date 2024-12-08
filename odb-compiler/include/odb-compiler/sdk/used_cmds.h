@@ -11,6 +11,9 @@ struct used_cmds;
 ODBCOMPILER_PUBLIC_API void
 used_cmds_init(struct used_cmds** hm);
 
+ODBCOMPILER_PUBLIC_API void
+used_cmds_deinit(struct used_cmds* hm);
+
 ODBCOMPILER_PUBLIC_API int
 used_cmds_append(struct used_cmds** used, const struct ast* ast);
 

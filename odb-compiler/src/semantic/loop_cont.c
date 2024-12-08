@@ -93,20 +93,20 @@ check_cont(
 
 static int
 check_loop_cont(
-    struct ast**              tus,
-    int                       tu_count,
-    int                       tu_id,
-    struct mutex**            tu_mutexes,
-    const struct ospath*      filenames,
-    struct utf8*              sources,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
-    const struct globals*     globals)
+    struct ast**               tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct udt_storage*  udts,
+    const struct globals*      globals)
 {
     ast_id         n, loop;
     struct ast**   astp = &tus[tu_id];
-    struct ospathc filename = ospathc(filenames[tu_id]);
+    struct ospathc filename = ospathc_list_get(filenames, tu_id);
     const char*    source = sources[tu_id].data;
 
     for (n = 0; n != ast_count(*astp); ++n)

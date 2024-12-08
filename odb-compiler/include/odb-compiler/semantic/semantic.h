@@ -8,21 +8,21 @@ struct ast;
 struct cmd_list;
 struct globals;
 struct mutex;
-struct ospath;
+struct ospathc_list;
 struct plugin_list;
 struct udt_storage;
 
 typedef int (*semantic_check_func)(
-    struct ast**              tus,
-    int                       tu_count,
-    int                       tu_id,
-    struct mutex**            tu_mutexes,
-    const struct ospath*      filenames,
-    struct utf8*              sources,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
-    const struct globals*     symbols);
+    struct ast**               tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct udt_storage*  udts,
+    const struct globals*      symbols);
 
 struct semantic_check
 {
@@ -38,7 +38,7 @@ semantic_check_run(
     int                          tu_count,
     int                          tu_id,
     struct mutex**               tu_mutexes,
-    const struct ospath*         filenames,
+    const struct ospathc_list*   filenames,
     struct utf8*                 sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
@@ -47,16 +47,16 @@ semantic_check_run(
 
 ODBCOMPILER_PUBLIC_API int
 semantic_run_essential_checks(
-    struct ast**              tus,
-    int                       tu_count,
-    int                       tu_id,
-    struct mutex**            tu_mutexes,
-    const struct ospath*      filenames,
-    struct utf8*              sources,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
-    const struct globals*     symbols);
+    struct ast**               tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
+    const struct ospathc_list* filenames,
+    struct utf8*               sources,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct udt_storage*  udts,
+    const struct globals*      symbols);
 
 /*!
  * Analyzes all expression trees and ensures that the types of the operands are

@@ -102,6 +102,12 @@ ospath_len(struct ospath path)
     return path.str.len;
 }
 
+static inline int
+ospathc_len(struct ospathc path)
+{
+    return path.len;
+}
+
 static inline void
 ospath_deinit(struct ospath path)
 {

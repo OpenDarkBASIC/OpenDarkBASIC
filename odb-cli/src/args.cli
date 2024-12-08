@@ -1,6 +1,14 @@
 section: info {
     en_US: "Build information."
     
+    option: help {
+        en_US: "Print this help text, or print help about a specific section,"
+                " or print everything by specifying \"all\""
+        short: 'h'
+        args: [all|name]
+        func: print_help
+    }
+
     option: version {
         en_US: "Prints version information."
         short: 'v'
@@ -12,12 +20,10 @@ section: info {
         func: print_commit_hash
     }
     
-    option: help {
-        en_US: "Print this help text, or print help about a specific section,"
-                " or print everything by specifying \"all\""
-        short: 'h'
-        args: [all|name]
-        func: print_help
+    option: cli-depgraph {
+        en_US: "Export the CLI dependency graph to Graphviz DOT format"
+        args: [filename]
+        func: cli_depgraph
     }
 }
 
@@ -66,9 +72,23 @@ section: sdk {
         func: set_sdk_plugins
     }
 
+    option: arch {
+        en_US: "Specify the target architecture. Defaults to \"x86_64\" for "
+               "the ODB SDK, or \"i386\" for the DBPro SDK."
+        args: <i386|x86_64|aarch64|wasm>
+        func: set_target_arch
+    }
+
+    option: platform {
+        en_US: "Specify the target platform. Defaults to the host platform "
+               "for the ODB SDK, or \"windows\" for the DBPro SDK."
+        args: <windows|linux>
+        func: set_target_platform
+    }
+
     task: setup-sdk {
         func: setup_sdk
-        runafter: { sdk-root, sdk-type, plugins }
+        runafter: { arch, platform, sdk-root, sdk-type, plugins }
     }
 
     option: sdk {
@@ -99,6 +119,7 @@ section: parser {
         short: 'i'
         args: <file> [files...]
         func: set_input
+        requires: parse-sources
     }
     
     option: dba {
@@ -108,6 +129,7 @@ section: parser {
                "stdin."
         args: [file...]
         func: set_dba
+        requires: parse-sources
     }
 
     option: dbpro {
@@ -115,10 +137,11 @@ section: parser {
                "files listed within."
         args: <file>
         func: set_dbpro
+        requires: parse-sources
     }
 
-    task: parse-input {
-        func: parse_input
+    task: parse-sources {
+        func: parse_sources
         runafter: { warning, load-commands, input, dba, dbpro }
     }
     
@@ -127,12 +150,12 @@ section: parser {
                "specified, the output is written to stdout."
         args: [file]
         func: dump_ast1
-        runafter: parse-input
+        runafter: parse-sources
     }
     
     task: semantic-checks {
-        func: do_semantic_checks
-        runafter: parse-input
+        func: semantic_checks
+        runafter: parse-sources
     }
 
     option: ast2 {
@@ -148,38 +171,37 @@ section: parser {
 section: codegen {
     en_US: "Optimizations, target arch and platform settings."
 
-    option: arch {
-        en_US: "Specify the target architecture. Defaults to \"x86_64\" for "
-               "the ODB SDK, or \"i386\" for the DBPro SDK."
-        args: <i386|x86_64|aarch64|wasm>
-        func: set_target_arch
-    }
-
-    option: platform {
-        en_US: "Specify the target platform. Defaults to the host platform "
-               "for the ODB SDK, or \"windows\" for the DBPro SDK."
-        args: <windows|linux>
-        func: set_target_platform
-    }
-
-    task: generate-ir {
-        func: generate_ir
-        runafter: { semantic-checks, platform, arch }
+    option: optimize {
+        en_US: "Set the optimization level from 1-3. Defaults to 3."
+        short: 'O'
+        args: [level]
+        func: set_optimization_level
     }
 
     option: ir {
         en_US: "Generate LLVM IR and write to output."
         args: [file]
         func: dump_ir
-        runafter: generate-ir
+        requires: generate-object-files
     }
 
     option: output {
         en_US: "Compile to executable code."
         short: 'o'
         args: [file]
-        func: generate_output
-        runafter: generate-ir
+        func: set_output
+        runafter: generate-object-files
+    }
+
+    task: generate-object-files {
+        func: generate_object_files
+        runafter: { ir, semantic-checks }
+    }
+
+    option: exec {
+        en_US: "Run the program after compilition succeeds."
+        func: execute_output
+        runafter: output
     }
 
     option: warnings {

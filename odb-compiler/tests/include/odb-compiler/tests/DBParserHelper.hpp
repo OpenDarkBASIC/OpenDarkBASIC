@@ -21,21 +21,15 @@ struct DBParserHelper
 
     virtual int
     parse(const char* code);
-    int
-    semantic(const struct semantic_check* check);
-    int
-    addCommand(const char* name);
-    int
-    addCommand(enum primitive_type return_type, const char* name);
-    int
-    addCommand(union type, const char* name);
-    int
-    addCommand(
+    int semantic(const struct semantic_check* check);
+    int addCommand(const char* name);
+    int addCommand(enum primitive_type return_type, const char* name);
+    int addCommand(union type, const char* name);
+    int addCommand(
         union type                        return_type,
         const char*                       name,
         std::initializer_list<union type> param_types);
-    int
-    addCommand(
+    int addCommand(
         enum primitive_type                        return_type,
         const char*                                name,
         std::initializer_list<enum primitive_type> param_types);
@@ -45,7 +39,7 @@ struct DBParserHelper
     struct udt_storage  udts;
     struct globals*     globals;
     struct db_parser    p;
-    struct ospath       filename;
+    struct ospath_list* filenames;
     struct utf8         src;
     struct ast*         ast;
     struct mutex*       ast_mutex;

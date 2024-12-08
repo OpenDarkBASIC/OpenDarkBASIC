@@ -1746,6 +1746,15 @@ struct intlist
     int data[1];
 };
 
+static struct intlist*
+intlist_alloc(int count)
+{
+    struct intlist* intlist = malloc(
+        offsetof(struct intlist, data) + sizeof(intlist->data[0]) * count);
+    intlist->count = 0;
+    return intlist;
+}
+
 static int
 intlist_count(const struct intlist* list)
 {
@@ -1869,7 +1878,7 @@ add_dependencies_node(
     if (dep_count == 0)
         return 0;
 
-    *deplist = realloc(*deplist, sizeof((*deplist)->data[0]) * dep_count);
+    *deplist = intlist_alloc(dep_count);
     for (; dep_names; dep_names = dep_names->next)
     {
         child = find_node_with_name(graph, dep_names->string, filename, source);
@@ -1975,29 +1984,82 @@ find_duplicate_names(
 }
 
 static int
-calculate_priorities_recurse(
-    struct graph* graph, int node, int depth, int* visited)
+report_circular_dependency(
+    const struct intlist* stack,
+    const struct graph*   graph,
+    int                   node,
+    const char*           filename,
+    const char*           source)
 {
-    if (visited[node])
-        return print_error("Circular dependency detected\n");
+    int             i;
+    struct str_view name = node_name(&graph->nodes[node]);
+    print_loc_error(
+        filename,
+        source,
+        name,
+        "Circular dependency detected for task or option \"%.*s\".\n",
+        name.len,
+        source + name.off);
+
+    fprintf(stderr, "Dependency cycle: %.*s", name.len, source + name.off);
+    i = stack->count;
+    while (stack->data[i--] != node)
+    {
+        struct str_view name = node_name(&graph->nodes[stack->data[i]]);
+        fprintf(stderr, " -> %.*s", name.len, source + name.off);
+    }
+    fprintf(stderr, "\n");
+
+    return -1;
+}
+
+static int
+calculate_priorities_recurse(
+    struct intlist* stack,
+    struct graph*   graph,
+    int             node,
+    int             depth,
+    const char*     filename,
+    const char*     source)
+{
+    int                   i;
+    const struct intlist* runafter = graph->nodes[node].runafter;
+
+    for (i = 0; i != stack->count; ++i)
+        if (stack->data[i] == node)
+            return report_circular_dependency(
+                stack, graph, node, filename, source);
+    stack->data[stack->count++] = node;
 
     if (graph->nodes[node].priority < depth)
         graph->nodes[node].priority = depth;
 
-    visited[node] = 1;
+    if (runafter)
+        for (i = 0; i != runafter->count; ++i)
+        {
+            int childdepth = calculate_priorities_recurse(
+                stack, graph, runafter->data[i], depth + 1, filename, source);
+            if (childdepth < 0)
+                return -1;
+            graph->nodes[node].priority = childdepth - 1;
+        }
+
+    stack->count--;
+    return graph->nodes[node].priority;
 }
 
 static int
-calculate_priorities(struct graph* graph)
+calculate_priorities(
+    struct graph* graph, const char* filename, const char* source)
 {
-    int  n;
-    int* visited = malloc(sizeof(*visited) * graph->count);
+    int             n;
+    struct intlist* stack = intlist_alloc(graph->count);
     for (n = 0; n != graph->count; ++n)
-    {
-        memset(visited, 0, sizeof(*visited) * graph->count);
-        if (calculate_priorities_recurse(graph, n, 0) != 0)
+        if (calculate_priorities_recurse(stack, graph, n, 0, filename, source)
+            < 0)
+        {
             return -1;
-    }
+        }
 
     return 0;
 }
@@ -2046,7 +2108,7 @@ create_dependency_graph_from_ast(
         return NULL;
     if (add_dependencies(graph, filename, source) != 0)
         return NULL;
-    if (calculate_priorities(graph) != 0)
+    if (calculate_priorities(graph, filename, source) != 0)
         return NULL;
 
     return graph;
@@ -2104,11 +2166,12 @@ export_depgraph(
                 fprintf(
                     fp,
                     "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                    "label=\"%.*s\"];\n",
+                    "label=\"%d %.*s\"];\n",
                     node,
                     style->option.color,
                     style->option.fontcolor,
                     style->option.shape,
+                    n->priority,
                     name.len,
                     source + name.off);
                 break;
@@ -2116,11 +2179,12 @@ export_depgraph(
                 fprintf(
                     fp,
                     "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                    "label=\"%.*s\"];\n",
+                    "label=\"%d %.*s\"];\n",
                     node,
                     style->task.color,
                     style->task.fontcolor,
                     style->task.shape,
+                    n->priority,
                     name.len,
                     source + name.off);
                 break;
@@ -2291,9 +2355,9 @@ gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
     mstream_cstr(ms, "    const int* require;" NL);
     mstream_cstr(ms, "    const char* en_US;" NL);
     mstream_cstr(ms, "    int (*func)(struct cli_ctx*, int, char**);" NL);
+    mstream_cstr(ms, "    const char* name;" NL);
     mstream_cstr(ms, "    const char* long_option;" NL);
-    mstream_cstr(ms, "    int arg_min;" NL);
-    mstream_cstr(ms, "    int arg_max;" NL);
+    mstream_cstr(ms, "    int priority;" NL);
     mstream_cstr(ms, "    char short_option;" NL);
     mstream_cstr(ms, "};" NL NL);
 
@@ -2314,17 +2378,16 @@ gen_task_table(struct mstream* ms, const struct graph* graph, const char* data)
         gen_property(ms, "en_US", &graph->nodes[n], data);
         mstream_cstr(ms, "\", ");
 
-        mstream_str(ms, func, data);
-        mstream_cstr(ms, ", ");
+        mstream_fmt(ms, "%S, ", func, data);
+
+        mstream_fmt(ms, "\"%S\", ", name, data);
 
         if (graph->nodes[n].type == NODE_OPTION)
-            mstream_fmt(ms, "\"%S\"", name, data);
+            mstream_fmt(ms, "\"%S\", ", name, data);
         else
-            mstream_cstr(ms, "NULL");
-        mstream_cstr(ms, ", ");
+            mstream_cstr(ms, "NULL, ");
 
-        mstream_cstr(ms, "0, 0");
-        mstream_cstr(ms, ", ");
+        mstream_fmt(ms, "%d, ", graph->nodes[n].priority);
 
         if (graph->nodes[n].type == NODE_OPTION)
         {
