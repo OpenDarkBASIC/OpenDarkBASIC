@@ -57,7 +57,7 @@ ospathc_list_count(const struct ospathc_list* l)
 static inline struct ospathc
 ospath_list_get(struct ospath_list* l, utf8_idx idx)
 {
-    struct utf8_span span = utf8_list_span((const struct utf8_list*)l, idx);
+    struct utf8_span span = utf8_list_span(&l->strlist, idx);
     struct ospathc   path = {{l->strlist.data + span.off}, span.len};
     l->strlist.data[span.off + span.len] = '\0';
     return path;
@@ -65,14 +65,21 @@ ospath_list_get(struct ospath_list* l, utf8_idx idx)
 static inline struct ospathc
 ospathc_list_get(const struct ospathc_list* l, utf8_idx idx)
 {
-    struct utf8_span span = utf8_list_span((const struct utf8_list*)l, idx);
+    struct utf8_span span = utf8_list_span(&l->strlist, idx);
     struct ospathc   path = {{l->strlist.data + span.off}, span.len};
     return path;
 }
 
+#define mem_release_ospath_list(l) mem_release_utf8_list(&l->strlist)
+#define mem_acquire_ospath_list(l) mem_acquire_utf8_list(&l->strlist)
+
 #define ospath_for_each(l, var)                                                \
     for (utf8_idx var##_i = 0; (l) && var##_i != (l)->strlist.count            \
                                && ((var = ospath_list_get((l), var##_i)), 1);  \
+         ++var##_i)
+#define ospathc_for_each(l, var)                                               \
+    for (utf8_idx var##_i = 0; (l) && var##_i != (l)->strlist.count            \
+                               && ((var = ospathc_list_get((l), var##_i)), 1); \
          ++var##_i)
 
 #define ospath_for_each_cstr(l, var) utf8_for_each_cstr(&(l)->strlist, var)

@@ -203,7 +203,14 @@ fs_mtime_ms(struct ospathc path)
 {
     struct stat st;
     if (stat(ospathc_cstr(path), &st))
+    {
+        log_err(
+            "Failed to stat file {quote:%.*s}: %s\n",
+            path.len,
+            path.str.data,
+            strerror(errno));
         return 0;
+    }
     return ((uint64_t)st.st_mtim.tv_sec * 1000)
            + ((uint64_t)st.st_mtim.tv_nsec / 1000000);
 }

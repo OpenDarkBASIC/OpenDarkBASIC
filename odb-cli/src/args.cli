@@ -190,18 +190,23 @@ section: codegen {
         short: 'o'
         args: [file]
         func: set_output
-        runafter: generate-object-files
+        requires: link-executable
     }
 
     task: generate-object-files {
         func: generate_object_files
-        runafter: { ir, semantic-checks }
+        runafter: { ir, output, semantic-checks }
+    }
+
+    task: link-executable {
+        func: link_executable
+        runafter: generate-object-files
     }
 
     option: exec {
         en_US: "Run the program after compilition succeeds."
         func: execute_output
-        runafter: output
+        runafter: link-executable
     }
 
     option: warnings {

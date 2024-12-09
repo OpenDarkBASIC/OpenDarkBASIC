@@ -2,6 +2,7 @@
 #include "odb-compiler/build_info.h"
 #include "odb-compiler/codegen/ir.h"
 #include "odb-compiler/codegen/target.h"
+#include "odb-compiler/link/link.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
@@ -20,6 +21,7 @@
 #include "odb-util/mfile.h"
 #include "odb-util/mutex.h"
 #include "odb-util/ospath_list.h"
+#include "odb-util/process.h"
 #include "odb-util/system.h"
 #include "odb-util/thread.h"
 #include "odb-util/vec.h"
@@ -64,7 +66,7 @@ struct cli_ctx
     enum target_arch     arch;
     enum target_platform platform;
     struct ospath        sdk_root_dir;
-    enum sdk_type        sdk_type;
+    enum sdk_type        sdk;
     struct ospath_list*  plugin_dirs;
 
     /* Commands */
@@ -83,7 +85,11 @@ struct cli_ctx
     struct globals* globals;
 
     /* Code generation */
+    struct ospath           arch_plat_dir;
     struct ospath           odbtmp_dir;
+    struct ospath           output_dir;
+    struct ospath           output_executable;
+    struct ospath_list*     obj_files;
     enum optimization_level optimization_level;
     unsigned                dump_ir : 1;
 };
@@ -102,7 +108,7 @@ cli_ctx_init(struct cli_ctx* ctx, const char* prog_name)
     ctx->platform = TARGET_WINDOWS;
 #endif
     ctx->sdk_root_dir = empty_ospath();
-    ctx->sdk_type = SDK_ODB;
+    ctx->sdk = SDK_ODB;
     ospath_list_init(&ctx->plugin_dirs);
 
     /* Commands */
@@ -120,7 +126,11 @@ cli_ctx_init(struct cli_ctx* ctx, const char* prog_name)
     globals_init(&ctx->globals);
 
     /* Code generation */
+    ctx->arch_plat_dir = empty_ospath();
     ctx->odbtmp_dir = empty_ospath();
+    ctx->output_dir = empty_ospath();
+    ctx->output_executable = empty_ospath();
+    ospath_list_init(&ctx->obj_files);
     ctx->optimization_level = OPTIMIZE_NONE;
     ctx->dump_ir = 0;
 }
@@ -133,7 +143,11 @@ cli_ctx_deinit(struct cli_ctx* ctx)
     struct plugin_info* plugin;
 
     /* Code generation */
+    ospath_list_deinit(ctx->obj_files);
+    ospath_deinit(ctx->output_executable);
+    ospath_deinit(ctx->output_dir);
     ospath_deinit(ctx->odbtmp_dir);
+    ospath_deinit(ctx->arch_plat_dir);
 
     /* Global variables, UDTs and functions */
     globals_deinit(ctx->globals);
@@ -252,9 +266,9 @@ set_sdk_type(struct cli_ctx* ctx, int argc, char** argv)
         return log_err("Missing argument to option {emph2:--sdk-type}\n");
 
     if (strcmp(argv[0], "odb") == 0)
-        ctx->sdk_type = SDK_ODB;
+        ctx->sdk = SDK_ODB;
     else if (strcmp(argv[0], "dbpro") == 0)
-        ctx->sdk_type = SDK_DBPRO;
+        ctx->sdk = SDK_DBPRO;
     else
         return log_err("Unrecognized SDK type {quote:%s}\n", argv[0]);
 
@@ -282,7 +296,7 @@ set_sdk_root(struct cli_ctx* ctx, int argc, char** argv)
 static int
 setup_sdk(struct cli_ctx* ctx, int argc, char** argv)
 {
-    if (ctx->sdk_type == SDK_DBPRO)
+    if (ctx->sdk == SDK_DBPRO)
     {
         if (ctx->platform != TARGET_WINDOWS)
         {
@@ -304,7 +318,7 @@ setup_sdk(struct cli_ctx* ctx, int argc, char** argv)
     /* Set the default SDK root directory */
     if (ospath_len(ctx->sdk_root_dir) == 0)
     {
-        switch (ctx->sdk_type)
+        switch (ctx->sdk)
         {
             case SDK_ODB: {
                 /* <arch>/<platform>/bin/odb-cli */
@@ -364,7 +378,7 @@ print_sdk(struct cli_ctx* ctx, int argc, char** argv)
     log_info("Target architecture : %s\n", target_arch_to_name(ctx->arch));
     log_info(
         "Target platform     : %s\n", target_platform_to_name(ctx->platform));
-    log_info("SDK type            : %s\n", sdk_type_to_cstr(ctx->sdk_type));
+    log_info("SDK type            : %s\n", sdk_type_to_cstr(ctx->sdk));
     log_info("SDK root            : %s\n", ospath_cstr(ctx->sdk_root_dir));
     log_info("Additional plugins  :\n");
     ospath_for_each(ctx->plugin_dirs, dir)
@@ -382,7 +396,7 @@ load_commands(struct cli_ctx* ctx, int argc, char** argv)
     log_progress(0, 0, "Searching for plugins...\n");
     ret = plugin_list_populate(
         &ctx->plugins,
-        ctx->sdk_type,
+        ctx->sdk,
         ctx->platform,
         ospathc(ctx->sdk_root_dir),
         ctx->plugin_dirs);
@@ -394,7 +408,7 @@ load_commands(struct cli_ctx* ctx, int argc, char** argv)
         &ctx->commands,
         &ctx->udts,
         ctx->plugins,
-        ctx->sdk_type,
+        ctx->sdk,
         ctx->arch,
         ctx->platform);
     if (ret != 0)
@@ -1007,7 +1021,7 @@ set_optimization_level(struct cli_ctx* ctx, int argc, char** argv)
 }
 
 static int
-generate_harness(struct cli_ctx* ctx, struct mutex* dump_mutex)
+generate_harness(struct cli_ctx* ctx, struct mutex* worker_mutex)
 {
     struct cmd_ids*   used_cmds_list;
     struct used_cmds* used_cmds;
@@ -1046,7 +1060,7 @@ generate_harness(struct cli_ctx* ctx, struct mutex* dump_mutex)
         &ctx->commands,
         used_cmds_list,
         ospath_cstr(main_dba_name),
-        ctx->sdk_type,
+        ctx->sdk,
         ctx->arch,
         ctx->platform);
     if (result != 0)
@@ -1055,9 +1069,9 @@ generate_harness(struct cli_ctx* ctx, struct mutex* dump_mutex)
     if (ctx->dump_ir)
     {
         /* Don't really care if this fails or not */
-        mutex_lock(dump_mutex);
+        mutex_lock(worker_mutex);
         ir_dump(ir);
-        mutex_unlock(dump_mutex);
+        mutex_unlock(worker_mutex);
     }
 
     if (ospath_len(ctx->odbtmp_dir))
@@ -1067,6 +1081,14 @@ generate_harness(struct cli_ctx* ctx, struct mutex* dump_mutex)
         if (ospath_join_cstr(&harnessobj, "odbharness.o") != 0)
             goto emit_harness_failed;
         if (ir_emit(ir, ospath_cstr(harnessobj)) != 0)
+            goto emit_harness_failed;
+
+        mutex_lock(worker_mutex);
+        mem_acquire_ospath_list(ctx->obj_files);
+        result = ospath_list_add(&ctx->obj_files, ospathc(harnessobj));
+        mem_release_ospath_list(ctx->obj_files);
+        mutex_unlock(worker_mutex);
+        if (result != 0)
             goto emit_harness_failed;
     }
 
@@ -1114,7 +1136,7 @@ generate_ir_from_ast(struct worker* worker, int tu_id)
     result = ir_translate_ast(
         ir,
         *vec_get(worker->ctx->asts, tu_id),
-        worker->ctx->sdk_type,
+        worker->ctx->sdk,
         worker->ctx->arch,
         worker->ctx->platform,
         &worker->ctx->commands,
@@ -1144,6 +1166,14 @@ generate_ir_from_ast(struct worker* worker, int tu_id)
         if (utf8_append_cstr(&objfilepath.str, ".o") != 0)
             goto emit_ir_failed;
         if (ir_emit(ir, ospath_cstr(module_name)) != 0)
+            goto emit_ir_failed;
+
+        mutex_lock(worker->mutex);
+        mem_acquire_ospath_list(ctx->obj_files);
+        result = ospath_list_add(&ctx->obj_files, ospathc(objfilepath));
+        mem_release_ospath_list(ctx->obj_files);
+        mutex_unlock(worker->mutex);
+        if (result != 0)
             goto emit_ir_failed;
     }
 
@@ -1207,6 +1237,7 @@ execute_ir_workers(struct cli_ctx* ctx, struct workers* workers)
     int          worker_id;
     struct ast** astp;
 
+    mem_release_ospath_list(ctx->obj_files);
     for (worker_id = 0; worker_id != workers_count(workers); ++worker_id)
     {
         struct worker* worker = vec_get(workers, worker_id);
@@ -1220,6 +1251,7 @@ execute_ir_workers(struct cli_ctx* ctx, struct workers* workers)
         if (thread_join(worker->thread) != NULL)
             goto semantic_ir_failed;
     }
+    mem_acquire_ospath_list(ctx->obj_files);
 
     return 0;
 
@@ -1231,6 +1263,7 @@ start_ir_thread_failed:
         struct worker* worker = vec_get(workers, worker_id);
         thread_join(worker->thread);
     }
+    mem_acquire_ospath_list(ctx->obj_files);
     return -1;
 }
 
@@ -1280,146 +1313,149 @@ create_dump_mutex_failed:
     return -1;
 }
 
-static int
-link_object_files(struct cli_ctx* ctx, int argc, char** argv)
+static const char*
+get_runtime_lib_filename(enum sdk_type sdk, enum target_platform platform)
 {
-    log_err("Task {quote:link-object-files} not yet implemented.\n");
-
-    struct ospath rtlib = empty_ospath();
-    switch (ctx->sdk_type)
+    switch (sdk)
     {
         case SDK_ODB:
-            ospath_set(&rtlib, ospathc(apdir));
-            switch (platform_)
+            switch (platform)
             {
-                case TARGET_WINDOWS:
-                    ospath_join_cstr(&rtlib, "odb-sdk/runtime/odb-runtime.lib");
-                    break;
-                case TARGET_LINUX:
-                    ospath_join_cstr(
-                        &rtlib, "odb-sdk/runtime/libodb-runtime.so");
-                    break;
-                case TARGET_MACOS:
-                    ospath_join_cstr(
-                        &rtlib, "odb-sdk/runtime/libodb-runtime.dylib");
-                    break;
+                case TARGET_WINDOWS: return "odb-runtime.lib";
+                case TARGET_LINUX: return "libodb-runtime.so";
+                case TARGET_MACOS: return "libodb-runtime.dylib";
             }
             break;
 
         case SDK_DBPRO:
-            ospath_set(&rtlib, ospathc(apdir));
-            switch (platform_)
+            switch (platform)
             {
-                case TARGET_WINDOWS:
-                    ospath_join_cstr(&rtlib, "dbp-sdk/runtime/dbp-runtime.lib");
-                    break;
-                case TARGET_LINUX:
-                    ospath_join_cstr(
-                        &rtlib, "dbp-sdk/runtime/libdbp-runtime.so");
-                    break;
-                case TARGET_MACOS:
-                    ospath_join_cstr(
-                        &rtlib, "dbp-sdk/runtime/libdbp-runtime.dylib");
-                    break;
+                case TARGET_WINDOWS: return "dbp-runtime.lib";
+                case TARGET_LINUX: return "libdbp-runtime.so";
+                case TARGET_MACOS: return "libdbp-runtime.dylib";
             }
             break;
     }
+    return "";
+}
 
-    struct ospath kernel32 = empty_ospath();
-    if (platform_ == TARGET_WINDOWS)
-    {
-        ospath_set(&kernel32, ospathc(apdir));
-        ospath_join_cstr(&kernel32, "lib/kernel32.lib");
-    }
-
-    log_info("Linking {emph:%s}\n", outputExe_.c_str());
-    const char* objfiles[] = {
-        ospath_cstr(objfilepath),
-        ospath_cstr(harnessobj),
-        ospath_cstr(rtlib),
-        ospath_cstr(kernel32),
-    };
-    odb_link(
-        objfiles,
-        platform_ == TARGET_WINDOWS ? 4 : 3,
-        outputExe_.c_str(),
-        arch_,
-        platform_);
-
-    switch (getSDKType())
+static const char*
+get_runtime_bin_filename(enum sdk_type sdk, enum target_platform platform)
+{
+    switch (sdk)
     {
         case SDK_ODB:
-            ospath_dirname(&rtlib);
-            switch (platform_)
+            switch (platform)
             {
-                case TARGET_WINDOWS:
-                    ospath_join_cstr(&rtlib, "odb-runtime.dll");
-                    ospath_join_cstr(&outdir, "odb-runtime.dll");
-                    break;
-                case TARGET_LINUX:
-                    ospath_join_cstr(&rtlib, "libodb-runtime.so");
-                    ospath_join_cstr(&outdir, "libodb-runtime.so");
-                    break;
-                case TARGET_MACOS:
-                    ospath_join_cstr(&rtlib, "libodb-runtime.dylib");
-                    ospath_join_cstr(&outdir, "libodb-runtime.dylib");
-                    break;
+                case TARGET_WINDOWS: return "odb-runtime.dll";
+                case TARGET_LINUX: return "libodb-runtime.so";
+                case TARGET_MACOS: return "libodb-runtime.dylib";
             }
-            fs_copy_file_if_newer(ospathc(rtlib), ospathc(outdir));
-            ospath_dirname(&outdir);
-
-            ospath_set(&rtlib, ospathc(apdir));
-            switch (platform_)
-            {
-                case TARGET_WINDOWS:
-                    ospath_join_cstr(&rtlib, "bin/odb-util.dll");
-                    ospath_join_cstr(&outdir, "odb-util.dll");
-                    break;
-                case TARGET_LINUX:
-                    ospath_join_cstr(&rtlib, "lib/libodb-util.so");
-                    ospath_join_cstr(&outdir, "libodb-util.so");
-                    break;
-                case TARGET_MACOS:
-                    ospath_join_cstr(&rtlib, "lib/libodb-util.dylib");
-                    ospath_join_cstr(&outdir, "libodb-util.dylib");
-                    break;
-            }
-            fs_copy_file_if_newer(ospathc(rtlib), ospathc(outdir));
-            ospath_dirname(&outdir);
             break;
 
         case SDK_DBPRO:
-            ospath_dirname(&rtlib);
-            switch (platform_)
+            switch (platform)
             {
-                case TARGET_WINDOWS:
-                    ospath_join_cstr(&rtlib, "dbp-runtime.dll");
-                    ospath_join_cstr(&outdir, "dbp-runtime.dll");
-                    break;
-                case TARGET_LINUX:
-                    ospath_join_cstr(&rtlib, "libdbp-runtime.so");
-                    ospath_join_cstr(&outdir, "libdbp-runtime.so");
-                    break;
-                case TARGET_MACOS:
-                    ospath_join_cstr(&rtlib, "libdbp-runtime.dylib");
-                    ospath_join_cstr(&outdir, "libdbp-runtime.dylib");
-                    break;
+                case TARGET_WINDOWS: return "dbp-runtime.dll";
+                case TARGET_LINUX: return "libdbp-runtime.so";
+                case TARGET_MACOS: return "libdbp-runtime.dylib";
             }
-            fs_copy_file_if_newer(ospathc(rtlib), ospathc(outdir));
-            ospath_dirname(&outdir);
+            break;
+    }
+    return "";
+}
+
+static const char*
+get_odbutil_filename(enum target_platform platform)
+{
+    switch (platform)
+    {
+        case TARGET_WINDOWS: return "odb-util.dll";
+        case TARGET_LINUX: return "libodb-util.so";
+        case TARGET_MACOS: return "libodb-util.dylib";
+    }
+    return "";
+}
+
+static int
+link_executable(struct cli_ctx* ctx, int argc, char** argv)
+{
+    const char*   filename;
+    struct ospath srcpath = empty_ospath();
+    struct ospath dstpath = empty_ospath();
+
+    /* Add runtime library to object file list */
+    filename = get_runtime_lib_filename(ctx->sdk, ctx->platform);
+    if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
+        goto failed;
+    if (ospath_join_cstr(&srcpath, filename) != 0)
+        goto failed;
+    if (ospath_list_add(&ctx->obj_files, ospathc(srcpath)) != 0)
+        goto failed;
+
+    /* Add kernel32 to object file list */
+    if (ctx->platform == TARGET_WINDOWS)
+    {
+        if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
+            goto failed;
+        if (ospath_join_cstr(&srcpath, "lib/kernel32.lib") != 0)
+            goto failed;
+        if (ospath_list_add(&ctx->obj_files, ospathc(srcpath)) != 0)
+            goto failed;
+    }
+
+    log_info("Linking {emph:%s}\n", ospath_cstr(ctx->output_executable));
+    if (odb_link(
+            ospath_list_ospathc(ctx->obj_files),
+            ospathc(ctx->output_executable),
+            ctx->arch,
+            ctx->platform)
+        != 0)
+    {
+        goto failed;
+    }
+
+    if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
+        goto failed;
+    if (ospath_set(&dstpath, ospathc(ctx->output_dir)) != 0)
+        goto failed;
+    if (ospath_join_cstr(
+            &srcpath, get_runtime_bin_filename(ctx->sdk, ctx->platform))
+        != 0)
+        goto failed;
+    if (ospath_join_cstr(
+            &dstpath, get_runtime_bin_filename(ctx->sdk, ctx->platform))
+        != 0)
+        goto failed;
+    if (fs_copy_file_if_newer(ospathc(srcpath), ospathc(dstpath)) != 0)
+        goto failed;
+
+    if (ctx->sdk == SDK_ODB)
+    {
+        if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
+            goto failed;
+        if (ospath_set(&dstpath, ospathc(ctx->output_dir)) != 0)
+            goto failed;
+        if (ospath_join_cstr(&srcpath, get_odbutil_filename(ctx->platform))
+            != 0)
+            goto failed;
+        if (ospath_join_cstr(&dstpath, get_odbutil_filename(ctx->platform))
+            != 0)
+            goto failed;
+        if (fs_copy_file_if_newer(ospathc(srcpath), ospathc(dstpath)) != 0)
+            goto failed;
     }
 
     // TODO
     // fs_remove_directory(ospathc(tmpdir));
 
-    ospath_deinit(kernel32);
-    ospath_deinit(rtlib);
-    ospath_deinit(objfilepath);
-    ospath_deinit(harnessobj);
-    ospath_deinit(maindbaname);
-    ospath_deinit(outdir);
-    ospath_deinit(tmpdir);
-    ospath_deinit(apdir);
+    ospath_deinit(srcpath);
+    ospath_deinit(dstpath);
+    return 0;
+
+failed:
+    ospath_deinit(srcpath);
+    ospath_deinit(dstpath);
     return -1;
 }
 
@@ -1433,47 +1469,142 @@ dump_ir(struct cli_ctx* ctx, int argc, char** argv)
 static int
 set_output(struct cli_ctx* ctx, int argc, char** argv)
 {
-    struct ospath apdir = empty_ospath();
+    const char* arch_name;
+    const char* plat_name;
+
+    if (argc == 0 || argv[0][0] == '-')
+        return log_err("Missing argument to option {emph2:--output}\n");
+
+    if (ospath_set_cstr(&ctx->output_executable, argv[0]) != 0)
+        return -1;
 
     /* Path to the compiler's architecture/platform directory, e.g.
      * i386/windows/ */
-    if (fs_get_path_to_self(&apdir) != 0)
+    arch_name = target_arch_to_name(ctx->arch);
+    plat_name = target_platform_to_name(ctx->platform);
+    if (fs_get_path_to_self(&ctx->arch_plat_dir) != 0)
         return -1;
-    ospath_dirname(&apdir);
-    ospath_dirname(&apdir);
-    ospath_dirname(&apdir);
-    ospath_dirname(&apdir);
-    ospath_join_cstr(&apdir, target_arch_to_name(ctx->arch));
-    ospath_join_cstr(&apdir, target_platform_to_name(ctx->platform));
-    log_dbg("apdir: {quote:%s}\n", ospath_cstr(apdir));
+    ospath_dirname(&ctx->arch_plat_dir);
+    ospath_dirname(&ctx->arch_plat_dir);
+    ospath_dirname(&ctx->arch_plat_dir);
+    ospath_dirname(&ctx->arch_plat_dir);
+    if (ospath_join_cstr(&ctx->arch_plat_dir, arch_name) != 0)
+        return -1;
+    if (ospath_join_cstr(&ctx->arch_plat_dir, plat_name) != 0)
+        return -1;
 
     /* Location for intermediate files such as object files */
-    ospath_set_cstr(&ctx->odbtmp_dir, outputExe_.c_str());
+    if (ospath_set_cstr(&ctx->odbtmp_dir, argv[0]) != 0)
+        return -1;
     ospath_dirname(&ctx->odbtmp_dir);
-    ospath_join_cstr(&ctx->odbtmp_dir, "_odbtmp");
+    if (ospath_join_cstr(&ctx->odbtmp_dir, "_odbtmp") != 0)
+        return -1;
     // TODO
     // if (fs_dir_exists(ospathc(ctx->odbtmp_dir)))
     //    fs_remove_directory(ospathc(ctx->odbtmp_dir));
-    fs_make_dir(ospathc(ctx->odbtmp_dir));
-    log_dbg("ctx->odbtmp_dir: {quote:%s}\n", ospath_cstr(ctx->odbtmp_dir));
+    if (fs_make_dir(ospathc(ctx->odbtmp_dir)) < 0)
+        return -1;
 
     /* Directory where the compiled executable is written to */
-    struct ospath outdir = empty_ospath();
-    ospath_set_cstr(&outdir, outputExe_.c_str());
-    ospath_dirname(&outdir);
-    log_dbg("outdir: {quote:%s}\n", ospath_cstr(outdir));
+    if (ospath_set_cstr(&ctx->output_dir, argv[0]) != 0)
+        return -1;
+    ospath_dirname(&ctx->output_dir);
 
-    /* Create paths if they don't exist */
-    if (fs_make_path(outdir) != 0)
-    { /* TODO */
+    log_dbg("output_dir    : {quote:%s}\n", ospath_cstr(ctx->output_dir));
+    log_dbg("odbtmp_dir    : {quote:%s}\n", ospath_cstr(ctx->odbtmp_dir));
+    log_dbg("arch_plat_dir : {quote:%s}\n", ospath_cstr(ctx->arch_plat_dir));
+
+    return 0;
+}
+
+struct read_process_ctx
+{
+    struct process* process;
+    int (*read)(struct process*, char*);
+};
+
+static void*
+read_process_until_done(void* param)
+{
+    char                     byte, did_write = 0;
+    struct read_process_ctx* ctx = (struct read_process_ctx*)param;
+    while (ctx->read(ctx->process, &byte) == 1)
+    {
+        log_raw("%c", byte);
+        did_write = 1;
     }
-    return -1;
+    if (did_write && byte != '\n')
+        log_raw("\n");
+    return NULL;
 }
 
 static int
 execute_output(struct cli_ctx* ctx, int argc, char** argv)
 {
-    log_err("Task {quote:execute-output} not yet implemented.\n");
+    int             exit_code;
+    struct process* process;
+    struct thread*  thread;
+    struct ospath   working_dir = empty_ospath();
+    const char* program_argv[] = {ospath_cstr(ctx->output_executable), NULL};
+
+    if (ospath_set(&working_dir, ospathc(ctx->output_executable)) != 0)
+        goto set_working_dir_failed;
+    ospath_dirname(&working_dir);
+
+    log_info("Executing {quote:%s}\n", ospath_cstr(ctx->output_executable));
+    process = process_start(
+        ospathc(ctx->output_executable),
+        ospathc(working_dir),
+        program_argv,
+        PROCESS_STDOUT | PROCESS_STDERR);
+
+    if (process == NULL)
+        goto start_process_failed;
+
+    {
+        struct read_process_ctx read_stdout_ctx = {
+            process,
+            process_read_stdout,
+        };
+        struct read_process_ctx read_stderr_ctx = {
+            process,
+            process_read_stderr,
+        };
+        thread = thread_start(read_process_until_done, &read_stderr_ctx);
+        if (thread == NULL)
+            log_warn(
+                "Failed to start stderr read thread -- There will be no stderr "
+                "output\n");
+        read_process_until_done(&read_stdout_ctx);
+    }
+
+    if (process_wait(process, 0) != 0)
+    {
+        log_warn("Process did not exit cleanly, calling terminate()\n");
+        process_terminate(process);
+        if (process_wait(process, 500) != 0)
+        {
+            log_warn("Process did not terminate after 500ms, calling kill()\n");
+            process_kill(process);
+            process_wait(process, 0);
+        }
+    }
+
+    if (thread)
+        thread_join(thread);
+
+    exit_code = process_join(process);
+    if (exit_code == 0)
+        log_info("Process exited with %d\n", exit_code);
+    else
+        log_err("Process exited with %d\n", exit_code);
+
+    ospath_deinit(working_dir);
+    return exit_code;
+
+start_process_failed:
+set_working_dir_failed:
+    ospath_deinit(working_dir);
     return -1;
 }
 

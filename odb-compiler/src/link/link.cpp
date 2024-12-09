@@ -3,6 +3,7 @@ extern "C" {
 #include "odb-compiler/link/link.h"
 #include "odb-util/fs.h"
 #include "odb-util/log.h"
+#include "odb-util/ospath_list.h"
 }
 
 #include "lld/Common/Driver.h"
@@ -14,10 +15,9 @@ LLD_HAS_DRIVER(elf)
 
 static int
 link_windows(
-    const char*      objs[],
-    int              count,
-    const char*      output_name,
-    enum target_arch arch)
+    struct ospathc_list* obj_files,
+    struct ospathc       output_executable,
+    enum target_arch     arch)
 {
     llvm::SmallVector<const char*> args;
 
@@ -33,26 +33,36 @@ link_windows(
         case TARGET_AArch64: args.push_back("-machine:aarch64"); break;
     }
 
-    std::string outNameArg = "-out:" + std::string(output_name);
+    std::string outNameArg
+        = "-out:"
+          + std::string(output_executable.str.data, output_executable.len);
     args.push_back(outNameArg.c_str());
-    
+
     // Win32 API
-    //args.push_back("Kernel32.lib");
+    // args.push_back("Kernel32.lib");
 
     // C runtime -- All 3 are needed
-    //args.push_back("libucrt.lib");      // /MT of "Universal C-Runtime"
-    //args.push_back("libvcruntime.lib"); // /MT of vcruntime
-    //args.push_back("libcmt.lib");       // /MT of CRT initialization and termination
+    // args.push_back("libucrt.lib");      // /MT of "Universal C-Runtime"
+    // args.push_back("libvcruntime.lib"); // /MT of vcruntime
+    // args.push_back("libcmt.lib");       // /MT of CRT initialization and
+    // termination
 
-    for (int i = 0; i != count; ++i)
-        args.push_back(objs[i]);
+    struct ospathc obj_file;
+    ospathc_for_each(obj_files, obj_file)
+    {
+        args.emplace_back(ospathc_cstr(obj_file));
+    }
 
-    log_dbg("%s\n", [&args] {
-        std::string s;
-        for (const auto& arg : args)
-            s += std::string(" ") + arg;
-        return s;
-    }().c_str());
+    log_dbg(
+        "%s\n",
+        [&args]
+        {
+            std::string s;
+            for (const auto& arg : args)
+                s += std::string(" ") + arg;
+            return s;
+        }()
+            .c_str());
 
     if (lld::coff::link(args, llvm::outs(), llvm::errs(), false, false))
         return 0;
@@ -62,10 +72,9 @@ link_windows(
 
 static int
 link_linux(
-    const char*      objs[],
-    int              count,
-    const char*      output_name,
-    enum target_arch arch)
+    struct ospathc_list* obj_files,
+    struct ospathc       output_executable,
+    enum target_arch     arch)
 {
     llvm::SmallVector<const char*> args;
 
@@ -90,10 +99,13 @@ link_linux(
     }
 
     args.push_back("-o");
-    args.push_back(output_name);
+    args.push_back(ospathc_cstr(output_executable));
 
-    for (int i = 0; i != count; ++i)
-        args.push_back(objs[i]);
+    struct ospathc obj_file;
+    ospathc_for_each(obj_files, obj_file)
+    {
+        args.push_back(ospathc_cstr(obj_file));
+    }
 
     if (fs_file_exists(cstr_ospathc("/usr/lib64/crt1.o")))
         args.push_back("/usr/lib64/crt1.o");
@@ -101,13 +113,17 @@ link_linux(
         args.push_back("/usr/lib/x86_64-linux-gnu/crt1.o");
     args.push_back("-lc");
     args.push_back("-lm");
-    
-    log_dbg("%s\n", [&args] {
-        std::string s;
-        for (const auto& arg : args)
-            s += std::string(" ") + arg;
-        return s;
-    }().c_str());
+
+    log_dbg(
+        "%s\n",
+        [&args]
+        {
+            std::string s;
+            for (const auto& arg : args)
+                s += std::string(" ") + arg;
+            return s;
+        }()
+            .c_str());
 
     if (lld::elf::link(args, llvm::outs(), llvm::errs(), false, false))
         return 0;
@@ -117,9 +133,8 @@ link_linux(
 
 int
 odb_link(
-    const char*          objs[],
-    int                  count,
-    const char*          output_name,
+    struct ospathc_list* obj_files,
+    struct ospathc       output_executable,
     enum target_arch     arch,
     enum target_platform platform)
 {
@@ -127,10 +142,13 @@ odb_link(
     switch (platform)
     {
         case TARGET_WINDOWS:
-            return link_windows(objs, count, output_name, arch);
-        case TARGET_LINUX: return link_linux(objs, count, output_name, arch);
+            return link_windows(obj_files, output_executable, arch);
+        case TARGET_LINUX:
+            return link_linux(obj_files, output_executable, arch);
         case TARGET_MACOS: break;
     }
 
-    return -1;
+    return log_err(
+        "Linking for platform {quote:%s} is not yet implemented.\n",
+        target_platform_to_name(platform));
 }
