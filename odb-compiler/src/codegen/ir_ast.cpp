@@ -1,5 +1,6 @@
 extern "C" {
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/codegen/ir.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/sdk/cmd_list.h"
@@ -557,6 +558,8 @@ create_db_func_table(
     for (ast_id n = 0; n != ast_count(ast); ++n)
     {
         if (ast_node_type(ast, n) != AST_FUNC1)
+            continue;
+        if (ast_node_type(ast, ast_find_parent(ast, n)) == AST_FUNC_POLY)
             continue;
 
         ast_id f2 = ast->nodes[n].func1.func2;

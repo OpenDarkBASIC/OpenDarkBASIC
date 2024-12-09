@@ -47,7 +47,7 @@ ast_delete_tree(struct ast* ast, ast_id node);
 ODBCOMPILER_PUBLIC_API void
 ast_gc(struct ast* ast);
 
-ast_id
+ODBCOMPILER_PUBLIC_API ast_id
 ast_find_parent(const struct ast* ast, ast_id node);
 
 /*!

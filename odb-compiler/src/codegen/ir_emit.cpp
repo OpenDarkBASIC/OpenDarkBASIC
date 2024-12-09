@@ -31,6 +31,7 @@ ir_emit(struct ir_module* ir, const char* filepath)
         return -1;
     }
 
+    log_dbg("Writing object file to {quote:%s}\n", filepath);
     pass.run(ir->Mod);
     dest.flush();
 

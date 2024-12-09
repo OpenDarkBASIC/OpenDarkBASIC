@@ -78,6 +78,13 @@ log_configure(struct log_interface iface)
 }
 
 /* -------------------------------------------------------------------------- */
+int
+log_has_color(void)
+{
+    return g_log.use_color;
+}
+
+/* -------------------------------------------------------------------------- */
 #if defined(ODBUTIL_PLATFORM_WINDOWS)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>

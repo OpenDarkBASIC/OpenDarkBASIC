@@ -174,6 +174,21 @@ cli_ctx_deinit(struct cli_ctx* ctx)
     ospath_deinit(ctx->sdk_root_dir);
 }
 
+static void
+write_stderr(const char* fmt, va_list ap)
+{
+    vfprintf(stderr, fmt, ap);
+    fflush(stderr);
+}
+
+static int
+disable_color(struct cli_ctx* ctx, int argc, char** argv)
+{
+    struct log_interface iface = {write_stderr, 0};
+    log_configure(iface);
+    return 0;
+}
+
 static int
 print_help_impl(const char* prog_name, int argc, char** argv);
 static int
@@ -1016,8 +1031,21 @@ configure_warning(struct cli_ctx* ctx, int argc, char** argv)
 static int
 set_optimization_level(struct cli_ctx* ctx, int argc, char** argv)
 {
-    log_err("Option {quote:--optimization-level} not yet implemented.\n");
-    return -1;
+    if (argc == 0 || argv[0][0] == '-')
+        return log_err("Missing argument to option {emph2:--optimize}\n");
+
+    if (strcmp(argv[0], "0") == 0)
+        return 0;
+    else if (strcmp(argv[0], "1") == 0)
+        return ctx->optimization_level = OPTIMIZE_1;
+    else if (strcmp(argv[0], "2") == 0)
+        return ctx->optimization_level = OPTIMIZE_2;
+    else if (strcmp(argv[0], "3") == 0)
+        return ctx->optimization_level = OPTIMIZE_3;
+    else
+        return log_err("Unrecognized optimization level {quote:%s}\n", argv[0]);
+
+    return 0;
 }
 
 static int
@@ -1123,9 +1151,9 @@ generate_ir_from_ast(struct worker* worker, int tu_id)
     objfilepath = empty_ospath();
 
     srcfilename = ospath_list_get(ctx->filenames, tu_id);
+    ospathc_filename(&srcfilename);
     if (ospath_set(&module_name, srcfilename) != 0)
         goto set_module_name_failed;
-    ospath_filename(&module_name);
     ospath_remove_ext(&module_name);
     log_dbg("module_name: {quote:%s}\n", ospath_cstr(module_name));
 
@@ -1158,14 +1186,13 @@ generate_ir_from_ast(struct worker* worker, int tu_id)
 
     if (ospath_len(ctx->odbtmp_dir))
     {
-        ospathc_filename(&srcfilename);
         if (ospath_set(&objfilepath, ospathc(ctx->odbtmp_dir)) != 0)
             goto emit_ir_failed;
         if (ospath_join(&objfilepath, srcfilename) != 0)
             goto emit_ir_failed;
         if (utf8_append_cstr(&objfilepath.str, ".o") != 0)
             goto emit_ir_failed;
-        if (ir_emit(ir, ospath_cstr(module_name)) != 0)
+        if (ir_emit(ir, ospath_cstr(objfilepath)) != 0)
             goto emit_ir_failed;
 
         mutex_lock(worker->mutex);
@@ -1314,7 +1341,18 @@ create_dump_mutex_failed:
 }
 
 static const char*
-get_runtime_lib_filename(enum sdk_type sdk, enum target_platform platform)
+get_sdk_runtime_path(enum sdk_type sdk)
+{
+    switch (sdk)
+    {
+        case SDK_ODB: return "odb-sdk/runtime";
+        case SDK_DBPRO: return "dbp-sdk/runtime";
+    }
+    return "";
+}
+
+static const char*
+get_sdk_runtime_lib_filename(enum sdk_type sdk, enum target_platform platform)
 {
     switch (sdk)
     {
@@ -1330,7 +1368,7 @@ get_runtime_lib_filename(enum sdk_type sdk, enum target_platform platform)
         case SDK_DBPRO:
             switch (platform)
             {
-                case TARGET_WINDOWS: return "dbp-runtime.lib";
+                case TARGET_WINDOWS: return "dbp-runtime.dll";
                 case TARGET_LINUX: return "libdbp-runtime.so";
                 case TARGET_MACOS: return "libdbp-runtime.dylib";
             }
@@ -1340,7 +1378,7 @@ get_runtime_lib_filename(enum sdk_type sdk, enum target_platform platform)
 }
 
 static const char*
-get_runtime_bin_filename(enum sdk_type sdk, enum target_platform platform)
+get_sdk_runtime_bin_filename(enum sdk_type sdk, enum target_platform platform)
 {
     switch (sdk)
     {
@@ -1366,7 +1404,7 @@ get_runtime_bin_filename(enum sdk_type sdk, enum target_platform platform)
 }
 
 static const char*
-get_odbutil_filename(enum target_platform platform)
+get_odbutil_bin_filename(enum target_platform platform)
 {
     switch (platform)
     {
@@ -1385,9 +1423,12 @@ link_executable(struct cli_ctx* ctx, int argc, char** argv)
     struct ospath dstpath = empty_ospath();
 
     /* Add runtime library to object file list */
-    filename = get_runtime_lib_filename(ctx->sdk, ctx->platform);
     if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
         goto failed;
+    filename = get_sdk_runtime_path(ctx->sdk);
+    if (ospath_join_cstr(&srcpath, filename) != 0)
+        goto failed;
+    filename = get_sdk_runtime_lib_filename(ctx->sdk, ctx->platform);
     if (ospath_join_cstr(&srcpath, filename) != 0)
         goto failed;
     if (ospath_list_add(&ctx->obj_files, ospathc(srcpath)) != 0)
@@ -1417,16 +1458,18 @@ link_executable(struct cli_ctx* ctx, int argc, char** argv)
 
     if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
         goto failed;
+    filename = get_sdk_runtime_path(ctx->sdk);
+    if (ospath_join_cstr(&srcpath, filename) != 0)
+        goto failed;
+    filename = get_sdk_runtime_lib_filename(ctx->sdk, ctx->platform);
+    if (ospath_join_cstr(&srcpath, filename) != 0)
+        goto failed;
+
     if (ospath_set(&dstpath, ospathc(ctx->output_dir)) != 0)
         goto failed;
-    if (ospath_join_cstr(
-            &srcpath, get_runtime_bin_filename(ctx->sdk, ctx->platform))
-        != 0)
+    if (ospath_join_cstr(&dstpath, filename) != 0)
         goto failed;
-    if (ospath_join_cstr(
-            &dstpath, get_runtime_bin_filename(ctx->sdk, ctx->platform))
-        != 0)
-        goto failed;
+
     if (fs_copy_file_if_newer(ospathc(srcpath), ospathc(dstpath)) != 0)
         goto failed;
 
@@ -1434,14 +1477,17 @@ link_executable(struct cli_ctx* ctx, int argc, char** argv)
     {
         if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
             goto failed;
+        if (ospath_join_cstr(&srcpath, "lib") != 0)
+            goto failed;
+        filename = get_odbutil_bin_filename(ctx->platform);
+        if (ospath_join_cstr(&srcpath, filename) != 0)
+            goto failed;
+
         if (ospath_set(&dstpath, ospathc(ctx->output_dir)) != 0)
             goto failed;
-        if (ospath_join_cstr(&srcpath, get_odbutil_filename(ctx->platform))
-            != 0)
+        if (ospath_join_cstr(&dstpath, filename) != 0)
             goto failed;
-        if (ospath_join_cstr(&dstpath, get_odbutil_filename(ctx->platform))
-            != 0)
-            goto failed;
+
         if (fs_copy_file_if_newer(ospathc(srcpath), ospathc(dstpath)) != 0)
             goto failed;
     }
@@ -1651,7 +1697,7 @@ static const char* banner =
     /* clang-format on */
 
     log_raw(
-        banner,
+        log_has_color() ? banner : banner_no_color,
         build_info_url(),
         build_info_version(),
         build_info_commit_hash());

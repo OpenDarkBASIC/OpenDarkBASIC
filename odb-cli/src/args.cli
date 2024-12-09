@@ -1,12 +1,19 @@
 section: info {
     en_US: "Build information."
     
+    option: no-color {
+        en_US: "Disable color output."
+        short: 'c'
+        func: disable_color
+    }
+
     option: help {
         en_US: "Print this help text, or print help about a specific section,"
                 " or print everything by specifying \"all\""
         short: 'h'
         args: [all|name]
         func: print_help
+        runafter: no-color
     }
 
     option: version {
@@ -88,7 +95,7 @@ section: sdk {
 
     task: setup-sdk {
         func: setup_sdk
-        runafter: { arch, platform, sdk-root, sdk-type, plugins }
+        runafter: { no-color, arch, platform, sdk-root, sdk-type, plugins }
     }
 
     option: sdk {
@@ -195,7 +202,7 @@ section: codegen {
 
     task: generate-object-files {
         func: generate_object_files
-        runafter: { ir, output, semantic-checks }
+        runafter: { ir, optimize, output, semantic-checks }
     }
 
     task: link-executable {

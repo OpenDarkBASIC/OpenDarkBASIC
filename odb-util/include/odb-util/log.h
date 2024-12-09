@@ -30,6 +30,8 @@ log_deinit(void);
 
 ODBUTIL_PUBLIC_API struct log_interface
 log_configure(struct log_interface iface);
+ODBUTIL_PUBLIC_API int
+log_has_color(void);
 
 /* clang-format off */
 

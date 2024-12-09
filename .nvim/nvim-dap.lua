@@ -101,7 +101,7 @@ dap.configurations.cpp = {
             end
             local dba_file = vim.fn.input('Path to DBA: ', last_dba, 'file')
             local output = "${workspaceFolder}/build-Debug/bin/" .. vim.fs.basename(dba_file) .. ".exe"
-            return { "-b", "-c", "--dba", dba_file, "--output", output, "--exec" }
+            return { "-c", "--dba", dba_file, "--output", output, "--exec" }
         end,
     },
     {
@@ -114,7 +114,7 @@ dap.configurations.cpp = {
         args        = function()
             local extra_args = vim.fn.input('Extra args: ')
             local args = {
-                "-b",
+                "-c",
                 "--dba",
                 "${workspaceFolder}/build-Debug/bin/playground/playground.dba",
                 "--output",
@@ -141,7 +141,7 @@ dap.configurations.cpp = {
         type = "lldb",
         request = "launch",
         program = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-asttool",
-        cwd = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin",
+        cwd = "${workspaceFolder}/build-Debug/bin/playground",
         stopOnEntry = false,
         args = { "-i", "playground.dba.ast", "--types" },
     },

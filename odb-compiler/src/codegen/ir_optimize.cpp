@@ -9,6 +9,10 @@
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
 #include "llvm/Transforms/Utils/Mem2Reg.h"
 
+extern "C" {
+#include "odb-util/log.h"
+}
+
 int
 ir_optimize_old(struct ir_module* ir)
 {
@@ -71,6 +75,8 @@ ir_optimize(struct ir_module* ir, enum optimization_level level)
 {
     if (level == OPTIMIZE_NONE)
         return 0;
+
+    log_dbg("Optimizing level %d\n", level);
 
     // Create the analysis managers.
     // These must be declared in this order so that they are destroyed in the
