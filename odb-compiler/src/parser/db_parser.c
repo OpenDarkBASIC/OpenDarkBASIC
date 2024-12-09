@@ -108,8 +108,15 @@ get_next_assembled_token(
      * If neither of these steps succeed, then we leave it as a TOK_IDENTIFIER.
      */
     if (token->pushed_char == TOK_IDENTIFIER
-        || token->pushed_char == TOK_INTEGER_LITERAL) /* Commands can start with
-                                                         an integer literal */
+        /* Annotated identifiers such as "str$" have their own tokens */
+        || token->pushed_char == TOK_IDENTIFIER_BOOLEAN
+        || token->pushed_char == TOK_IDENTIFIER_WORD
+        || token->pushed_char == TOK_IDENTIFIER_DOUBLE_INTEGER
+        || token->pushed_char == TOK_IDENTIFIER_FLOAT
+        || token->pushed_char == TOK_IDENTIFIER_DOUBLE
+        || token->pushed_char == TOK_IDENTIFIER_STRING
+        /* Commands can start with an integer literal */
+        || token->pushed_char == TOK_INTEGER_LITERAL)
     {
         int              i, longest_match_token_idx = -1;
         struct utf8_span candidate = token->pushed_location;
@@ -174,7 +181,8 @@ get_next_assembled_token(
 
     /* This identifier could be a keyword */
     token = token_queue_peek_read(*tokens);
-    if (token->pushed_char == TOK_IDENTIFIER)
+    if (token->pushed_char == TOK_IDENTIFIER
+        || token->pushed_char == TOK_COMMAND)
     {
         dbtoken_kind_t keyword
             = db_keyword_lookup(source, token->pushed_location);

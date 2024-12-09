@@ -261,7 +261,7 @@
 %type<node_value> select caselist case
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_for_init loop_next loop_cont loop_exit
 %type<string_value> loop_name
-%type<node_value> type as_type_auto maybe_as_type
+%type<node_value> type as_type as_type_auto maybe_as_type
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
 %type<node_value> identifier
@@ -352,7 +352,7 @@ expr
   | expr BSHL expr                          { $$ = ast_binop(ctx->astp, BINOP_SHIFT_LEFT, $1, $3, @2, @$); }
   | expr BSHR expr                          { $$ = ast_binop(ctx->astp, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
-  | expr AS type                            { $$ = ast_cast(ctx->astp, $1, $3, @$); }
+  | expr as_type                            { $$ = ast_cast(ctx->astp, $1, $2, @$); }
   | command_expr                            { $$ = $1; }
   | rvalue                                  { $$ = $1; }
   | literal                                 { $$ = $1; }
@@ -378,7 +378,7 @@ maybe_paramlist
   |                                         { $$ = -1; }
   ;
 param
-  : identifier AS type                      { $$ = ast_param(ctx->astp, $1, $3, @$); }
+  : identifier as_type                      { $$ = ast_param(ctx->astp, $1, $2, @$); }
   | identifier                              { $$ = ast_param(ctx->astp, $1, -1, @$); }
   ;
 load_plugin
@@ -403,7 +403,7 @@ typelist
   | typelist_entry                          { $$ = $1; }
   ;
 typelist_entry
-  : IDENTIFIER AS type                      { $$ = ast_typelist(ctx->astp, $1, $3, @$); }
+  : IDENTIFIER as_type                      { $$ = ast_typelist(ctx->astp, $1, $2, @$); }
   | type                                    { $$ = ast_typelist(ctx->astp, empty_utf8_span(), $1, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
@@ -439,8 +439,8 @@ assignment
   : lvalue '=' expr                         { $$ = ast_assign(ctx->astp, $1, $3, @2, @$); }
   ;
 var_decl
-  : scope identifier AS type                { $$ = ast_var_decl(ctx->astp, $2, $4, -1, $1, @1, empty_utf8_span(), @$); }
-  | identifier AS type                      { $$ = ast_var_decl(ctx->astp, $1, $3, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
+  : scope identifier as_type                { $$ = ast_var_decl(ctx->astp, $2, $3, -1, $1, @1, empty_utf8_span(), @$); }
+  | identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
   | scope identifier                        { $$ = ast_var_decl(ctx->astp, $2, -1, -1, $1, @1, empty_utf8_span(), @$); }
   | scope identifier as_type_auto '=' expr  { $$ = ast_var_decl(ctx->astp, $2, $3, $5, $1, @1, @4, @$); }
   | identifier as_type_auto '=' expr        { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
@@ -463,7 +463,7 @@ udt_members
   | udt_member_decl                         { $$ = ast_block(ctx->astp, $1, @$); }
   ;
 udt_member_decl
-  : identifier AS type                      { $$ = ast_var_decl(ctx->astp, $1, $3, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
+  : identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
   | identifier as_type_auto '=' expr        { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
   ;
 inc
@@ -556,7 +556,7 @@ loop_for
   ;
 loop_for_init
   : assignment                              { $$ = $1; }
-  | identifier AS type '=' expr             { $$ = ast_var_decl(ctx->astp, $1, $3, $5, SCOPE_LOCAL, @1, @3, @$); }
+  | identifier as_type '=' expr             { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
   ;
 loop_next
   : NEXT rvalue                             { $$ = $2; }
@@ -631,12 +631,16 @@ type
   | TYPE '(' expr ')'                       { $$ = ast_as_expr(ctx->astp, $3, @$); }
   | IDENTIFIER                              { $$ = ast_as_udt(ctx->astp, $1, @$); }
   ;
+/* This is to merge the locations of "as" and "type" */
+as_type
+  : AS type                                 { $$ = $2; (*ctx->astp)->nodes[$$].info.location = utf8_span_union(@1, @2); }
+  ;
 maybe_as_type
-  : AS type                                 { $$ = $2; }
+  : as_type                                 { $$ = $1; }
   |                                         { $$ = -1; }
   ;
 as_type_auto
-  : AS type                                 { $$ = $2; }
+  : as_type                                 { $$ = $1; }
   | AS                                      { $$ = ast_as_auto(ctx->astp, @$); }
   ;
 %%

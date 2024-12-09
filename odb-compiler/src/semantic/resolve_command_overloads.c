@@ -287,17 +287,20 @@ report_ambiguous_overloads(
             ret_type.primitive == TYPE_VOID ? " " : "(");
         for (arg_idx = 0; arg_idx != utf8_list_count(param_names); ++arg_idx)
         {
-            char fmt[26];
+            char             fmt[28];
+            struct utf8_view arg_tname
+                = type_name(param_types->data[arg_idx].type, ast, source);
             if (arg_idx)
                 log_raw(", ");
             if (arg_is_highlighted(arg_positions, arg_idx, hl_count))
-                sprintf(fmt, "{emph%d:%%s AS %%s}", arg_idx);
+                sprintf(fmt, "{emph%d:%%s AS %%.*s}", arg_idx);
             else
-                strcpy(fmt, "%s AS %s");
+                strcpy(fmt, "%s AS %.*s");
             log_raw(
                 fmt,
                 utf8_list_cstr(param_names, arg_idx),
-                param_types->data[arg_idx].type);
+                arg_tname.len,
+                arg_tname.data + arg_tname.off);
         }
         log_raw("%s  ", ret_type.primitive == TYPE_VOID ? "" : ")");
         log_raw("[%s]\n", utf8_cstr(plugin->name));
@@ -314,7 +317,7 @@ report_ambiguous_overloads(
          arg = ast->nodes[arg].arglist.next, ++arg_idx)
     {
         ast_id               expr = ast->nodes[arg].arglist.expr;
-        struct utf8_view     ins = cstr_utf8_view("AS <TYPE>");
+        struct utf8_view     ins = cstr_utf8_view(" AS <TYPE>");
         struct utf8_view     ann = empty_utf8_view();
         struct utf8_span     loc = ast_loc(ast, expr);
         utf8_idx             loc_end = loc.off + loc.len;

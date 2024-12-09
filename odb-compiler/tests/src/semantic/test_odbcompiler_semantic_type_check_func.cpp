@@ -220,6 +220,19 @@ TEST_F(NAME, pass_byte_to_func_with_different_arguments_inserts_casts)
     ASSERT_THAT(ast_node_type(ast, arg2), Eq(AST_CAST));
     ASSERT_THAT(ast_type_info(ast, arg1).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, arg2).primitive, Eq(TYPE_F32));
+
+    EXPECT_THAT(log(), LogEq(
+        "test:1:8\n"
+        "warning: Implicit conversion of 2nd argument from BYTE to FLOAT in function call.\n"
+        " 1 | sum(2, 3)\n"
+        "   |        ^ BYTE\n"
+        "test:2:30\n"
+        "note: Function parameter type is declared here:\n"
+        " 2 | FUNCTION sum(a AS INTEGER, b AS FLOAT)\n"
+        "   |                              ^~~~~~~~<\n"
+        "help: Insert an explicit cast to silence this warning:\n"
+        " 1 | sum(2, 3 AS FLOAT)\n"
+        "   |         ^~~~~~~~<\n"));
 }
 
 TEST_F(NAME, func_call_is_cast_to_correct_type)

@@ -1610,7 +1610,7 @@ warn_loop_for_wrong_direction_no_step(
     struct ospathc    filename,
     const char*       source)
 {
-    struct utf8_view ins = cstr_utf8_view(" STEP 1");
+    struct utf8_view ins = cstr_utf8_view(" STEP -1");
     struct utf8_view ann = empty_utf8_view();
 
     struct utf8_span loc

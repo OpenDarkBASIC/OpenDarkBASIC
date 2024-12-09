@@ -990,7 +990,6 @@ gen_source(
 #else
             "        \"./odb-cli\"," NL
 #endif
-            "        \"-b\"," NL
             "        \"--dba\"," NL
             "        \"--output\"," NL
 #if defined(_WIN32)

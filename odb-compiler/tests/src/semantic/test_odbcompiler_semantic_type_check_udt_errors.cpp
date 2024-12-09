@@ -73,7 +73,7 @@ TEST_F(NAME, read_variable_as_udt)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(-1));
     EXPECT_THAT(
         log(),
-        LogEq("test:6:9\n"
+        LogEq("test:6:5\n"
               "error: `bar' is not a User-Defined Type.\n"
               " 6 | a = bar.z\n"
               "   |     ^~<\n"

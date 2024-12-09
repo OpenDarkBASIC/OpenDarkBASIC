@@ -140,12 +140,12 @@ TEST_F(NAME, excerpt_3_one_sized_locations_on_same_line)
     struct utf8_view     ann1 = cstr_utf8_view("test1");
     struct utf8_view     ann2 = cstr_utf8_view("test2");
     struct utf8_view     ann3 = cstr_utf8_view("test3");
-    struct log_highlight inst[]
+    struct log_highlight hl[]
         = {{ins, ann1, {23, 1}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
            {ins, ann2, {27, 1}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
            {ins, ann3, {29, 1}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
            {0}};
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
 
     // clang-format off
     EXPECT_THAT(
@@ -170,12 +170,12 @@ TEST_F(NAME, excerpt_3_wrap_to_next_line)
     struct utf8_view     ann1 = cstr_utf8_view("test1");
     struct utf8_view     ann2 = cstr_utf8_view("test2");
     struct utf8_view     ann3 = cstr_utf8_view("test3");
-    struct log_highlight inst[]
+    struct log_highlight hl[]
         = {{ins, ann1, {23, 5}, LOG_HIGHLIGHT, LOG_MARKERS, 0},  // a = 5
            {ins, ann2, {34, 15}, LOG_HIGHLIGHT, LOG_MARKERS, 0}, // a = 7 .. print
            {ins, ann3, {50, 4}, LOG_HIGHLIGHT, LOG_MARKERS, 0},  // str$
            {0}};
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
 
     EXPECT_THAT(
         log(),
@@ -197,27 +197,27 @@ TEST_F(NAME, excerpt_3_wrap_to_next_line_overlapping_annotations)
 
     /* clang-format off */
     struct utf8_view     ins = empty_utf8_view();
-    struct utf8_view     ann1 = cstr_utf8_view("test1");
-    struct utf8_view     ann2 = cstr_utf8_view("test2");
+    struct utf8_view     ann1 = cstr_utf8_view("very long annotation");
+    struct utf8_view     ann2 = cstr_utf8_view("another long annotation");
     struct utf8_view     ann3 = cstr_utf8_view("test3");
-    struct log_highlight inst[] = {
-        {ins, ann1, {23, 5}, LOG_HIGHLIGHT, LOG_MARKERS, 0},  // a = 1
-        {ins, ann2, {29, 4}, LOG_HIGHLIGHT, LOG_MARKERS, 1}, // then
+    struct utf8_view     ann4 = cstr_utf8_view("test4");
+    struct log_highlight hl[] = {
+        {ins, ann1, {23, 5},  LOG_HIGHLIGHT, LOG_MARKERS, 0}, // a = 5
+        {ins, ann2, {29, 4},  LOG_HIGHLIGHT, LOG_MARKERS, 1}, // then
         {ins, ann3, {34, 15}, LOG_HIGHLIGHT, LOG_MARKERS, 2}, // a = 7 .. print
-        {empty_utf8_view(), cstr_utf8_view("test3"), {50, 4}, LOG_HIGHLIGHT, LOG_MARKERS, 3},  // str$
+        {ins, ann4, {50, 4},  LOG_HIGHLIGHT, LOG_MARKERS, 3},  // str$
         LOG_HIGHLIGHT_SENTINAL
     };
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
 
     EXPECT_THAT(
         log(),
         LogEq(" 2 | if {emph0}a = 5{reset} {emph1}then{reset} {emph2}a = 7{reset}\n"
-              "   |    {emph0}^~~~<{reset} {emph1}^~~<{reset} {emph2}^~~~~{reset} {emph2}test2{reset}\n"
+              "   |    {emph0}^~~~<{reset} {emph1}^~~<{reset} {emph2}^~~~~{reset} {emph2}test3{reset}\n"
               "   |    {emph0}|{reset}     {emph1}another long annotation{reset}\n"
               "   |    {emph0}very long annotation{reset}\n"
               " 3 | {emph2}print{reset} {emph0}str${reset}(a)\n"
-              "   | {emph2}~~~~<{reset} {emph0}^~~<{reset} {emph0}test3{reset}\n"));
-    /*clang-format on */
+              "   | {emph2}~~~~<{reset} {emph0}^~~<{reset} {emph0}test4{reset}\n"));
 }
 
 TEST_F(NAME, excerpt_binop_one_sized_lhs_location)
@@ -455,11 +455,11 @@ TEST_F(NAME, insert_excerpt1)
     struct utf8_view     ins1 = cstr_utf8_view("(");
     struct utf8_view     ins2 = cstr_utf8_view(") <> 0");
     struct utf8_view     ann = empty_utf8_view();
-    struct log_highlight inst[]
+    struct log_highlight hl[]
         = {{ins1, ann, {23, ins1.len}, LOG_INSERT, LOG_MARKERS, 0},
            {ins2, ann, {28, ins2.len}, LOG_INSERT, LOG_MARKERS, 0},
            {0}};
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
 
     // clang-format off
     EXPECT_THAT(
@@ -480,11 +480,11 @@ TEST_F(NAME, insert_excerpt2)
     struct utf8_view     ins1 = cstr_utf8_view("(");
     struct utf8_view     ins2 = cstr_utf8_view(") <> 0");
     struct utf8_view     ann = empty_utf8_view();
-    struct log_highlight inst[]
+    struct log_highlight hl[]
         = {{ins1, ann, {23, ins1.len}, LOG_INSERT, LOG_MARKERS, 0},
            {ins2, ann, {28, ins2.len}, LOG_INSERT, LOG_MARKERS, 0},
            {0}};
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
 
     // clang-format off
     EXPECT_THAT(
@@ -505,11 +505,11 @@ TEST_F(NAME, insert_excerpt3)
     struct utf8_view     ins1 = cstr_utf8_view("(0 + ");
     struct utf8_view     ins2 = cstr_utf8_view(") <> 0");
     struct utf8_view     ann = empty_utf8_view();
-    struct log_highlight inst[]
+    struct log_highlight hl[]
         = {{ins1, ann, {23, ins1.len}, LOG_INSERT, LOG_MARKERS, 0},
            {ins2, ann, {28, ins2.len}, LOG_INSERT, LOG_MARKERS, 0},
            {0}};
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
 
     // clang-format off
     EXPECT_THAT(
@@ -533,12 +533,12 @@ TEST_F(NAME, insert_and_highlight_excerpt)
     struct utf8_view     ann2 = cstr_utf8_view("test1");
     struct utf8_view     ins3 = cstr_utf8_view(") <> 0");
     struct utf8_view     ann3 = cstr_utf8_view("test2");
-    struct log_highlight inst[]
+    struct log_highlight hl[]
         = {{ins1, ann1, {23, ins1.len}, LOG_INSERT, LOG_MARKERS, 1},
            {ins2, ann2, {23, 5}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
            {ins3, ann3, {28, ins3.len}, LOG_INSERT, LOG_MARKERS, 1},
            {0}};
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
 
     // clang-format off
     EXPECT_THAT(
@@ -557,9 +557,9 @@ TEST_F(NAME, issue)
 
     struct utf8_view           ins = cstr_utf8_view(" STEP 1");
     struct utf8_view           ann = empty_utf8_view();
-    const struct log_highlight inst[]
+    const struct log_highlight hl[]
         = {{ins, ann, {12, ins.len}, LOG_INSERT, LOG_MARKERS, 0}, {0}};
-    log_excerpt(source, inst);
+    log_excerpt(source, hl);
     EXPECT_THAT(
         log(),
         LogEq(" 1 | for n=a to b{insert} STEP 1{reset}\n"
