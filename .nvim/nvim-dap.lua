@@ -145,6 +145,14 @@ dap.configurations.cpp = {
         stopOnEntry = false,
         args = { "-i", "playground.dba.ast", "--types" },
     },
+    {
+        name = "Editor",
+        type = "lldb",
+        request = "launch",
+        program = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin/odb-editor",
+        cwd = "${workspaceFolder}/build-Debug/bin/x86_64/linux/bin",
+        stopOnEntry = false,
+    },
 }
 
 dap.configurations.c = dap.configurations.cpp

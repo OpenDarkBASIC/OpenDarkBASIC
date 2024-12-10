@@ -80,10 +80,54 @@ property_panel_new(void)
 static GtkWidget*
 plugin_view_new(void)
 {
-    //GtkWidget* notebook = gtk_notebook_new();
-    //g_signal_connect(notebook, "page-removed", G_CALLBACK(page_removed), NULL);
-    //return notebook;
-    GtkWidget* editor = gtk_source_view_new();
+    // GtkWidget* notebook = gtk_notebook_new();
+    // g_signal_connect(notebook, "page-removed", G_CALLBACK(page_removed),
+    // NULL); return notebook;
+    GtkTextTagTable* tag_table = gtk_text_tag_table_new();
+    GtkSourceBuffer* buffer = gtk_source_buffer_new(tag_table);
+    gtk_text_buffer_set_text(
+        GTK_TEXT_BUFFER(buffer), "for n = 1 to 10\n    print n\nnext n\n", -1);
+
+    GtkTextTag* keyword = gtk_source_buffer_create_source_tag(
+        buffer, "keyword", "foreground", "red", NULL);
+    GtkTextTag* number = gtk_source_buffer_create_source_tag(
+        buffer, "number", "foreground", "blue", NULL);
+    GtkTextTag* operator = gtk_source_buffer_create_source_tag(
+        buffer, "operator", "foreground", "cyan", NULL);
+
+    GtkTextIter start, end;
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &start, 0);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &end, 3);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(buffer), keyword, &start, &end);
+
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &start, 6);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &end, 7);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(buffer), operator, &start, &end);
+
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &start, 8);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &end, 9);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(buffer), number, &start, &end);
+
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &start, 10);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &end, 12);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(buffer), keyword, &start, &end);
+
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &start, 14);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &end, 16);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(buffer), number, &start, &end);
+
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &start, 20);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &end, 25);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(buffer), keyword, &start, &end);
+
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &start, 28);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(buffer), &end, 32);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(buffer), keyword, &start, &end);
+
+    GtkWidget* editor = gtk_source_view_new_with_buffer(buffer);
+    gtk_source_view_set_show_line_marks(GTK_SOURCE_VIEW(editor), TRUE);
+    gtk_source_view_set_show_line_numbers(GTK_SOURCE_VIEW(editor), TRUE);
+    gtk_source_view_set_show_right_margin(GTK_SOURCE_VIEW(editor), TRUE);
     return editor;
 }
 
