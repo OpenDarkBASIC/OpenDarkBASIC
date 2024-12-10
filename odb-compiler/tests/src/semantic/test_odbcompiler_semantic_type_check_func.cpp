@@ -229,7 +229,7 @@ TEST_F(NAME, pass_byte_to_func_with_different_arguments_inserts_casts)
         "test:2:30\n"
         "note: Function parameter type is declared here:\n"
         " 2 | FUNCTION sum(a AS INTEGER, b AS FLOAT)\n"
-        "   |                              ^~~~~~~~<\n"
+        "   |                              ^~~~~~~<\n"
         "help: Insert an explicit cast to silence this warning:\n"
         " 1 | sum(2, 3 AS FLOAT)\n"
         "   |         ^~~~~~~~<\n"));

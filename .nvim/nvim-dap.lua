@@ -5,8 +5,8 @@ dap.set_log_level("TRACE")
 
 dap.adapters.lldb = {
     type = "executable",
-    command = "/usr/bin/lldb-dap",
-    name = "lldb"
+    command = "/usr/bin/lldb-dap-18",
+    name = "lldb",
 }
 
 dap.configurations.cpp = {
@@ -164,7 +164,7 @@ dap.configurations.basic = {
             end
             local dba_file = vim.fn.input('Path to DBA: ', last_dba, 'file')
             local output = "${workspaceFolder}/build-Debug/bin/" .. vim.fs.basename(dba_file) .. ".exe"
-            return { "-b", "-c", "--dba", dba_file, "--output", output, "--exec" }
+            return { "-c", "--dba", dba_file, "--output", output, "--exec" }
         end,
     },
 }
