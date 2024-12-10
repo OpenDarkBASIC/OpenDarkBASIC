@@ -1,0 +1,14 @@
+#pragma once
+#define DATADIR "${gtksourceview_DATADIR}"
+#define DEVELOPMENT_BUILD ${gtksourceview_DEVELOPMENT_BUILD}
+#define ENABLE_FONT_CONFIG ${gtksourceview_ENABLE_FONT_CONFIG}
+#define GETTEXT_PACKAGE "${gtksourceview_GETTEXT_PACKAGE}"
+#define GSV_API_VERSION ${gtksourceview_GSV_API_VERSION}
+#define GSV_API_VERSION_S "${gtksourceview_GSV_API_VERSION}"
+#define HAVE_MEMALIGN ${gtksourceview_HAVE_MEMALIGN}
+#define HAVE_UNISTD_H ${gtksourceview_HAVE_UNISTD_H}
+#define HICOLORDIR "${gtksourceview_HICOLORDIR}"
+#define PACKAGE_DATADIR "${gtksourceview_PACKAGE_DATADIR}"
+#define PACKAGE_VERSION ${gtksourceview_PACKAGE_VERSION}
+#define _GTK_SOURCE_EXTERN ${gtksourceview__GTK_SOURCE_EXTERN}
+

@@ -1,0 +1,19 @@
+option('install_tests',
+       type: 'boolean', value: false,
+       description: 'Install test programs')
+
+option('introspection',
+       type: 'feature', value: 'auto',
+       description: 'Generate gir data (requires gobject-introspection)')
+
+option('vapi',
+       type: 'boolean', value: true,
+       description: 'Generate vapi data (requires vapigen)')
+
+option('gtk_doc',
+       type: 'boolean', value: false,
+       description: 'Build reference manual (requires gtk-doc)')
+
+option('sysprof',
+       type: 'boolean', value: false,
+       description: 'Build with sysprof profiler support')

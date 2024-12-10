@@ -1,0 +1,87 @@
+/*** BEGIN file-header ***/
+#include "gtksource-enumtypes.h"
+#include "gtksource.h"
+#include "gtksourcebuffer.h"
+#include "gtksourcecompletion.h"
+#include "gtksourcecompletioncell.h"
+#include "gtksourcecompletioncontext.h"
+#include "gtksourcecompletionprovider.h"
+#include "gtksourcecompletionproposal.h"
+#include "gtksourceencoding.h"
+#include "gtksourcefile.h"
+#include "gtksourcefileloader.h"
+#include "gtksourcefilesaver.h"
+#include "gtksourcegutter.h"
+#include "gtksourcegutterrenderer.h"
+#include "gtksourcegutterrendererpixbuf.h"
+#include "gtksourcegutterrenderertext.h"
+#include "gtksourcehover.h"
+#include "gtksourcehovercontext.h"
+#include "gtksourcehoverprovider.h"
+#include "gtksourcehoverdisplay.h"
+#include "gtksourceindenter.h"
+#include "gtksourceinit.h"
+#include "gtksourcelanguage.h"
+#include "gtksourcelanguagemanager.h"
+#include "gtksourcegutterlines.h"
+#include "gtksourcemap.h"
+#include "gtksourcemark.h"
+#include "gtksourcemarkattributes.h"
+#include "gtksourceprintcompositor.h"
+#include "gtksourceregion.h"
+#include "gtksourcescheduler.h"
+#include "gtksourcesearchcontext.h"
+#include "gtksourcesearchsettings.h"
+#include "gtksourcesnippet.h"
+#include "gtksourcesnippetchunk.h"
+#include "gtksourcesnippetcontext.h"
+#include "gtksourcesnippetmanager.h"
+#include "gtksourcespacedrawer.h"
+#include "gtksourcestyle.h"
+#include "gtksourcestylescheme.h"
+#include "gtksourcestyleschemechooser.h"
+#include "gtksourcestyleschemechooserbutton.h"
+#include "gtksourcestyleschemechooserwidget.h"
+#include "gtksourcestyleschememanager.h"
+#include "gtksourcestyleschemepreview.h"
+#include "gtksourcetag.h"
+#include "gtksourcetypes.h"
+#include "gtksourceutils.h"
+#include "gtksourceview.h"
+#include "gtksourcevimimcontext.h"
+
+/*** END file-header ***/
+
+/*** BEGIN file-production ***/
+/* enumerations from "@basename@" */
+/*** END file-production ***/
+
+/*** BEGIN value-header ***/
+GType
+@enum_name@_get_type (void)
+{
+ static gsize static_g_@type@_type_id;
+
+ if (g_once_init_enter (&static_g_@type@_type_id))
+   {
+     static const G@Type@Value values[] = {
+/*** END value-header ***/
+
+/*** BEGIN value-production ***/
+           { @VALUENAME@, "@VALUENAME@", "@valuenick@" },
+/*** END value-production ***/
+
+/*** BEGIN value-tail ***/
+           { 0, NULL, NULL }
+     };
+
+     GType g_@type@_type_id =
+       g_@type@_register_static (g_intern_static_string ("@EnumName@"), 
+values);
+
+     g_once_init_leave (&static_g_@type@_type_id, g_@type@_type_id);
+   }
+ return static_g_@type@_type_id;
+}
+
+/*** END value-tail ***/
