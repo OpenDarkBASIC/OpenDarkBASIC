@@ -25,14 +25,12 @@ macro (odb_cligen_target name)
         INPUT
         OUTPUT)
     set (odb_cligen_target_PARAM_MULTI_VALUE_KEYWORDS)
-
     cmake_parse_arguments (
         odb_cligen_target_arg
         "${odb_cligen_target_PARAM_OPTIONS}"
         "${odb_cligen_target_PARAM_ONE_VALUE_KEYWORDS}"
         "${odb_cligen_target_PARAM_MULTI_VALUE_KEYWORDS}"
         ${ARGN})
-
     if (NOT "${odb_cligen_target_arg_UNPARSED_ARGUMENTS}" STREQUAL "")
         message (FATAL_ERROR "odb_cligen_target <name> <input> <output>")
     endif ()

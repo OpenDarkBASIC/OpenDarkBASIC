@@ -4,8 +4,12 @@ project (odb-editor
     LANGUAGES C
     VERSION 0.0.1)
 
+option (ODBEDITOR_WERROR "Treat compiler warnings as errors" ${ODB_WERROR})
+
 find_package (GTK4 REQUIRED COMPONENTS
     gtk glib cairo pango harfbuzz gdk-pixbuf graphene)
+
+add_subdirectory ("thirdparty/gtksourceview-cmake")
 
 gtk_compile_resource (
     "res/odbeditor.gresource.xml"
@@ -20,10 +24,29 @@ add_executable (odb-editor
 target_include_directories (odb-editor
     PRIVATE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+target_compile_options (odb-editor
+    PRIVATE
+        $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>)
+if (ODBEDITOR_WERROR)
+    target_compile_options (odb-editor
+        PRIVATE
+            $<$<C_COMPILER_ID:GNU>:-Werror>
+            $<$<C_COMPILER_ID:Clang>:-Werror>
+            $<$<C_COMPILER_ID:AppleClang>:-Werror>
+            $<$<CXX_COMPILER_ID:GNU>:-Werror>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror>
+            $<$<CXX_COMPILER_ID:AppleClang>:-Werror>)
+endif ()
 target_link_libraries (odb-editor
     PRIVATE
-        odb-sdk
+        odb-util
         odb-compiler
+        gtksourceview
         GTK4::glib
         GTK4::cairo
         GTK4::pango
