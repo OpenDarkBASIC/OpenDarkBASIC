@@ -14,6 +14,7 @@ find_path (GTK4_glibconfig_INCLUDE_DIR
         "${GTK4_ROOT}/lib/"
         "/usr/lib64"
         "/usr/lib"
+        "/usr/lib/x86_64-linux-gnu"
     PATH_SUFFIXES "glib-2.0/include")
 set (GTK4_glib_INCLUDE_DIRS
     "${GTK4_glib_INCLUDE_DIR}"
@@ -54,6 +55,7 @@ find_path (GTK4_graphene-config_INCLUDE_DIR
         "${GTK4_ROOT}/lib"
         "/usr/lib64"
         "/usr/lib"
+        "/usr/lib/x86_64-linux-gnu"
     PATH_SUFFIXES "graphene-1.0/include")
 set (GTK4_graphene_INCLUDE_DIRS
     "${GTK4_graphene_INCLUDE_DIR}"
