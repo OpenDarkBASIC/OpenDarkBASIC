@@ -1,0 +1,2 @@
+subdir('snippets')
+subdir('words')

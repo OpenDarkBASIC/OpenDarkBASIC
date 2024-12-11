@@ -1,0 +1,5 @@
+*~
+*.swp
+build
+_build
+.flatpak-builder

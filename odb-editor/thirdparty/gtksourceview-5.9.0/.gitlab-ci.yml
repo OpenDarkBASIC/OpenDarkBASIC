@@ -1,0 +1,47 @@
+include:
+  - project: 'gnome/citemplates'
+    file: 'flatpak/flatpak_ci_initiative.yml'
+
+stages:
+    - test
+    - docs
+    - deploy
+
+variables:
+    FEDORA_IMAGE: "registry.gitlab.gnome.org/gnome/gtksourceview/fedora:latest"
+
+flatpak:
+    variables:
+        BUNDLE: "gtksourceview-test-widget-dev.flatpak"
+        MANIFEST_PATH: "org.gnome.GtkSourceView.TestWidget.json"
+        FLATPAK_MODULE: "gtksourceview"
+        RUNTIME_REPO: "https://nightly.gnome.org/gnome-nightly.flatpakrepo"
+        APP_ID: "org.gnome.GtkSourceView.TestWidget"
+    extends: ".flatpak"
+
+reference:
+    image: $FEDORA_IMAGE
+    stage: docs
+    needs: []
+    variables:
+        MESON_FLAGS: "-Dc_std=c11 -Dcpp_std=c++11 -Dwerror=true --buildtype=release -Dglib:tests=false -Dgtk:media-gstreamer=disabled -Dgtk:broadway-backend=false -Dgtk:demos=false -Dgtk:build-examples=false -Dgtk:build-tests=false -Dgtk:werror=false -Dlibsass:werror=false -Dsassc:werror=false -Dlibadwaita:werror=false"
+    script:
+        - mkdir -p pfx/
+        - meson ${MESON_FLAGS} --prefix=${PWD}/pfx -Dgtk_doc=true _build
+        - ninja -C _build install
+        - mkdir -p _reference/
+        - mv pfx/share/doc/gtksourceview5/ _reference/
+    artifacts:
+        paths:
+            - _reference
+
+pages:
+    stage: deploy
+    needs: ['reference']
+    script:
+        - mv _reference public/
+    artifacts:
+        paths:
+            - public
+    only:
+        - master

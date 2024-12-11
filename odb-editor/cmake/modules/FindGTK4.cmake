@@ -33,6 +33,11 @@ find_path (GTK4_harfbuzz_INCLUDE_DIRS
     PATHS
         "${GTK4_ROOT}/include"
     PATH_SUFFIXES "harfbuzz")
+find_path (GTK4_fribidi_INCLUDE_DIRS
+    NAMES "fribidi.h"
+    PATHS
+        "${GTK4_ROOT}/include"
+    PATH_SUFFIXES "fribidi")
 find_path (GTK4_gdk-pixbuf_INCLUDE_DIRS
     NAMES "gdk-pixbuf/gdk-pixbuf.h"
     PATHS
@@ -87,6 +92,10 @@ find_library (GTK4_pango_LIBRARY
         "${GTK4_ROOT}/lib")
 find_library (GTK4_harfbuzz_LIBRARY
     NAMES "harfbuzz"
+    PATHS
+        "${GTK4_ROOT}/lib")
+find_library (GTK4_fribidi_LIBRARY
+    NAMES "fribidi"
     PATHS
         "${GTK4_ROOT}/lib")
 find_library (GTK4_gdk-pixbuf_LIBRARY
@@ -202,6 +211,12 @@ find_file (GTK4_freetype_RUNTIME
 find_program (GTK4_glib_compile_resources_PROGRAM
     NAMES "glib-compile-resources")
 
+find_program (GTK4_glib_mkenums_PROGRAM
+    NAMES "glib-mkenums")
+
+find_program (GTK4_glib_genmarshal_PROGRAM
+    NAMES "glib-genmarshal")
+
 set (GTK4_RUNTIMES
     ${GTK4_gtk_RUNTIME}
     ${GTK4_glib_RUNTIME}
@@ -254,24 +269,121 @@ macro (gtk_compile_resource in_file out_file)
     if (NOT IS_ABSOLUTE ${_input_file})
         set (_input_file "${CMAKE_CURRENT_SOURCE_DIR}/${_input_file}")
     endif ()
-    if (NOT IS_ABSOLUTE "${_output_file}")
+    if (NOT IS_ABSOLUTE ${_output_file})
         set (_output_file "${CMAKE_CURRENT_BINARY_DIR}/${_output_file}")
     endif ()
 
     get_filename_component (_work_dir ${_input_file} DIRECTORY)
     get_filename_component (_out_dir ${_output_file} DIRECTORY)
 
-    add_custom_command (OUTPUT ${_output_file}
+    add_custom_command (
+        OUTPUT ${_output_file}
+        DEPENDS ${_input_file}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${_out_dir}
         COMMAND ${GTK4_glib_compile_resources_PROGRAM}
         ARGS --generate --target=${_output_file} ${_input_file}
         WORKING_DIRECTORY ${_work_dir}
         MAIN_DEPENDENCY ${_input_file}
-        COMMENT "Compiling resource ${_input_file}"
+        COMMENT "Compiling resource ${_input_file} -> ${_output_file}"
         VERBATIM)
+endmacro ()
 
-    unset (_out_dir)
-    unset (_work_dir)
-    unset (_output_file)
-    unset (_input_file)
-endmacro()
+macro (gtk_mkenums template_file out_file)
+    set (_options)
+    set (_one_value_keywords
+        IDENTIFIER_PREFIX
+        SYMBOL_PREFIX
+        DECORATOR)
+    set (_multi_value_keywords
+        SOURCES)
+    cmake_parse_arguments (_args
+        "${_options}"
+        "${_one_value_keywords}"
+        "${_multi_value_keywords}"
+        ${ARGN})
+    if (NOT ${_args_UNPARSED_ARGUMENTS} STREQUAL "")
+        message (FATAL_ERROR "gtk_mkenums <template file> <output>")
+    endif ()
+
+    set (_input_files ${_args_SOURCES})
+    set (_output_file ${out_file})
+    if (NOT IS_ABSOLUTE ${_output_file})
+        set (_output_file "${CMAKE_CURRENT_BINARY_DIR}/${_output_file}")
+    endif ()
+    get_filename_component (_out_dir ${_output_file} DIRECTORY)
+
+    add_custom_command (
+        OUTPUT ${_output_file}
+        DEPENDS ${template_file} ${_input_files}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${_out_dir}
+        COMMAND ${GTK4_glib_mkenums_PROGRAM}
+        ARGS
+            --identifier-prefix=${_args_IDENTIFIER_PREFIX}
+            --symbol-prefix=${_args_SYMBOL_PREFIX}
+            --eprod=${_args_DECORATOR}
+            --template=${template_file}
+            --output=${_output_file}
+            ${_input_files}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating enums ${_output_file}"
+        VERBATIM)
+endmacro ()
+
+macro (gtk_genmarshal in_file out_file)
+    set (_options
+        VALIST_MARSHALLERS)
+    set (_one_value_keywords
+        PREFIX)
+    set (_multi_value_keywords
+        SOURCES)
+    cmake_parse_arguments (_args
+        "${_options}"
+        "${_one_value_keywords}"
+        "${_multi_value_keywords}"
+        ${ARGN})
+    if (NOT ${_args_UNPARSED_ARGUMENTS} STREQUAL "")
+        message (FATAL_ERROR "gtk_mkenums <template file> <output>")
+    endif ()
+
+    set (_input_file ${in_file})
+    set (_output_file ${out_file})
+    if (NOT IS_ABSOLUTE ${_input_file})
+        set (_input_file "${CMAKE_CURRENT_SOURCE_DIR}/${_input_file}")
+    endif ()
+    if (NOT IS_ABSOLUTE ${_output_file})
+        set (_output_file "${CMAKE_CURRENT_BINARY_DIR}/${_output_file}")
+    endif ()
+
+    get_filename_component (_work_dir ${_input_file} DIRECTORY)
+    get_filename_component (_out_dir ${_output_file} DIRECTORY)
+    get_filename_component (_ext ${_output_file} EXT)
+
+    if (_ext STREQUAL ".c")
+        set (_gen_type "--body")
+    elseif (_ext STREQUAL ".h")
+        set (_gen_type "--header")
+    else ()
+        message (FATAL_ERROR "Invalid output file extension ${_ext}")
+    endif ()
+
+    set (_gen_valist)
+    if (_args_VALIST_MARSHALLERS)
+        set (_gen_valist "--valist-marshallers")
+    endif ()
+
+    add_custom_command (
+        OUTPUT ${_output_file}
+        DEPENDS ${_input_file}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${_out_dir}
+        COMMAND ${GTK4_glib_genmarshal_PROGRAM}
+        ARGS
+            ${_gen_type}
+            ${_gen_valist}
+            --prefix=${_args_PREFIX}
+            --output=${_output_file}
+            ${_input_file}
+        WORKING_DIRECTORY ${_work_dir}
+        MAIN_DEPENDENCY ${_input_file}
+        COMMENT "Generating marshal ${_input_file} -> ${_output_file}"
+        VERBATIM)
+endmacro ()
