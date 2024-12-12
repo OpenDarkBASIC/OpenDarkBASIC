@@ -1,0 +1,32 @@
+#pragma once
+
+#cmakedefine HAVE_STDINT_H
+#cmakedefine HAVE_FCNTL_H
+#cmakedefine HAVE_UNISTD_H
+#cmakedefine HAVE_SYS_STAT_H
+#cmakedefine HAVE_SYS_MMAN_H
+#cmakedefine HAVE_SYS_SOCKET_H
+#cmakedefine HAVE_NETINET_IN_H
+#cmakedefine HAVE_ARPA_INET_H
+#cmakedefine HAVE_NETDB_H
+#cmakedefine HAVE_SYS_SELECT_H
+#cmakedefine HAVE_POLL_H
+#cmakedefine HAVE_SYS_TIME_H
+#cmakedefine HAVE_SYS_TIMEB_H
+#cmakedefine HAVE_DL_H
+#cmakedefine HAVE_DLFCN_H
+#cmakedefine HAVE_GLOB_H
+
+#cmakedefine HAVE_GETTIMEOFDAY
+#cmakedefine HAVE_FTIME
+#cmakedefine HAVE_STAT
+#cmakedefine HAVE_MMAP
+#cmakedefine HAVE_MUNMAP
+#if defined(HAVE_MMAP) && !defined(HAVE_MUNMAP)
+#  undef HAVE_MMAP
+#endif
+
+/* A form that will not confuse apibuild.py */
+#define ATTRIBUTE_DESTRUCTOR ${ATTRIBUTE_DESTRUCTOR}
+
+
