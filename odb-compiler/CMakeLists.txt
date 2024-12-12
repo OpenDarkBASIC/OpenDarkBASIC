@@ -303,21 +303,6 @@ odb_target_properties (LIB_LIEF
         MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
 target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
-# reproc
-
-#set(REPROC++ ON)
-#set(REPROC_OBJECT_LIBRARIES ON)
-#FetchContent_Declare (
-#    reproc
-#    URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
-#)
-#FetchContent_MakeAvailable (reproc)
-
-#set_property (TARGET reproc PROPERTY POSITION_INDEPENDENT_CODE ON)
-#set_property (TARGET reproc++ PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-#target_link_libraries (odb-compiler PRIVATE reproc++)
-
 # On Windows, we have to link the generated executables to kernel32.lib
 if (WIN32)
     if (NOT WINDOWS_KIT_DIR)
@@ -586,19 +571,19 @@ endif ()
 # Installation
 ###############################################################################
 
-install (
-    TARGETS
-        odb-compiler
-    EXPORT OpenDarkBASICConfig
-    ARCHIVE DESTINATION ${ODB_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${ODB_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${ODB_INSTALL_BINDIR})
-install (
-    DIRECTORY "include/odb-compiler"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install (
-    DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install (
-    EXPORT OpenDarkBASICConfig
-    DESTINATION "share/odb/cmake")
+#install (
+#    TARGETS odb-compiler
+#    EXPORT OpenDarkBASICConfig
+#    ARCHIVE DESTINATION ${ODB_INSTALL_LIBDIR}
+#    LIBRARY DESTINATION ${ODB_INSTALL_LIBDIR}
+#    RUNTIME DESTINATION ${ODB_INSTALL_BINDIR})
+#install (
+#    DIRECTORY "include/odb-compiler"
+#    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#install (
+#    DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler"
+#    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#install (
+#    EXPORT OpenDarkBASICConfig
+#    DESTINATION "share/OpenDarkBASIC/cmake")
+

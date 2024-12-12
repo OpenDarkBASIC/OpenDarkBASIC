@@ -208,18 +208,18 @@ endif ()
 # Installation
 ###############################################################################
 
-install (
-    TARGETS odb-util
-    EXPORT OpenDarkBASICConfig
-    ARCHIVE DESTINATION ${ODB_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${ODB_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${ODB_INSTALL_BINDIR})
-install (
-    DIRECTORY "include/odb-util"
-    DESTINATION ${ODB_INSTALL_INCLUDEDIR})
-install (
-    DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-util"
-    DESTINATION ${ODB_INSTALL_INCLUDEDIR})
-install (
-    EXPORT OpenDarkBASICConfig
-    DESTINATION "share/odb/cmake")
+#install (
+#    TARGETS odb-util
+#    EXPORT OpenDarkBASICConfig
+#    ARCHIVE DESTINATION ${ODB_INSTALL_LIBDIR}
+#    LIBRARY DESTINATION ${ODB_INSTALL_LIBDIR}
+#    RUNTIME DESTINATION ${ODB_INSTALL_BINDIR})
+#install (
+#    DIRECTORY "include/odb-util"
+#    DESTINATION ${ODB_INSTALL_INCLUDEDIR})
+#install (
+#    DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-util"
+#    DESTINATION ${ODB_INSTALL_INCLUDEDIR})
+#install (
+#    EXPORT OpenDarkBASICConfig
+#    DESTINATION "share/OpenDarkBASIC/cmake")
