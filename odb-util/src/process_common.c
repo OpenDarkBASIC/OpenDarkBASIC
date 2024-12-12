@@ -16,7 +16,8 @@ read_thread(void* param)
     char                    byte;
     struct read_thread_ctx* ctx = param;
 
-    mem_init();
+    if (mem_init() != 0)
+        return (void*)-1;
     mem_acquire(ctx->buf->data, ctx->buf->len);
 
     while (ctx->read(ctx->process, &byte) > 0)
@@ -24,14 +25,14 @@ read_thread(void* param)
         if (utf8_reserve(ctx->buf, ctx->buf->len + 1) != 0)
         {
             mem_release(ctx->buf->data);
-            mem_deinit();
+            (void)mem_deinit();
             return (void*)-1;
         }
         ctx->buf->data[ctx->buf->len++] = byte;
     }
 
     mem_release(ctx->buf->data);
-    mem_deinit();
+    (void)mem_deinit();
     return (void*)0;
 }
 

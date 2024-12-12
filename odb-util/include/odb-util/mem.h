@@ -13,10 +13,10 @@ typedef int32_t mem_idx;
 #   define mem_alloc     malloc
 #   define mem_free      free
 #   define mem_realloc   realloc
-#   define mem_track_allocation(p)
-#   define mem_track_deallocation(p)
-#   define mem_acquire(p, s)
-#   define mem_release(p)
+#   define mem_track_allocation(p) do {} while (0)
+#   define mem_track_deallocation(p) do {} while (0)
+#   define mem_acquire(p, s) do {} while (0)
+#   define mem_release(p) do {} while (0)
 #else
 
 /*!

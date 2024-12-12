@@ -648,6 +648,7 @@ process_end(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, end) == AST_END,
         log_err("type: %d\n", ast_node_type(ast, end)));
+    (void)end;
 
     // TODO: This function is created every time an END is encountered
     llvm::Function* FSDKDeInit = llvm::Function::Create(
