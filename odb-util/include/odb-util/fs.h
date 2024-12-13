@@ -50,4 +50,4 @@ ODBUTIL_PUBLIC_API int
 fs_get_appdata_dir(struct ospath* path);
 
 ODBUTIL_PUBLIC_API uint64_t
-fs_mtime_ms(struct ospathc path);
+fs_mtime_ms(struct ospathc path, int log_error);
