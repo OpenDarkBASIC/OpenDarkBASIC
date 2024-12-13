@@ -87,3 +87,4 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
     int ident = ast->nodes[ast->nodes[cmd].command.arglist].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, ident), Eq(AST_VAR_READ));
 }
+
