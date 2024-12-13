@@ -480,7 +480,7 @@ dump_commands(struct cli_ctx* ctx, int argc, char** argv)
     }
 
     log_info(
-        "Wrote %d commands to stdout [--dump-commands]\n",
+        "Wrote %d commands to stdout [{emph2:--commands}]\n",
         cmd_list_count(&ctx->commands));
 
     return 0;

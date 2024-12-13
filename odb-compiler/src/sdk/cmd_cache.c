@@ -49,8 +49,6 @@ cmd_cache_load(
 
     if (ospath_join_cstr(&path, "cmd-cache") != 0)
         goto open_mfile_failed;
-    if (fs_make_path(path) != 0)
-        goto open_mfile_failed;
     if (ospath_join(&path, utf8_ospathc(fname)) != 0)
         goto open_mfile_failed;
 

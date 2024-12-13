@@ -129,7 +129,7 @@ int
 fs_make_path(struct ospath path)
 {
 try_again:
-    if (CreateDirectory(ospath_cstr(path), NULL))
+    if (CreateDirectory(ospath_cstr(path), NULL) == 0)
     {
         if (GetLastError() == ERROR_ALREADY_EXISTS)
             return 0;
@@ -212,6 +212,9 @@ fs_get_appdata_dir(struct ospath* path)
         goto get_folder_failed;
 
     if (utf16_to_utf8(&path->str, cstr_utf16_view(u16path)) != 0)
+        goto utf_conversion_failed;
+
+    if (ospath_join_cstr(path, "OpenDarkBASIC") != 0)
         goto utf_conversion_failed;
 
     CoTaskMemFree(u16path);

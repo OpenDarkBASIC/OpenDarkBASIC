@@ -20,10 +20,14 @@ randomize matrix 1, 4
 update matrix 1
 
 do
-   if leftkey() then dec a#, 2
-   if rightkey() then inc a#, 2
-   if upkey() then speed# = curvevalue(0.3, speed#, 5)
-   if downkey() then speed# = curvevalue(-0.15, speed#, 5)
+   left = leftkey() or keystate(30)
+   right = rightkey() or keystate(32)
+   up = upkey() or keystate(17)
+   down = downkey() or keystate(31)
+   if left then dec a#, 2
+   if right then inc a#, 2
+   if up then speed# = curvevalue(0.3, speed#, 5)
+   if down then speed# = curvevalue(-0.15, speed#, 5)
    if controlkey() then speed# = 2
    if spacekey() and g# = -10 then g# = 0.3
 
