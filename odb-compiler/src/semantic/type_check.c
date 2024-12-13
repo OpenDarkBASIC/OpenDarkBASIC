@@ -2959,6 +2959,7 @@ process_call_like(
             f2 = (*astp)->nodes[f1].func1.func2;
             f3 = (*astp)->nodes[f2].func2.func3;
             paramlist = (*astp)->nodes[f3].func3.paramlist;
+            arglist = (*astp)->nodes[n].call_like.arglist;
             for (arg_num = 1, pl_node = paramlist, al_node = arglist;
                  pl_node > -1 && al_node > -1;
                  arg_num++,
@@ -2997,7 +2998,7 @@ process_call_like(
                         break;
                 }
 
-                cast = cast_to_type(astp, al_node, param_type);
+                cast = cast_to_type(astp, arg, param_type);
                 if (cast < -1)
                     return DEP_ERROR;
                 (*astp)->nodes[al_node].arglist.expr = cast;
@@ -3552,17 +3553,17 @@ type_check(
     locals_deinit(locals);
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
+    ast_export_basename(
+        *astp,
+        ospathc_list_get(filenames, tu_id),
+        utf8_view(sources[tu_id]),
+        cmds);
     if (return_code == 0)
         return_code = sanity_check(
             *astp,
             cmds,
             ospathc_list_get(filenames, tu_id),
             utf8_cstr(sources[tu_id]));
-    ast_export_basename(
-        *astp,
-        ospathc_list_get(filenames, tu_id),
-        utf8_view(sources[tu_id]),
-        cmds);
 #endif
 
     return return_code;

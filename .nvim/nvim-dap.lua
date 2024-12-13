@@ -5,8 +5,8 @@ dap.set_log_level("TRACE")
 
 dap.adapters.lldb = {
     type = "executable",
-    command = "/usr/bin/lldb-dap",
-    name = "lldb"
+    command = "/usr/bin/lldb-dap-18",
+    name = "lldb",
 }
 
 dap.configurations.cpp = {
