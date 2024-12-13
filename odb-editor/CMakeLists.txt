@@ -9,6 +9,7 @@ option (ODBEDITOR_WERROR "Treat compiler warnings as errors" ${ODB_WERROR})
 find_package (GTK4 REQUIRED COMPONENTS
     gtk glib cairo pango harfbuzz gdk-pixbuf graphene)
 
+add_subdirectory ("thirdparty/libxml-cmake")
 add_subdirectory ("thirdparty/gtksourceview-cmake")
 
 gtk_compile_resource (

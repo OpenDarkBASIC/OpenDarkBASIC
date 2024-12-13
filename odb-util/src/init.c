@@ -17,7 +17,7 @@ odbutil_init(void)
     return 0;
 
 log_init_failed:
-    mem_deinit();
+    (void)mem_deinit();
 init_mem_failed:
     backtrace_deinit();
 backtrace_init_failed:

@@ -60,6 +60,7 @@ udt_storage_add_type(
     return type_invalid();
 }
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
 void
 mem_acquire_udt_storage(struct udt_storage* udts)
 {
@@ -73,3 +74,4 @@ mem_release_udt_storage(struct udt_storage* udts)
     mem_release(udts->source.data);
     mem_release_ast(udts->ast);
 }
+#endif

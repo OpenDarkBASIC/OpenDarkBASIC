@@ -105,9 +105,9 @@ utf8_list_insert(struct utf8_list** l, utf8_idx insert, struct utf8_view in)
         struct utf8_span* span;
         int               i;
 
-        /* Move strings to make space for str.len+1 */
+        /* Move strings to make space for str.len+padding */
         memmove(
-            (*l)->data + slotspan->off + in.len + 1,
+            (*l)->data + slotspan->off + in.len + UTF8_APPEND_PADDING,
             (*l)->data + slotspan->off,
             (*l)->str_used - slotspan->off);
 
@@ -119,7 +119,7 @@ utf8_list_insert(struct utf8_list** l, utf8_idx insert, struct utf8_view in)
 
         /* Calculate new offsets */
         for (span = slotspan - 1, i = (*l)->count - insert; i; i--, span--)
-            span->off += in.len + 1;
+            span->off += in.len + UTF8_APPEND_PADDING;
     }
     else
     {
@@ -187,8 +187,9 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view str)
     {
         half = len / 2;
         middle = found + half;
-        if (lexicographically_less(
-                utf8_span_view(l->data, UTF8_LIST_TABLE_PTR(l)[-middle]), str))
+        struct utf8_span span = UTF8_LIST_TABLE_PTR(l)[-middle];
+        struct utf8_view view = utf8_span_view(l->data, span);
+        if (lexicographically_less(view, str))
         {
             found = middle;
             ++found;
