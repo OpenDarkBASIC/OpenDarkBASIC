@@ -259,7 +259,7 @@ main(int argc, char** argv)
     {
         out_file = fopen(cfg.output_fname, "w");
         if (out_file == NULL)
-            return log_err("Failed to open output file: %s\n", strerror(errno));
+            return log_err("Failed to open output file: {errno}\n");
     }
 
     if (cfg.input_fname != NULL)

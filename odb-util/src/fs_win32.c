@@ -1,11 +1,10 @@
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <KnownFolders.h>
-#include <ShlObj.h>
-
 #include "odb-util/fs.h"
 #include "odb-util/log.h"
 #include "odb-util/utf8.h"
+#include <KnownFolders.h>
+#include <ShlObj.h>
+#include <Windows.h>
 
 int
 fs_get_path_to_self(struct ospath* path)
@@ -188,13 +187,17 @@ fs_copy_file_if_newer(struct ospathc src, struct ospathc dst)
 }
 
 int
-fs_remove_file(struct ospathc path)
+fs_remove_file(struct ospathc path, int log_error)
 {
     if (DeleteFileA(ospathc_cstr(path)) == 0)
     {
-        log_err(
-            "Failed to remove file {quote:%s}: {win32error}\n",
-            ospathc_cstr(path));
+        if (GetLastError() == ERROR_FILE_NOT_FOUND)
+            return 1;
+
+        if (log_error)
+            log_err(
+                "Failed to remove file {quote:%s}: {win32error}\n",
+                ospathc_cstr(path));
         return -1;
     }
 

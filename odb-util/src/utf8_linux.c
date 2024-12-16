@@ -19,8 +19,7 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
     cd = iconv_open("UTF-8", "UTF-16");
     if (cd == (iconv_t)-1)
     {
-        log_err(
-            "iconv_open() failed in utf16_to_utf8(): %s\n", strerror(errno));
+        log_err("iconv_open() failed in utf16_to_utf8(): {errno}\n");
         goto iconv_open_failed;
     }
 
@@ -61,9 +60,7 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
                     break;
 
                 default:
-                    log_err(
-                        "Failed to convert string to UTF-8: %s\n",
-                        strerror(errno));
+                    log_err("Failed to convert string to UTF-8: {errno}\n");
                     goto grow_outbuf_failed;
                     break;
             }

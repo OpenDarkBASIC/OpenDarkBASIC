@@ -125,6 +125,10 @@ process_node(
         case AST_UDT_INIT:
         case AST_UDT_READ:
         case AST_UDT_WRITE:
+        case AST_DIM_DECL1:
+        case AST_DIM_DECL2:
+        case AST_DIM_READ:
+        case AST_DIM_WRITE:
         case AST_PARAM:
         case AST_IDENTIFIER:
         case AST_BINOP:

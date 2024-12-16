@@ -41,6 +41,8 @@ endtype,            TOK_ENDTYPE
 end,                TOK_END
 inc,                TOK_INC
 dec,                TOK_DEC
+dim,                TOK_DIM
+undim,              TOK_UNDIM
 /* Control flow */
 if,                 TOK_IF
 then,               TOK_THEN
@@ -77,7 +79,6 @@ endfunction,        TOK_ENDFUNCTION
 %%
 
 //complex,          TOK_COMPLEX
-//dim,              TOK_DIM
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO
 //mat2x2,           TOK_MAT2X2
@@ -93,7 +94,6 @@ endfunction,        TOK_ENDFUNCTION
 //quat,             TOK_QUAT
 //return,           TOK_RETURN
 //type,             TOK_TYPE
-//undim,            TOK_UNDIM
 //vec2,             TOK_VEC2
 //vec3,             TOK_VEC3
 //vec4,             TOK_VEC4

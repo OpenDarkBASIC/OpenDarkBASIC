@@ -38,3 +38,6 @@ erase s, "bla"
 if insert(s, "bla") then print "new value"
 if erase(s, "bla") then print "value erased"
 if s("bla") then print "bla exists"
+
+map m() as string, Player
+

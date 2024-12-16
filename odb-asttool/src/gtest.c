@@ -33,6 +33,10 @@
     X(AST_UDT_INIT, "udt_init", "udt_init", "arglist", "")                     \
     X(AST_UDT_READ, "udt_read", "udt_read", "left", "right")                   \
     X(AST_UDT_WRITE, "udt_write", "udt_write", "left", "right")                \
+    X(AST_DIM_DECL1, "dim_decl1", "dim_decl1", "dim_decl2", "arglist")         \
+    X(AST_DIM_DECL2, "dim_decl2", "dim_decl2", "identifier", "as")             \
+    X(AST_DIM_READ, "dim_read", "dim_read", "arglist", "identifier")           \
+    X(AST_DIM_WRITE, "dim_write", "dim_write", "arglist", "identifier")        \
     X(AST_PARAM, "param", "param", "identifier", "as")                         \
     X(AST_IDENTIFIER, "ident", "identifier", "", "")                           \
     X(AST_BINOP, "binop", "binop", "left", "right")                            \
@@ -442,6 +446,10 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
                 "].udt_write.index, Eq(%d));\n",
                 ast->nodes[n].udt_write.index);
             break;
+        case AST_DIM_DECL1: break;
+        case AST_DIM_DECL2: break;
+        case AST_DIM_READ: break;
+        case AST_DIM_WRITE: break;
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             fprintf(fp, "    ASSERT_THAT(ast->nodes[");

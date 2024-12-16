@@ -28,6 +28,10 @@ child_changed:
         case AST_UDT_INIT: return -1;
         case AST_UDT_READ: return -1;
         case AST_UDT_WRITE: return -1;
+        case AST_DIM_DECL1: return -1;
+        case AST_DIM_DECL2: return -1;
+        case AST_DIM_READ: return -1;
+        case AST_DIM_WRITE: return -1;
         case AST_PARAM: return -1;
         case AST_IDENTIFIER: return -1;
         case AST_BINOP: return -1;

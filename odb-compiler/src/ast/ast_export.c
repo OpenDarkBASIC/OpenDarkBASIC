@@ -136,9 +136,8 @@ ast_export(
     if (fp == NULL)
     {
         return log_err(
-            "Failed to open file {quote:%s}: {emph:%s}\n",
-            ospathc_cstr(filepath),
-            strerror(errno));
+            "Failed to open file {quote:%s}: {errno}\n",
+            ospathc_cstr(filepath));
     }
 
     if (ast_export_fp(ast, fp, source, cmds) != 0)

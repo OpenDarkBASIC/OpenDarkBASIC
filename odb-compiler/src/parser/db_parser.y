@@ -135,6 +135,7 @@
 %token GLOBAL LOCAL
 %token VOID BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
 %token TYPE ENDTYPE
+%token DIM UNDIM
 /* Control flow */
 %token IF
 %token THEN
@@ -269,6 +270,7 @@
 %type<node_value> lvalue rvalue
 %type<node_value> var_decl var_read var_write
 %type<node_value> udt_decl udt_members udt_member_decl
+%type<node_value> dim_decl
 %type<node_value> func func_exit call_like_stmt call_like_expr
 %type<node_value> container_write
 
@@ -305,6 +307,7 @@ stmt
   | func                                    { $$ = $1; }
   | var_decl                                { $$ = $1; }
   | udt_decl                                { $$ = $1; }
+  | dim_decl                                { $$ = $1; }
   | istmt                                   { $$ = $1; }
   ;
 // Statements that can appear "inline", e.g. "if x then istmt"
@@ -465,6 +468,12 @@ udt_members
 udt_member_decl
   : identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
   | identifier as_type_auto '=' expr        { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
+  ;
+dim_decl
+  : DIM identifier '(' maybe_arglist ')' as_type {
+        $$ = ast_dim_decl(ctx->astp, $2, $4, $6, @$);
+    }
+  | DIM identifier '(' maybe_arglist ')'    { $$ = ast_dim_decl(ctx->astp, $2, $4, -1, @$); }
   ;
 inc
   : INC lvalue ',' expr                     { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }

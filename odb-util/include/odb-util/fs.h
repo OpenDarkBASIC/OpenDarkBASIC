@@ -43,8 +43,14 @@ fs_copy_file(struct ospathc src, struct ospathc dst);
 ODBUTIL_PUBLIC_API int
 fs_copy_file_if_newer(struct ospathc src, struct ospathc dst);
 
+/*!
+ * @brief Removes a file from the filesystem.
+ * @return Returns -1 if the file exists but was not deleted.
+ * Returns 0 if the file was deleted successfully.
+ * Returns 1 if the file did not exist.
+ */
 ODBUTIL_PUBLIC_API int
-fs_remove_file(struct ospathc path);
+fs_remove_file(struct ospathc path, int log_error);
 
 ODBUTIL_PUBLIC_API int
 fs_get_appdata_dir(struct ospath* path);

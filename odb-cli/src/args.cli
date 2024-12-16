@@ -93,6 +93,11 @@ section: sdk {
         func: set_target_platform
     }
 
+    option: clear-command-cache {
+        en_US: "Forces all commands to be reloaded from their plugins"
+        func: clear_command_cache
+    }
+
     task: setup-sdk {
         func: setup_sdk
         runafter: { no-color, arch, platform, sdk-root, sdk-type, plugins }
@@ -106,7 +111,7 @@ section: sdk {
 
     task: load-commands {
         func: load_commands
-        runafter: setup-sdk
+        runafter: { setup-sdk, clear-command-cache }
     }
 
     option: commands {

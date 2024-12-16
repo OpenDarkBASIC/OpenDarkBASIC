@@ -747,7 +747,7 @@ process_command(
         return 0;
     }
 
-    /* DarkBASIC Pro passes floast as reinterpreted DWORDs */
+    /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
     if (sdk_type == SDK_DBPRO)
     {
         int i = results_count(*results) - num_args;
@@ -2112,6 +2112,10 @@ process_node(
         case AST_UDT_WRITE:
             return process_udt_write(
                 ir, stack, results, b, ast, source, udt_table, allocamap);
+        case AST_DIM_DECL1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_DIM_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_DIM_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_DIM_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             ODBUTIL_DEBUG_ASSERT(

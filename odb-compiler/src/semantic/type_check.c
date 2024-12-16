@@ -29,8 +29,9 @@ struct view_scope
 struct local
 {
     /* Points to the identifier that first created the entry. It needs to be a
-     * ast_id because some checks rely on checking if they created the entry or
-     * not. Storing the name would not be sufficient for this comparison. */
+     * ast_id rather than a utf8_span, because some checks rely on checking if
+     * they created the entry or not and the same names can have different
+     * spans. */
     ast_id first_occurrence;
 
     /* The parent node that created the entry. When a type is not resolvable,
@@ -518,6 +519,96 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
 
     /* Paramlists are not expressions, so set the entire list to VOID */
     ast->nodes[paramlist].info.type_info = primitive_type(TYPE_VOID);
+
+    stack_pop(*stack);
+    return DEP_SOLVED;
+}
+
+static enum process_result
+process_dim_decl(
+    struct stack**  stack,
+    struct ast*     ast,
+    ast_id          dim_decl,
+    const char*     source,
+    struct locals** locals)
+{
+    ast_id           decl2, arglist, ident, as;
+    int32_t          scope_id;
+    struct utf8_span name;
+    struct local*    local;
+    int32_t          top = stack_count(*stack);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, dim_decl) == AST_DIM_DECL1,
+        log_err("type: %d\n", ast_node_type(ast, dim_decl)));
+
+    decl2 = ast->nodes[dim_decl].dim_decl1.dim_decl2;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, decl2) == AST_DIM_DECL2,
+        log_err("type: %d\n", ast_node_type(ast, decl2)));
+
+    arglist = ast->nodes[dim_decl].dim_decl1.arglist;
+    ident = ast->nodes[decl2].dim_decl2.identifier;
+    as = ast->nodes[dim_decl].dim_decl2.as;
+    ODBUTIL_DEBUG_ASSERT(
+        arglist == -1 || ast_node_type(ast, arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(ast, arglist)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, ident) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, ident)));
+
+    /* "Touch" the variable so others can depend on it. The type info is set
+     * later */
+    name = ast->nodes[ident].identifier.name;
+    scope_id = ast->nodes[ident].info.scope_id;
+    switch (declare_local(locals, source, name, scope_id, &local))
+    {
+        case HM_OOM: return DEP_ERROR;
+        case HM_NEW: {
+            init_local(local, ident, dim_decl, primitive_type(TYPE_INVALID));
+            break;
+        }
+        case HM_EXISTS: {
+            if (type_is_valid(local->type))
+            {
+                log_err("TODO: Redeclaration\n");
+                return DEP_ERROR;
+            }
+            break;
+        }
+    }
+
+    if (as > -1 && type_is_invalid(ast_type_info(ast, as))
+        && ast_node_type(ast, as) != AST_AS_AUTO)
+        stack_push_entry(stack, dim_decl, as);
+
+    if (stack_count(*stack) != top)
+        return DEP_ADDED_CHILDREN;
+
+    ODBUTIL_DEBUG_ASSERT(type_is_invalid(local->type), (void)0);
+    if (as > -1)
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, as) != AST_AS_AUTO,
+            log_err("type: %d\n", ast_node_type(ast, as)));
+        ODBUTIL_DEBUG_ASSERT(type_is_valid(ast_type_info(ast, as)), (void)0);
+        local->type = ast_type_info(ast, as);
+    }
+    else
+    {
+        /* Use identifier's type annotation instead */
+        local->type
+            = annotation_to_type(ast->nodes[ident].identifier.annotation);
+    }
+
+    /* TODO: Global variables are not yet supported */
+
+    /* TODO: DarkBASIC Pro will default-initialize the variables in the call to
+     * DimDDD. However, OpenDarkBASIC only allocates the memory. We are
+     * responsible for creating the default initializer here. The reason for
+     * this decision is because we allow nested arrays inside UDTs, and since
+     * the type information is currently not exposed to plugins, plugins won't
+     * be able to recurse into the structure by themselves. */
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -3296,6 +3387,10 @@ process_node(
             return process_udt_read(stack, *astp, n, filename, source, locals);
         case AST_UDT_WRITE:
             return process_udt_write(stack, *astp, n, filename, source, locals);
+        case AST_DIM_DECL1: return process_dim_decl();
+        case AST_DIM_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_DIM_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_DIM_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_PARAM:
             return process_param(stack, astp, n, filename, source, locals);
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;

@@ -5,7 +5,7 @@ dap.set_log_level("TRACE")
 
 dap.adapters.lldb = {
     type = "executable",
-    command = "/usr/bin/lldb-dap-18",
+    command = "/usr/bin/lldb-dap",
     name = "lldb",
 }
 
@@ -115,10 +115,8 @@ dap.configurations.cpp = {
             local extra_args = vim.fn.input('Extra args: ')
             local args = {
                 "-c",
-                "--dba",
-                "${workspaceFolder}/build-Debug/bin/playground/playground.dba",
-                "--output",
-                "${workspaceFolder}/build-Debug/bin/playground/playground",
+                "--dba",    "${workspaceFolder}/build-Debug/bin/playground/playground.dba",
+                "--output", "${workspaceFolder}/build-Debug/bin/playground/playground",
                 "--exec",
             }
             if #extra_args > 0 then

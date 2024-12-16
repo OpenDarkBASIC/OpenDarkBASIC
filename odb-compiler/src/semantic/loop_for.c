@@ -42,6 +42,10 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_UDT_INIT: break;
         case AST_UDT_READ: break;
         case AST_UDT_WRITE: break;
+        case AST_DIM_DECL1: break;
+        case AST_DIM_DECL2: break;
+        case AST_DIM_READ: break;
+        case AST_DIM_WRITE: break;
         case AST_PARAM: break;
         case AST_IDENTIFIER: break;
         case AST_BINOP: break;

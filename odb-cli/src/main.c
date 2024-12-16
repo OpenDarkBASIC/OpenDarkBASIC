@@ -4,6 +4,7 @@
 #include "odb-compiler/codegen/target.h"
 #include "odb-compiler/link/link.h"
 #include "odb-compiler/parser/db_parser.h"
+#include "odb-compiler/sdk/cmd_cache.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/sdk_type.h"
@@ -91,7 +92,9 @@ struct cli_ctx
     struct ospath           output_executable;
     struct ospath_list*     obj_files;
     enum optimization_level optimization_level;
-    unsigned                dump_ir : 1;
+
+    unsigned clear_command_cache : 1;
+    unsigned dump_ir : 1;
 };
 
 static void
@@ -110,6 +113,7 @@ cli_ctx_init(struct cli_ctx* ctx, const char* prog_name)
     ctx->sdk_root_dir = empty_ospath();
     ctx->sdk = SDK_ODB;
     ospath_list_init(&ctx->plugin_dirs);
+    ctx->clear_command_cache = 0;
 
     /* Commands */
     udt_storage_init(&ctx->udts);
@@ -404,9 +408,22 @@ print_sdk(struct cli_ctx* ctx, int argc, char** argv)
 }
 
 static int
+clear_command_cache(struct cli_ctx* ctx, int argc, char** argv)
+{
+    ctx->clear_command_cache = 1;
+    return 0;
+}
+
+static int
 load_commands(struct cli_ctx* ctx, int argc, char** argv)
 {
     int ret;
+
+    if (ctx->clear_command_cache)
+    {
+        log_info("Clearing command cache...\n");
+        cmd_cache_delete(ctx->sdk, ctx->arch, ctx->platform);
+    }
 
     log_progress(0, 0, "Searching for plugins...\n");
     ret = plugin_list_populate(
@@ -548,7 +565,7 @@ push_translation_unit_from_stdin(struct cli_ctx* ctx)
     }
     if (!feof(stdin))
     {
-        log_err("Failed to read from stdin: {emph:%s}\n", strerror(errno));
+        log_err("Failed to read from stdin: {errno}\n");
         goto read_failed;
     }
 
@@ -1844,9 +1861,8 @@ cli_depgraph_impl(struct ospathc filepath)
                                           : fopen(ospathc_cstr(filepath), "w");
     if (fp == NULL)
         return log_err(
-            "Failed to open file {quote:%s} for writing: %s\n",
-            ospathc_cstr(filepath),
-            strerror(errno));
+            "Failed to open file {quote:%s} for writing: {errno}\n",
+            ospathc_cstr(filepath));
 
     write_depgraph(fp, &catpuccin);
 

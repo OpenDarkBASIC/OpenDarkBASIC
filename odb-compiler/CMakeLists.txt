@@ -468,6 +468,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_conditionals_errors.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_dim.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_func.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_loop_for.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_loop_for_errors.cpp"
@@ -504,6 +505,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_dim.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_func.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_func_poly.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_func_return.cpp"
@@ -528,6 +530,7 @@ if (ODBCOMPILER_TESTS)
     # cases
     set (CIGEN_SUITES
         #"binop-precedence"
+        "dim"
         "loop-do"
         "loop-for"
         "select-case"

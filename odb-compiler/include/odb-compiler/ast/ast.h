@@ -84,6 +84,10 @@ enum ast_type
     AST_UDT_INIT,
     AST_UDT_READ,
     AST_UDT_WRITE,
+    AST_DIM_DECL1,
+    AST_DIM_DECL2,
+    AST_DIM_READ,
+    AST_DIM_WRITE,
     AST_PARAM,
     AST_IDENTIFIER,
     AST_BINOP,
@@ -271,6 +275,29 @@ union ast_node
         ast_id right;
         int index;
     } udt_write;
+
+    struct {
+        struct info info;
+        ast_id dim_decl2;
+        ast_id arglist;
+    } dim_decl1;
+    struct {
+        struct info info;
+        ast_id identifier;
+        ast_id as;
+    } dim_decl2;
+
+    struct {
+        struct info info;
+        ast_id arglist;
+        ast_id identifier;
+    } dim_read;
+
+    struct {
+        struct info info;
+        ast_id arglist;
+        ast_id identifier;
+    } dim_write;
 
     struct {
         struct info info;
@@ -604,6 +631,9 @@ ast_id ast_udt_decl(struct ast** astp, ast_id type_identifier, ast_id members_bl
 ast_id ast_udt_init(struct ast** astp, struct utf8_span type_name, ast_id arglist, struct utf8_span location);
 ast_id ast_udt_read(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
 ast_id ast_udt_write(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
+ast_id ast_dim_decl(struct ast** astp, ast_id identifier, ast_id arglist, ast_id as, struct utf8_span location);
+ast_id ast_dim_read(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
+ast_id ast_dim_write(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_param(struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 ast_id ast_inc_step(struct ast** astp, ast_id lvalue, ast_id expr, struct utf8_span location);

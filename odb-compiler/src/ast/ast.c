@@ -141,6 +141,10 @@ dup_node_source_references(
         case AST_UDT_INIT: DUP_REF(udt_init, type_name); return 0;
         case AST_UDT_READ: return 0;
         case AST_UDT_WRITE: return 0;
+        case AST_DIM_DECL1: return 0;
+        case AST_DIM_DECL2: return 0;
+        case AST_DIM_READ: return 0;
+        case AST_DIM_WRITE: return 0;
         case AST_PARAM: return 0;
         case AST_IDENTIFIER: DUP_REF(identifier, name); return 0;
         case AST_BINOP: DUP_REF(binop, op_location); return 0;
@@ -741,6 +745,88 @@ ast_udt_write(
     (*astp)->nodes[n].udt_write.left = member;
     (*astp)->nodes[n].udt_write.right = next;
     (*astp)->nodes[n].udt_write.index = -1;
+
+    return n;
+}
+
+ast_id
+ast_dim_decl(
+    struct ast**     astp,
+    ast_id           identifier,
+    ast_id           arglist,
+    ast_id           as,
+    struct utf8_span location)
+{
+    ast_id decl1 = new_node(astp, AST_DIM_DECL1, location);
+    ast_id decl2 = new_node(astp, AST_DIM_DECL2, location);
+    if (decl1 < 0 || decl2 < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        as == -1 || ast_node_type(*astp, as) == AST_AS_TYPE
+            || ast_node_type(*astp, as) == AST_AS_EXPR
+            || ast_node_type(*astp, as) == AST_AS_AUTO
+            || ast_node_type(*astp, as) == AST_AS_UDT,
+        log_err("type: %d\n", ast_node_type(*astp, as)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        arglist == -1 || ast_node_type(*astp, arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(*astp, arglist)));
+
+    (*astp)->nodes[decl1].dim_decl1.arglist = arglist;
+    (*astp)->nodes[decl1].dim_decl1.dim_decl2 = decl2;
+    (*astp)->nodes[decl2].dim_decl2.identifier = identifier;
+    (*astp)->nodes[decl2].dim_decl2.as = as;
+
+    return decl1;
+}
+
+ast_id
+ast_dim_read(
+    struct ast**     astp,
+    ast_id           identifier,
+    ast_id           arglist,
+    struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_DIM_READ, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(*astp, arglist)));
+
+    (*astp)->nodes[n].dim_read.identifier = identifier;
+    (*astp)->nodes[n].dim_read.arglist = arglist;
+
+    return n;
+}
+
+ast_id
+ast_dim_write(
+    struct ast**     astp,
+    ast_id           identifier,
+    ast_id           arglist,
+    struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_DIM_WRITE, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(*astp, arglist)));
+
+    (*astp)->nodes[n].dim_write.identifier = identifier;
+    (*astp)->nodes[n].dim_write.arglist = arglist;
 
     return n;
 }

@@ -3,6 +3,7 @@
 #include "odb-util/log.h"
 #include "odb-util/mutex.h"
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -112,6 +113,12 @@ log_last_error_win32(void)
     LocalFree(error);
 }
 #endif
+
+static void
+log_last_error_posix(void)
+{
+    log_printf("(%d) %s", errno, strerror(errno));
+}
 
 /* -------------------------------------------------------------------------- */
 static int
@@ -366,6 +373,11 @@ process_color_format(const char* fmt, struct varef* args)
         return fmt + 12;
     }
 #endif
+    if (memcmp(fmt, "{errno}", 7) == 0)
+    {
+        log_last_error_posix();
+        return fmt + 7;
+    }
 
     for (i = 0; next_control_sequence(fmt + 1, &i, &start, &end);)
     {

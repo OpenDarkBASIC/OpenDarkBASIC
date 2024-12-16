@@ -20,9 +20,8 @@ dynlib_open(struct ospathc filepath)
     void* handle = dlopen(ospathc_cstr(filepath), RTLD_LAZY);
     if (handle == NULL)
         log_err(
-            "Failed to dlopen() file {quote:%s}: %s\n",
-            ospathc_cstr(filepath),
-            strerror(errno));
+            "Failed to dlopen() file {quote:%s}: {errno}\n",
+            ospathc_cstr(filepath));
     return (struct dynlib*)handle;
 }
 
@@ -74,8 +73,8 @@ static ElfW(Addr) get_symbol_count_in_GNU_hash_table(const uint32_t* hashtab)
 int
 dynlib_symbol_table(
     struct dynlib* handle,
-    int            (*on_symbol)(const char* sym, void* user),
-    void*          user)
+    int (*on_symbol)(const char* sym, void* user),
+    void* user)
 {
     struct link_map* lm;
     ElfW(Addr) symidx;
@@ -106,11 +105,13 @@ dynlib_symbol_table(
     for (const ElfW(Dyn)* dyn = lm->l_ld; dyn->d_tag != DT_NULL; ++dyn)
         switch (dyn->d_tag)
         {
-        case DT_SYMTAB: symtab = (const ElfW(Sym)*)dyn->d_un.d_ptr; break;
-        case DT_HASH: hashtab = (const uint32_t*)dyn->d_un.d_ptr; break;
-        case DT_GNU_HASH: gnuhashtab = (const uint32_t*)dyn->d_un.d_ptr; break;
-        case DT_SYMENT: symsize = dyn->d_un.d_val; break;
-        case DT_STRTAB: strtab = (const char*)dyn->d_un.d_ptr; break;
+            case DT_SYMTAB: symtab = (const ElfW(Sym)*)dyn->d_un.d_ptr; break;
+            case DT_HASH: hashtab = (const uint32_t*)dyn->d_un.d_ptr; break;
+            case DT_GNU_HASH:
+                gnuhashtab = (const uint32_t*)dyn->d_un.d_ptr;
+                break;
+            case DT_SYMENT: symsize = dyn->d_un.d_val; break;
+            case DT_STRTAB: strtab = (const char*)dyn->d_un.d_ptr; break;
         }
     if (!symtab || !(hashtab || gnuhashtab) || !symsize || !strtab)
         return -1;

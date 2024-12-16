@@ -21,10 +21,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     if (fd < 0)
     {
         if (log_error)
-            log_err(
-                "Failed to open() file {quote:%s}: %s\n",
-                c_file_name,
-                strerror(errno));
+            log_err("Failed to open() file {quote:%s}: {errno}\n", c_file_name);
         goto open_failed;
     }
 
@@ -32,9 +29,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     {
         if (log_error)
             log_err(
-                "Failed to fstat() file {quote:%s}: %s\n",
-                c_file_name,
-                strerror(errno));
+                "Failed to fstat() file {quote:%s}: {errno}\n", c_file_name);
         goto fstat_failed;
     }
 
@@ -60,10 +55,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     if (mf->address == MAP_FAILED)
     {
         if (log_error)
-            log_err(
-                "Failed to mmap() file {quote:%s}: %s\n",
-                c_file_name,
-                strerror(errno));
+            log_err("Failed to mmap() file {quote:%s}: {errno}\n", c_file_name);
         goto mmap_failed;
     }
 
@@ -94,10 +86,7 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd < 0)
     {
-        log_err(
-            "Failed to open() file {quote:%s}: %s\n",
-            c_file_name,
-            strerror(errno));
+        log_err("Failed to open() file {quote:%s}: {errno}\n", c_file_name);
         goto open_failed;
     }
 
@@ -107,10 +96,9 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
     if (fallocate(fd, 0, 0, size) != 0)
     {
         log_err(
-            "Failed to resize file {quote:%s} to {quote:%d}: %s\n",
+            "Failed to resize file {quote:%s} to {quote:%d}: {errno}\n",
             c_file_name,
-            size,
-            strerror(errno));
+            size);
         goto mmap_failed;
     }
 
@@ -119,9 +107,8 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
     if (mf->address == MAP_FAILED)
     {
         log_err(
-            "Failed to mmap() file {quote:%s} for writing: %s\n",
-            c_file_name,
-            strerror(errno));
+            "Failed to mmap() file {quote:%s} for writing: {errno}\n",
+            c_file_name);
         goto mmap_failed;
     }
 
@@ -145,8 +132,7 @@ mfile_map_mem(struct mfile* mf, int size)
         NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mf->address == MAP_FAILED)
     {
-        log_err(
-            "Failed to mmap() {emph:%d} bytes: %s\n", size, strerror(errno));
+        log_err("Failed to mmap() {emph:%d} bytes: {errno}\n", size);
         return -1;
     }
 

@@ -341,6 +341,10 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
                 != ast->nodes[n2].udt_write.index)
                 return 0;
             break;
+        case AST_DIM_DECL1: break;
+        case AST_DIM_DECL2: break;
+        case AST_DIM_READ: break;
+        case AST_DIM_WRITE: break;
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(

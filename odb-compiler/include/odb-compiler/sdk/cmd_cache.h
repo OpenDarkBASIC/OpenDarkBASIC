@@ -26,3 +26,9 @@ cmd_cache_save(
     enum sdk_type             sdk_type,
     enum target_arch          arch,
     enum target_platform      platform);
+
+ODBCOMPILER_PUBLIC_API int
+cmd_cache_delete(
+    enum sdk_type        sdk_type,
+    enum target_arch     arch,
+    enum target_platform platform);

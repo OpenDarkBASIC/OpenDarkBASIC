@@ -1,0 +1,4 @@
+dim arr(10)
+arr(5) = 42
+dim arr(20)
+print arr(5)

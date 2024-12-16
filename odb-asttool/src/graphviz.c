@@ -166,6 +166,10 @@ get_node_style(enum ast_type node_type, const struct style* style)
         case AST_UDT_INIT: return &style->type;
         case AST_UDT_READ: return &style->identifier;
         case AST_UDT_WRITE: return &style->identifier;
+        case AST_DIM_DECL1: return &style->type;
+        case AST_DIM_DECL2: return &style->type;
+        case AST_DIM_READ: return &style->identifier;
+        case AST_DIM_WRITE: return &style->identifier;
         case AST_PARAM: return &style->list;
         case AST_IDENTIFIER: return &style->identifier;
         case AST_BINOP: return &style->operator;
@@ -325,6 +329,10 @@ write_node(
         case AST_UDT_WRITE:
             fprintf(fp, "udt_write(%d)", ast->nodes[n].udt_write.index);
             break;
+        case AST_DIM_DECL1: fprintf(fp, "dim_decl1"); break;
+        case AST_DIM_DECL2: fprintf(fp, "dim_decl2"); break;
+        case AST_DIM_READ: fprintf(fp, "dim_read"); break;
+        case AST_DIM_WRITE: fprintf(fp, "dim_write"); break;
         case AST_PARAM: fprintf(fp, "param"); break;
         case AST_IDENTIFIER:
             fprintf(
@@ -544,6 +552,10 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_UDT_INIT: NAMES("arglist", "")
         case AST_UDT_READ: NAMES("left", "right")
         case AST_UDT_WRITE: NAMES("left", "right")
+        case AST_DIM_DECL1: NAMES("dim_decl2", "arglist")
+        case AST_DIM_DECL2: NAMES("identifier", "as")
+        case AST_DIM_READ: NAMES("arglist", "identifier")
+        case AST_DIM_WRITE: NAMES("arglist", "identifier")
         case AST_PARAM: NAMES("identifier", "as")
         case AST_IDENTIFIER: break;
         case AST_BINOP: NAMES("left", "right")

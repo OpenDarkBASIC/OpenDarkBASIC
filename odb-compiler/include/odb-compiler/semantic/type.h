@@ -24,7 +24,7 @@
     X(STRING,       'S') /* 4/8 bytes -- char* (passed as DWORD on 32-bit) */  \
     X(ARRAY,        'H') /* 4/8 bytes -- Pass array address directly */        \
     X(LABEL,        'P') /* 4 bytes -- ? */                                    \
-    X(DABEL,        'Q') /* 4 bytes -- ? */                                    \
+    X(DABEL,        'Q') /* 4 bytes -- Data label, string with label name */   \
     X(I64_ARRAY,    'v') /* 4 bytes (DWORD*) */                                \
     X(U32_ARRAY,    'e') /* 4 bytes (DWORD*) */                                \
     X(I32_ARRAY,    'm') /* 4 bytes (DWORD*) */                                \
@@ -34,8 +34,8 @@
     X(F32_ARRAY,    'g') /* 4 bytes (DWORD*) */                                \
     X(F64_ARRAY,    'u') /* 4 bytes (DWORD*) */                                \
     X(STRING_ARRAY, 't') /* 4 bytes (DWORD*) */                                \
-    X(ANY,          'X')    /* 4 bytes -- (think reinterpret_cast) */          \
-    X(UDT,          'E')          /* 4 bytes */
+    X(ANY,          'X') /* 4 bytes -- (think reinterpret_cast) */             \
+    X(UDT,          'E') /* 4 bytes */
 /* clang-format on */
 
 #define PRIMITIVE_TYPE_LIST                                                    \
@@ -60,10 +60,11 @@ enum primitive_type
 #undef X
 };
 
-/* Either a primitive type, or if the value is greater than the maximum value in
- * the primitive_type enum, is reference into the udt_decl node in the AST. If
- * the original declaration originates from a different AST, it is always copied
- * into the current AST so we don't have to also store the tu_id here. */
+/* Either a primitive type, or if the value is greater than the maximum value
+ * in the primitive_type enum, is a reference to a udt_decl node in the AST. If
+ * the original declaration originates from a different AST, it is always
+ * copied into the current AST so we don't have to also store the tu_id here.
+ */
 union type
 {
     enum primitive_type primitive;

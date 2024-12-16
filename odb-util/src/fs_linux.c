@@ -35,8 +35,7 @@ fs_get_path_to_self(struct ospath* path)
             "/proc/self/exe", path->str.data, capacity - UTF8_APPEND_PADDING);
         if (path->str.len < 0)
             return log_err(
-                "readlink() failed in fs_get_path_to_self(): %s",
-                strerror(errno));
+                "readlink() failed in fs_get_path_to_self(): {errno}");
 
         if (path->str.len < capacity - UTF8_APPEND_PADDING)
             break;
@@ -108,9 +107,7 @@ fs_make_dir(struct ospathc path)
         return 1;
 
     log_err(
-        "Failed to create directory {quote:%s}: %s\n",
-        ospathc_cstr(path),
-        strerror(errno));
+        "Failed to create directory {quote:%s}: {errno}\n", ospathc_cstr(path));
     return -1;
 }
 
@@ -136,9 +133,8 @@ try_again:
         }
 
         log_err(
-            "Failed to create directory {quote:%s}: %s\n",
-            ospath_cstr(path),
-            strerror(errno));
+            "Failed to create directory {quote:%s}: {errno}\n",
+            ospath_cstr(path));
 
         return -1;
     }
@@ -186,6 +182,24 @@ fs_copy_file_if_newer(struct ospathc src, struct ospathc dst)
 }
 
 int
+fs_remove_file(struct ospathc path, int log_error)
+{
+    if (unlink(ospathc_cstr(path)) != 0)
+    {
+        if (errno == ENOENT)
+            return 1;
+
+        if (log_error)
+            log_err(
+                "Failed to remove file {quote:%s}: {errno}\n",
+                ospathc_cstr(path));
+        return -1;
+    }
+
+    return 0;
+}
+
+int
 fs_get_appdata_dir(struct ospath* path)
 {
     struct passwd* pw = getpwuid(getuid());
@@ -205,10 +219,9 @@ fs_mtime_ms(struct ospathc path)
     if (stat(ospathc_cstr(path), &st))
     {
         log_err(
-            "Failed to stat file {quote:%.*s}: %s\n",
+            "Failed to stat file {quote:%.*s}: {errno}\n",
             path.len,
-            path.str.data,
-            strerror(errno));
+            path.str.data);
         return 0;
     }
     return ((uint64_t)st.st_mtim.tv_sec * 1000)
