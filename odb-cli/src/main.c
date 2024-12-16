@@ -497,7 +497,7 @@ dump_commands(struct cli_ctx* ctx, int argc, char** argv)
     }
 
     log_info(
-        "Wrote %d commands to stdout [--dump-commands]\n",
+        "Wrote %d commands to stdout [{emph2:--commands}]\n",
         cmd_list_count(&ctx->commands));
 
     return 0;
@@ -1385,7 +1385,7 @@ get_sdk_runtime_lib_filename(enum sdk_type sdk, enum target_platform platform)
         case SDK_DBPRO:
             switch (platform)
             {
-                case TARGET_WINDOWS: return "dbp-runtime.dll";
+                case TARGET_WINDOWS: return "dbp-runtime.lib";
                 case TARGET_LINUX: return "libdbp-runtime.so";
                 case TARGET_MACOS: return "libdbp-runtime.dylib";
             }
@@ -1478,7 +1478,7 @@ link_executable(struct cli_ctx* ctx, int argc, char** argv)
     filename = get_sdk_runtime_path(ctx->sdk);
     if (ospath_join_cstr(&srcpath, filename) != 0)
         goto failed;
-    filename = get_sdk_runtime_lib_filename(ctx->sdk, ctx->platform);
+    filename = get_sdk_runtime_bin_filename(ctx->sdk, ctx->platform);
     if (ospath_join_cstr(&srcpath, filename) != 0)
         goto failed;
 

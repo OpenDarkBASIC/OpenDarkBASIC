@@ -244,8 +244,11 @@ cmd_id
 cmd_list_find(const struct cmd_list* commands, struct utf8_view name)
 {
     cmd_id cmd = utf8_lower_bound(commands->cmd_names, name);
-    if (cmd < cmd_list_count(commands)
-        && utf8_equal(name, utf8_list_view(commands->cmd_names, cmd)))
-        return cmd;
+    if (cmd < cmd_list_count(commands))
+    {
+        struct utf8_view found_name = utf8_list_view(commands->cmd_names, cmd);
+        if (utf8_equal(name, found_name))
+            return cmd;
+    }
     return -1;
 }

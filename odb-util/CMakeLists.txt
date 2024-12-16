@@ -112,6 +112,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     $<$<PLATFORM_ID:Windows>:src/mfile_win32.c>
     $<$<PLATFORM_ID:Windows>:src/ospath_win32.c>
     $<$<PLATFORM_ID:Windows>:src/process_win32.c>
+    $<$<PLATFORM_ID:Windows>:src/system_win32.c>
     $<$<PLATFORM_ID:Windows>:src/thread_win32.c>
     $<$<PLATFORM_ID:Windows>:src/utf8_win32.c>)
 target_include_directories (odb-util

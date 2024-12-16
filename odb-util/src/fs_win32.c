@@ -128,7 +128,7 @@ int
 fs_make_path(struct ospath path)
 {
 try_again:
-    if (CreateDirectory(ospath_cstr(path), NULL))
+    if (CreateDirectory(ospath_cstr(path), NULL) == 0)
     {
         if (GetLastError() == ERROR_ALREADY_EXISTS)
             return 0;
@@ -173,10 +173,10 @@ fs_copy_file(struct ospathc src, struct ospathc dst)
 int
 fs_copy_file_if_newer(struct ospathc src, struct ospathc dst)
 {
-    uint64_t dst_mtime = fs_mtime_ms(dst);
+    uint64_t dst_mtime = fs_mtime_ms(dst, 0);
     if (dst_mtime > 0)
     {
-        uint64_t src_mtime = fs_mtime_ms(src);
+        uint64_t src_mtime = fs_mtime_ms(src, 1);
         if (src_mtime == 0)
             return -1;
         if (src_mtime <= dst_mtime)
@@ -217,6 +217,9 @@ fs_get_appdata_dir(struct ospath* path)
     if (utf16_to_utf8(&path->str, cstr_utf16_view(u16path)) != 0)
         goto utf_conversion_failed;
 
+    if (ospath_join_cstr(path, "OpenDarkBASIC") != 0)
+        goto utf_conversion_failed;
+
     CoTaskMemFree(u16path);
     return 0;
 
@@ -227,7 +230,7 @@ get_folder_failed:
 }
 
 uint64_t
-fs_mtime_ms(struct ospathc path)
+fs_mtime_ms(struct ospathc path, int log_error)
 {
     FILETIME      mtime;
     LARGE_INTEGER ns100;
@@ -241,9 +244,10 @@ fs_mtime_ms(struct ospathc path)
         NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        log_err(
-            "Failed to open file {quote:%s}: {win32error}\n",
-            ospathc_cstr(path));
+        if (log_error)
+            log_err(
+                "Failed to open file {quote:%s}: {win32error}\n",
+                ospathc_cstr(path));
         goto open_file_failed;
     }
 
