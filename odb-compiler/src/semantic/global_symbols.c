@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/semantic/globals.h"
+#include "odb-compiler/semantic/global_symbols.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
@@ -144,20 +144,22 @@ HM_DEFINE_API_FULL(
     kvs_set_value,
     128,
     70)
+
 struct global_symbols
 {
     struct hm hm;
 };
 
 void
-global_symbols_deinit(struct global_symbols* globals)
+global_symbols_deinit(struct global_symbols* global_symbols)
 {
-    hm_deinit(&globals->hm);
+    hm_deinit(&global_symbols->hm);
 }
 
 static int
 add_function(
-    struct global_symbols**           globals,
+    struct global_symbols**    global_symbols,
+    struct ast**               globals,
     struct ast**               tus,
     int                        tu_id,
     ast_id                     f1,
@@ -179,7 +181,7 @@ add_function(
     func_span = ast->nodes[identifier].identifier.name;
     func_name = utf8_span_view(source, func_span);
 
-    switch (hm_emplace_or_get((struct hm**)globals, func_name, &entry))
+    switch (hm_emplace_or_get((struct hm**)global_symbols, func_name, &entry))
     {
         case HM_OOM: return -1;
         case HM_NEW: {
@@ -191,16 +193,20 @@ add_function(
                 f1 = parent;
 
             entry->tu_id = tu_id;
-            entry->ast_node = f1;
+            entry->original_node = f1;
+            /* TODO: Copy into "globals" AST and translate offset */
+            entry->type = node_to_type(f1);
             break;
         }
 
         case HM_EXISTS: {
+            /* XXX: This may  not be a function. Previous definition could be a
+             * UDT or array */
             const struct ast* prev_ast = tus[entry->tu_id];
             ast_id            prev_f1
-                = ast_node_type(prev_ast, entry->ast_node) == AST_FUNC_POLY
-                      ? prev_ast->nodes[entry->ast_node].func_poly.func
-                      : entry->ast_node;
+                = ast_node_type(prev_ast, entry->original_node) == AST_FUNC_POLY
+                      ? prev_ast->nodes[entry->original_node].func_poly.func
+                      : entry->original_node;
             struct ospathc prev_filename
                 = ospathc_list_get(filenames, entry->tu_id);
             const char*    prev_source = sources[entry->tu_id].data;
@@ -222,7 +228,8 @@ add_function(
 
 static int
 add_udt_decl(
-    struct global_symbols**           globals,
+    struct global_symbols**    global_symbols,
+    struct ast**               globals,
     struct ast**               tus,
     int                        tu_id,
     ast_id                     udt_decl,
@@ -243,16 +250,18 @@ add_udt_decl(
     udt_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
     udt_span = ast->nodes[udt_ident].identifier.name;
     udt_name = utf8_span_view(source, udt_span);
-    switch (hm_emplace_or_get((struct hm**)globals, udt_name, &entry))
+    switch (hm_emplace_or_get((struct hm**)global_symbols, udt_name, &entry))
     {
         case HM_OOM: return -1;
         case HM_NEW: {
             entry->tu_id = tu_id;
-            entry->ast_node = udt_decl;
+            entry->original_node = udt_decl;
             break;
         }
 
         case HM_EXISTS: {
+            /* XXX: This may  not be a UDT. Previous definition could be a
+             * function or array */
             const struct ast* prev_ast = tus[entry->tu_id];
             struct ospathc    prev_filename
                 = ospathc_list_get(filenames, entry->tu_id);
@@ -264,7 +273,7 @@ add_udt_decl(
                 filename,
                 source,
                 prev_ast,
-                entry->ast_node,
+                entry->original_node,
                 prev_filename,
                 prev_source);
         }
@@ -275,7 +284,8 @@ add_udt_decl(
 
 int
 globals_add_declarations_from_ast(
-    struct global_symbols**           table,
+    struct global_symbols**    global_symbols,
+    struct ast**               globals,
     struct ast**               tus,
     int                        tu_id,
     const struct ospathc_list* filenames,
@@ -285,59 +295,69 @@ globals_add_declarations_from_ast(
     for (n = 0; n != ast_count(tus[tu_id]); ++n)
     {
         if (ast_node_type(tus[tu_id], n) == AST_FUNC1)
-            if (add_function(table, tus, tu_id, n, filenames, sources) != 0)
+            if (add_function(
+                    global_symbols, globals, tus, tu_id, n, filenames, sources)
+                != 0)
+            {
                 return -1;
+            }
 
         if (ast_node_type(tus[tu_id], n) == AST_UDT_DECL)
-            if (add_udt_decl(table, tus, tu_id, n, filenames, sources) != 0)
+            if (add_udt_decl(
+                    global_symbols, globals, tus, tu_id, n, filenames, sources)
+                != 0)
+            {
                 return -1;
+            }
     }
 
     return 0;
 }
 
 const struct global*
-global_symbols_find(const struct global_symbols* table, struct utf8_view key)
+global_symbols_find(const struct global_symbols* global_symbols, struct utf8_view key)
 {
-    return hm_find(&table->hm, key);
+    return hm_find(&global_symbols->hm, key);
 }
 
 #if defined(ODBUTIL_MEM_DEBUGGING)
 void
-mem_acquire_globals(struct global_symbols* table)
+mem_acquire_globals(struct global_symbols* global_symbols)
 {
-    if (table == NULL)
+    if (global_symbols == NULL)
         return;
 
-    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_data != NULL, (void)0);
-    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_spans != NULL, (void)0);
-    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.values != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(global_symbols->hm.kvs.key_data != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(global_symbols->hm.kvs.key_spans != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(global_symbols->hm.kvs.values != NULL, (void)0);
 
     mem_acquire(
-        table,
+        global_symbols,
         offsetof(struct hm, hashes)
-            + table->hm.capacity * sizeof(table->hm.hashes[0]));
+            + global_symbols->hm.capacity
+                  * sizeof(global_symbols->hm.hashes[0]));
     mem_acquire(
-        table->hm.kvs.key_data,
+        global_symbols->hm.kvs.key_data,
         offsetof(struct kvs_key_data, data)
-            + sizeof(table->hm.kvs.key_data->data[0])
-                  * table->hm.kvs.key_data->capacity);
+            + sizeof(global_symbols->hm.kvs.key_data->data[0])
+                  * global_symbols->hm.kvs.key_data->capacity);
     mem_acquire(
-        table->hm.kvs.key_spans,
-        sizeof(table->hm.kvs.key_spans[0]) * table->hm.capacity);
+        global_symbols->hm.kvs.key_spans,
+        sizeof(global_symbols->hm.kvs.key_spans[0])
+            * global_symbols->hm.capacity);
     mem_acquire(
-        table->hm.kvs.values,
-        sizeof(table->hm.kvs.values[0]) * table->hm.capacity);
+        global_symbols->hm.kvs.values,
+        sizeof(global_symbols->hm.kvs.values[0]) * global_symbols->hm.capacity);
 }
 void
-mem_release_globals(struct global_symbols* table)
+mem_release_globals(struct global_symbols* global_symbols)
 {
-    if (table == NULL)
+    if (global_symbols == NULL)
         return;
 
-    mem_release(table->hm.kvs.values);
-    mem_release(table->hm.kvs.key_spans);
-    mem_release(table->hm.kvs.key_data);
-    mem_release(table);
+    mem_release(global_symbols->hm.kvs.values);
+    mem_release(global_symbols->hm.kvs.key_spans);
+    mem_release(global_symbols->hm.kvs.key_data);
+    mem_release(global_symbols);
 }
 #endif

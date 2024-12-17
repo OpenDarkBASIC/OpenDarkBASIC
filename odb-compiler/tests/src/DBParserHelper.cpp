@@ -6,7 +6,7 @@
 extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-compiler/semantic/globals.h"
+#include "odb-compiler/semantic/global_symbols.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/mutex.h"
@@ -58,7 +58,7 @@ DBParserHelper::~DBParserHelper()
     db_parser_deinit(&p);
     utf8_deinit(src);
     ospath_list_deinit(filenames);
-    globals_deinit(globals);
+    global_symbols_deinit(globals);
     cmd_list_deinit(&cmds);
     udt_storage_deinit(&udts);
     plugin_list_deinit(plugins);

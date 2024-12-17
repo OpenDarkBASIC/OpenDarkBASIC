@@ -2,7 +2,7 @@
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/semantic/globals.h"
+#include "odb-compiler/semantic/global_symbols.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/bm.h"
@@ -991,18 +991,18 @@ create_default_initializer(
 
 static ast_id
 create_default_initializer_udt(
-    struct ast**          astp,
-    struct utf8_span      udt_name,
-    struct ospathc        filename,
-    const char*           source,
-    const struct globals* globals)
+    struct ast**                 astp,
+    struct utf8_span             udt_name,
+    struct ospathc               filename,
+    const char*                  source,
+    const struct global_symbols* global_symbols)
 {
     struct utf8_view     key;
     const struct global* entry;
     ast_id               udt_decl, udt_ident, members, arglist;
 
     key = utf8_span_view(source, udt_name);
-    entry = globals_find(globals, key);
+    entry = global_symbols_find(global_symbols, key);
     if (entry == NULL)
     {
         log_flc(filename, source, udt_name);
@@ -1064,15 +1064,15 @@ create_default_initializer_udt(
 
 static enum process_result
 process_var_decl(
-    struct stack**             stack,
-    struct ast**               tus,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    ast_id                     var_decl,
-    const struct ospathc_list* filenames,
-    const struct utf8*         sources,
-    struct locals**            locals,
-    const struct globals*      globals)
+    struct stack**               stack,
+    struct ast**                 tus,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
+    ast_id                       var_decl,
+    const struct ospathc_list*   filenames,
+    const struct utf8*           sources,
+    struct locals**              locals,
+    const struct global_symbols* global_symbols)
 {
     ast_id           decl1, decl2, identifier, as, init_expr;
     struct local*    local;
@@ -1186,7 +1186,7 @@ process_var_decl(
             log_err("type: %d\n", ast_node_type(*astp, as)));
         udt_name = (*astp)->nodes[as].as_udt.type_name;
         init_expr = create_default_initializer_udt(
-            astp, udt_name, filename, source, globals);
+            astp, udt_name, filename, source, global_symbols);
         if (init_expr < 0)
             return DEP_ERROR;
 
@@ -1299,15 +1299,15 @@ process_var_write(
 
 static enum process_result
 process_udt_decl(
-    struct stack**             stack,
-    struct ast**               tus,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    ast_id                     udt_decl,
-    const struct ospathc_list* filenames,
-    const struct utf8*         sources,
-    struct locals**            locals,
-    const struct globals*      globals)
+    struct stack**               stack,
+    struct ast**                 tus,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
+    ast_id                       udt_decl,
+    const struct ospathc_list*   filenames,
+    const struct utf8*           sources,
+    struct locals**              locals,
+    const struct global_symbols* global_symbols)
 {
     ast_id               members, type_identifier;
     struct utf8_span     type_name;
@@ -1343,7 +1343,7 @@ process_udt_decl(
     /* Check if another module has already declared the type globally */
     type_name = ast->nodes[type_identifier].identifier.name;
     key = utf8_span_view(source, type_name);
-    global = globals_find(globals, key);
+    global = global_symbols_find(global_symbols, key);
     if (global != NULL && global->tu_id != tu_id)
     {
         const struct ast* first_ast = tus[global->tu_id];
@@ -2948,14 +2948,14 @@ find_func_instantiation(
 
 static enum process_result
 process_call_like(
-    struct stack**             stack,
-    struct ast**               tus,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    ast_id                     n,
-    const struct ospathc_list* filenames,
-    const struct utf8*         sources,
-    const struct globals*      globals)
+    struct stack**               stack,
+    struct ast**                 tus,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
+    ast_id                       n,
+    const struct ospathc_list*   filenames,
+    const struct utf8*           sources,
+    const struct global_symbols* global_symbols)
 {
     ast_id ident, arglist;
 
@@ -2977,7 +2977,7 @@ process_call_like(
 
     ident = (*astp)->nodes[n].call_like.identifier;
     key = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
-    global = globals_find(globals, key);
+    global = global_symbols_find(global_symbols, key);
     if (global == NULL)
     {
         log_flc(filename, source, ast_loc(*astp, ident));
@@ -3245,15 +3245,15 @@ process_as_expr(struct stack** stack, struct ast* ast, ast_id as_expr)
 
 static enum process_result
 process_as_udt(
-    struct stack**             stack,
-    struct ast**               tus,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    ast_id                     as_udt,
-    const struct ospathc_list* filenames,
-    struct utf8*               sources,
-    struct locals**            locals,
-    const struct globals*      globals)
+    struct stack**               stack,
+    struct ast**                 tus,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
+    ast_id                       as_udt,
+    const struct ospathc_list*   filenames,
+    struct utf8*                 sources,
+    struct locals**              locals,
+    const struct global_symbols* global_symbols)
 {
     struct utf8_span type_name;
     int32_t          scope_id;
@@ -3281,7 +3281,7 @@ process_as_udt(
             struct mutex*        their_mutex;
             const char*          their_source;
             struct utf8_view     key = utf8_span_view(source->data, type_name);
-            const struct global* global = globals_find(globals, key);
+            const struct global* global = global_symbols_find(global_symbols, key);
             if (global == NULL)
                 return err_udt_not_found(
                     *astp, type_name, filename, source->data);
@@ -3314,15 +3314,15 @@ process_as_udt(
 
 static enum process_result
 process_node(
-    struct stack**             stack,
-    struct locals**            locals,
-    struct ast**               tus,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct ospathc_list* filenames,
-    struct utf8*               sources,
-    const struct cmd_list*     cmds,
-    const struct globals*      globals)
+    struct stack**               stack,
+    struct locals**              locals,
+    struct ast**                 tus,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
+    const struct ospathc_list*   filenames,
+    struct utf8*                 sources,
+    const struct cmd_list*       cmds,
+    const struct global_symbols* global_symbols)
 {
     struct ast**        astp = &tus[tu_id];
     struct ospathc      filename = ospathc_list_get(filenames, tu_id);
@@ -3364,7 +3364,7 @@ process_node(
                 filenames,
                 sources,
                 locals,
-                globals);
+                global_symbols);
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_VAR_READ:
             return process_var_read(stack, astp, n, filename, source, locals);
@@ -3380,14 +3380,15 @@ process_node(
                 filenames,
                 sources,
                 locals,
-                globals);
+                global_symbols);
         case AST_UDT_INIT:
             return process_udt_init(stack, astp, n, filename, source, *locals);
         case AST_UDT_READ:
             return process_udt_read(stack, *astp, n, filename, source, locals);
         case AST_UDT_WRITE:
             return process_udt_write(stack, *astp, n, filename, source, locals);
-        case AST_DIM_DECL1: return process_dim_decl();
+        case AST_DIM_DECL1:
+            return process_dim_decl(stack, *astp, n, source, locals);
         case AST_DIM_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_DIM_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_DIM_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
@@ -3430,7 +3431,7 @@ process_node(
             return process_func_call(stack, *astp, n, filename, source);
         case AST_CALL_LIKE:
             return process_call_like(
-                stack, tus, tu_id, tu_mutexes, n, filenames, sources, globals);
+                stack, tus, tu_id, tu_mutexes, n, filenames, sources, global_symbols);
 
         case AST_BOOLEAN_LITERAL:
             (*astp)->nodes[n].info.type_info = primitive_type(TYPE_BOOL);
@@ -3484,7 +3485,7 @@ process_node(
                 filenames,
                 sources,
                 locals,
-                globals);
+                global_symbols);
         case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
     }
 
@@ -3549,16 +3550,16 @@ sanity_check(
 
 static int
 type_check(
-    struct ast**               tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct ospathc_list* filenames,
-    struct utf8*               sources,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct udt_storage*  udts,
-    const struct globals*      globals)
+    struct ast**                 tus,
+    int                          tu_count,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
+    const struct ospathc_list*   filenames,
+    struct utf8*                 sources,
+    const struct plugin_list*    plugins,
+    const struct cmd_list*       cmds,
+    const struct udt_storage*    udts,
+    const struct global_symbols* global_symbols)
 {
     struct locals* locals;
     struct stack*  stack;
@@ -3601,7 +3602,7 @@ type_check(
             filenames,
             sources,
             cmds,
-            globals))
+            global_symbols))
         {
             case DEP_ERROR:
                 return_code = -1;

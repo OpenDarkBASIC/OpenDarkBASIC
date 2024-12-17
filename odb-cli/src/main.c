@@ -9,7 +9,7 @@
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/sdk_type.h"
 #include "odb-compiler/sdk/used_cmds.h"
-#include "odb-compiler/semantic/globals.h"
+#include "odb-compiler/semantic/global_symbols.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-compiler/semantic/udt.h"
@@ -83,7 +83,7 @@ struct cli_ctx
     struct asts*        asts;
 
     /* Global variables, UDTs and functions */
-    struct globals* globals;
+    struct global_symbols* globals;
 
     /* Code generation */
     struct ospath           arch_plat_dir;
@@ -127,7 +127,7 @@ cli_ctx_init(struct cli_ctx* ctx, const char* prog_name)
     asts_init(&ctx->asts);
 
     /* Global variables, UDTs and functions */
-    globals_init(&ctx->globals);
+    global_symbols_init(&ctx->globals);
 
     /* Code generation */
     ctx->arch_plat_dir = empty_ospath();
@@ -154,7 +154,7 @@ cli_ctx_deinit(struct cli_ctx* ctx)
     ospath_deinit(ctx->arch_plat_dir);
 
     /* Global variables, UDTs and functions */
-    globals_deinit(ctx->globals);
+    global_symbols_deinit(ctx->globals);
 
     /* Translation unit */
     while (sources_count(ctx->sources) > 0)

@@ -47,7 +47,7 @@ udt_storage_add_type(
         if (udt_decl < 0)
             return type_invalid();
 
-        return type_udt(udt_decl);
+        return node_to_type(udt_decl);
     }
 
     log_flc(filename, source, type_name);

@@ -6,7 +6,7 @@
 
 struct ast;
 struct cmd_list;
-struct globals;
+struct global_symbols;
 struct mutex;
 struct ospathc_list;
 struct plugin_list;
@@ -22,7 +22,7 @@ typedef int (*semantic_check_func)(
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
     const struct udt_storage*  udts,
-    const struct globals*      symbols);
+    const struct global_symbols*      symbols);
 
 struct semantic_check
 {
@@ -43,7 +43,7 @@ semantic_check_run(
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
     const struct udt_storage*    udts,
-    const struct globals*        symbols);
+    const struct global_symbols*        symbols);
 
 ODBCOMPILER_PUBLIC_API int
 semantic_run_essential_checks(
@@ -56,7 +56,7 @@ semantic_run_essential_checks(
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
     const struct udt_storage*  udts,
-    const struct globals*      symbols);
+    const struct global_symbols*      symbols);
 
 /*!
  * Analyzes all expression trees and ensures that the types of the operands are

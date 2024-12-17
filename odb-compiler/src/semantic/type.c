@@ -16,17 +16,17 @@ last_enum_idx(void)
 }
 
 union type
-type_udt(int udt_decl)
+node_to_type(int ast_node)
 {
     union type t;
-    t.id = udt_decl + last_enum_idx() + 1;
+    t.ast_node = ast_node + last_enum_idx() + 1;
     return t;
 }
 
 int
-type_udt_decl(union type type)
+type_to_node(union type type)
 {
-    return type.id - last_enum_idx() - 1;
+    return type.ast_node - last_enum_idx() - 1;
 }
 
 enum type_annotation
@@ -90,19 +90,36 @@ primitive_type_name(enum primitive_type primitive)
     return "(unknown type)";
 }
 
+static ast_id
+node_to_identifier(const struct ast* ast, ast_id node)
+{
+    switch (ast_node_type(ast, node))
+    {
+        case AST_UDT_DECL: return ast->nodes[node].udt_decl.type_identifier;
+        case AST_DIM_DECL1:
+            node = ast->nodes[node].dim_decl1.dim_decl2;
+            return ast->nodes[node].dim_decl2.identifier;
+        case AST_FUNC1: return ast->nodes[node].func1.identifier;
+        case AST_FUNC_POLY:
+            node = ast->nodes[node].func_poly.func;
+            return ast->nodes[node].func1.identifier;
+        default: break;
+    }
+
+    ODBUTIL_DEBUG_ASSERT(0, log_err("type: %d\n", ast_node_type(ast, node)));
+    return -1;
+}
+
 struct utf8_view
 type_name(union type type, const struct ast* ast, const char* source)
 {
-    ast_id udt_decl, ident;
+    ast_id node, ident;
 
     if (type_is_primitive(type))
         return cstr_utf8_view(primitive_type_name(type.primitive));
 
-    udt_decl = type_udt_decl(type);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
-        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
-    ident = ast->nodes[udt_decl].udt_decl.type_identifier;
+    node = type_to_node(type);
+    ident = node_to_identifier(ast, node);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, ident) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, ident)));
@@ -134,9 +151,9 @@ type_convert(union type from, union type to)
     /* clang-format on */
 
     if (type_is_primitive(from) && type_is_primitive(to))
-        return rules[from.id - 1][to.id - 1];
+        return rules[from.ast_node - 1][to.ast_node - 1];
 
-    if (from.id == to.id)
+    if (from.ast_node == to.ast_node)
         return TC_ALLOW;
 
     return TC_DISALLOW;

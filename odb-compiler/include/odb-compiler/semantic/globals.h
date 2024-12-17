@@ -19,33 +19,33 @@ struct global
     ast_id ast_node;
 };
 
-struct globals;
+struct global_symbols;
 
 static inline void
-globals_init(struct globals** table)
+globals_init(struct global_symbols** table)
 {
     *table = NULL;
 }
 
 ODBCOMPILER_PUBLIC_API void
-globals_deinit(struct globals* table);
+global_symbols_deinit(struct global_symbols* table);
 
 ODBCOMPILER_PUBLIC_API int
 globals_add_declarations_from_ast(
-    struct globals**           table,
+    struct global_symbols**           table,
     struct ast**               tus,
     int                        tu_id,
     const struct ospathc_list* filenames,
     const struct utf8*         sources);
 
 ODBCOMPILER_PUBLIC_API const struct global*
-globals_find(const struct globals* table, struct utf8_view key);
+global_symbols_find(const struct global_symbols* table, struct utf8_view key);
 
 #if defined(ODBUTIL_MEM_DEBUGGING)
 ODBCOMPILER_PUBLIC_API void
-mem_acquire_globals(struct globals* table);
+mem_acquire_globals(struct global_symbols* table);
 ODBCOMPILER_PUBLIC_API void
-mem_release_globals(struct globals* table);
+mem_release_globals(struct global_symbols* table);
 #else
 #define mem_acquire_globals(table)
 #define mem_release_globals(table)

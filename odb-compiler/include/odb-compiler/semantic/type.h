@@ -60,15 +60,25 @@ enum primitive_type
 #undef X
 };
 
-/* Either a primitive type, or if the value is greater than the maximum value
- * in the primitive_type enum, is a reference to a udt_decl node in the AST. If
- * the original declaration originates from a different AST, it is always
- * copied into the current AST so we don't have to also store the tu_id here.
+/* 
+ * Either a primitive type, or if the value is greater than the maximum value
+ * in the primitive_type enum, is a reference to a node in an AST.
+ *
+ * By convention, node types will always refer to a node that exists in the
+ * same AST. If a type originates from a different AST, it is copied into the
+ * current AST to enforce this convention. This is to avoid confusion about
+ * which AST to look in for the declaration.
+ *
+ * The node can be one of the following types:
+ *   Function: AST_FUNC_POLY or AST_FUNC1 if the function is not
+ *             polymorphic.
+ *   UDT:      AST_UDT_DECL node that defines the type.
+ *   Array:    AST_DIM_DECL1 node that defines the type. 
  */
 union type
 {
     enum primitive_type primitive;
-    int                 id;
+    int                 ast_node;
 };
 
 enum type_annotation
@@ -108,10 +118,10 @@ type_invalid(void)
 }
 
 ODBCOMPILER_PUBLIC_API union type
-type_udt(int udt_decl);
+node_to_type(int ast_node);
 
 ODBCOMPILER_PUBLIC_API int
-type_udt_decl(union type type);
+type_to_node(union type type);
 
 ODBCOMPILER_PUBLIC_API enum type_annotation
 type_to_annotation(union type type);
@@ -168,5 +178,5 @@ type_is_valid(union type t)
 static inline int
 types_equal(union type t1, union type t2)
 {
-    return t1.id == t2.id;
+    return t1.ast_node == t2.ast_node;
 }

@@ -10,7 +10,7 @@ extern "C" {
 
 struct ast;
 struct mutex;
-struct globals;
+struct global_symbols;
 struct plugin_list;
 }
 
@@ -37,7 +37,7 @@ struct DBParserHelper
     struct plugin_list* plugins;
     struct cmd_list     cmds;
     struct udt_storage  udts;
-    struct globals*     globals;
+    struct global_symbols*     globals;
     struct db_parser    p;
     struct ospath_list* filenames;
     struct utf8         src;

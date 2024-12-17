@@ -187,10 +187,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/ast_integrity.c"
    
     "include/odb-compiler/semantic/semantic.h"
-    "include/odb-compiler/semantic/globals.h"
+    "include/odb-compiler/semantic/global_symbols.h"
     "include/odb-compiler/semantic/type.h"
     "src/semantic/calculate_scope_ids.c"
-    "src/semantic/globals.c"
+    "src/semantic/global_symbols.c"
     "src/semantic/loop_cont.c"
     "src/semantic/loop_exit.c"
     "src/semantic/loop_for.c"

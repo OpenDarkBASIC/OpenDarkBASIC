@@ -1219,7 +1219,7 @@ process_binop(
     } type_family;
     ODBUTIL_DEBUG_ASSERT(
         types_equal(lhs_type, rhs_type),
-        log_err("lhs: %d, rhs: %d\n", lhs_type.id, rhs_type.id));
+        log_err("lhs: %d, rhs: %d\n", lhs_type.ast_node, rhs_type.ast_node));
     ODBUTIL_DEBUG_ASSERT(type_is_primitive(lhs_type), (void)0);
     switch (lhs_type.primitive)
     {
@@ -1953,7 +1953,7 @@ process_cast(
     union type to = ast_type_info(ast, cast);
     ODBUTIL_DEBUG_ASSERT(
         type_is_primitive(from) && type_is_primitive(to),
-        log_err("from: %d, to: %d\n", from.id, to.id));
+        log_err("from: %d, to: %d\n", from.ast_node, to.ast_node));
     switch (to.primitive)
     {
         case TYPE_INVALID: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;

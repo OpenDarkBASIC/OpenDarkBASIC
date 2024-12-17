@@ -235,7 +235,7 @@ cmd_cache_save(
         mstream_write_utf8(&ms, utf8_list_view(cmds->cmd_names, cmd));
         mstream_write_utf8(&ms, utf8_list_view(cmds->symbols, cmd));
         mstream_write_li16(&ms, cmds->plugin_ids->data[cmd]);
-        mstream_write_li32(&ms, cmds->return_types->data[cmd].id);
+        mstream_write_li32(&ms, cmds->return_types->data[cmd].ast_node);
         mstream_write_u8(
             &ms, cmd_param_types_list_count(cmds->param_types->data[cmd]));
         for (i = 0;
@@ -248,7 +248,7 @@ cmd_cache_save(
                 = utf8_list_view(cmds->param_names->data[cmd], i);
             mstream_write_lu32(
                 &ms,
-                (uint32_t)(param_type->type.id & 0x7FFFFFFF)
+                (uint32_t)(param_type->type.ast_node & 0x7FFFFFFF)
                     | (uint32_t)(param_type->direction << 31));
             mstream_write_utf8(&ms, param_name);
         }

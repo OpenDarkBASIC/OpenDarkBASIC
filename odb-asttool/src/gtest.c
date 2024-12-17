@@ -642,7 +642,7 @@ write_property_check(FILE* fp, const struct ast* ast, ast_id n)
                     fp, ast->nodes[n].as_type.type.primitive);
             }
             else
-                fprintf(fp, "id, Eq(%d\n", ast->nodes[n].as_type.type.id);
+                fprintf(fp, "id, Eq(%d\n", ast->nodes[n].as_type.type.ast_node);
             fprintf(fp, "));\n");
             break;
         case AST_AS_EXPR: break;
@@ -684,7 +684,7 @@ write_type_check(FILE* fp, const struct ast* ast, ast_id n)
         write_primitive_type_enum_name(fp, type.primitive);
     }
     else
-        fprintf(fp, ".id, Eq(%d)", type.id);
+        fprintf(fp, ".id, Eq(%d)", type.ast_node);
 
     fprintf(fp, "));\n");
 }

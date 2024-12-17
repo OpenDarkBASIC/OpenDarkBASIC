@@ -113,7 +113,7 @@ type_name(union type type, const struct ast* ast, const char* source)
     if (type_is_primitive(type))
         return cstr_utf8_view(primitive_type_name(type.primitive));
 
-    udt_decl = type.id - last_enum_idx() - 1;
+    udt_decl = type.ast_node - last_enum_idx() - 1;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
