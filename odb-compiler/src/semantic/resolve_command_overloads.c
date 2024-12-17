@@ -1,8 +1,8 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-compiler/semantic/globals.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
-#include "odb-compiler/semantic/udt.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
 #include "odb-util/vec.h"
@@ -125,7 +125,7 @@ report_duplicate_commands(
     ast_id                    cmd,
     struct ospathc            filename,
     const char*               source,
-    const struct udt_storage* udts,
+    const struct globals*     globals,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const struct candidates*  candidates)
@@ -157,7 +157,9 @@ report_duplicate_commands(
         for (arg_idx = 0; arg_idx != utf8_list_count(param_names); ++arg_idx)
         {
             struct utf8_view tname = type_name(
-                param_types->data[arg_idx].type, udts->ast, udts->source.data);
+                param_types->data[arg_idx].type,
+                globals->ast,
+                globals->source.data);
             if (arg_idx)
                 log_raw(", ");
             log_raw(
@@ -344,7 +346,7 @@ report_available_commands(
     const char*               source,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
+    const struct globals*     globals,
     cmd_id                    cmd)
 {
     int              gutter;
@@ -380,7 +382,7 @@ report_available_commands(
         for (i = 0; i != utf8_list_count(param_names); ++i)
         {
             struct utf8_view tname = type_name(
-                param_types->data[i].type, udts->ast, udts->source.data);
+                param_types->data[i].type, globals->ast, globals->source.data);
             if (i)
                 log_raw(", ");
             log_raw(
@@ -401,7 +403,7 @@ log_signature(
     const char*               source,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
-    const struct udt_storage* udts)
+    const struct globals*     globals)
 {
     int              i;
     struct utf8_view name = utf8_list_view(cmds->cmd_names, cmd_id);
@@ -420,7 +422,7 @@ log_signature(
     for (i = 0; i != utf8_list_count(param_names); ++i)
     {
         struct utf8_view tname = type_name(
-            param_types->data[i].type, udts->ast, udts->source.data);
+            param_types->data[i].type, globals->ast, globals->source.data);
         if (i)
             log_raw(", ");
         log_raw(
@@ -441,7 +443,7 @@ typecheck_warnings(
     const char*               source,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
-    const struct udt_storage* udts)
+    const struct globals*     globals)
 {
     int         i;
     struct ast* ast = *astp;
@@ -481,7 +483,7 @@ typecheck_warnings(
                     param_tname.len,
                     param_tname.data + param_tname.off);
                 log_excerpt_1(source, ast_loc(ast, arg), arg_tname, 0);
-                log_signature(cmd_id, ast, source, plugins, cmds, udts);
+                log_signature(cmd_id, ast, source, plugins, cmds, globals);
                 break;
 
             case TC_SIGN_CHANGE:
@@ -498,7 +500,7 @@ typecheck_warnings(
                     param_tname.len,
                     param_tname.data + param_tname.off);
                 log_excerpt_1(source, ast_loc(ast, arg), arg_tname, 0);
-                log_signature(cmd_id, ast, source, plugins, cmds, udts);
+                log_signature(cmd_id, ast, source, plugins, cmds, globals);
                 break;
         }
 
@@ -554,8 +556,7 @@ resolve_command_overloads(
     struct utf8*               sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct udt_storage*  udts,
-    const struct global_symbols*      globals)
+    const struct globals*      globals)
 {
     ast_id             n;
     ast_id             arglist;
@@ -651,7 +652,7 @@ resolve_command_overloads(
                                            ? *vec_first(candidates)
                                            : *vec_first(prev_candidates);
             if (typecheck_warnings(
-                    astp, n, filename, source, plugins, cmds, udts)
+                    astp, n, filename, source, plugins, cmds, globals)
                 != 0)
             {
                 goto fail;
@@ -664,7 +665,7 @@ resolve_command_overloads(
         if (candidates_count(candidates) > 0)
         {
             report_duplicate_commands(
-                ast, n, filename, source, udts, plugins, cmds, candidates);
+                ast, n, filename, source, globals, plugins, cmds, candidates);
         }
         else if (candidates_count(prev_candidates) > 0)
         {
@@ -688,7 +689,7 @@ resolve_command_overloads(
                 source,
                 plugins,
                 cmds,
-                udts,
+                globals,
                 ast->nodes[n].command.id);
         }
         else if (ctx.argcount > param_max)
@@ -701,7 +702,7 @@ resolve_command_overloads(
                 source,
                 plugins,
                 cmds,
-                udts,
+                globals,
                 ast->nodes[n].command.id);
         }
         else if (candidates_count(prev_candidates) == 0)
@@ -715,7 +716,7 @@ resolve_command_overloads(
                 source,
                 plugins,
                 cmds,
-                udts,
+                globals,
                 ast->nodes[n].command.id);
         }
 

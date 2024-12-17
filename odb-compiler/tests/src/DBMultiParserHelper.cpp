@@ -1,4 +1,4 @@
-#include "odb-compiler/tests/DBParserHelper.hpp"
+#include "odb-compiler/tests/DBMultiParserHelper.hpp"
 #include <filesystem>
 
 #include <gtest/gtest.h>
@@ -11,42 +11,32 @@ extern "C" {
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/mutex.h"
 #include "odb-util/utf8.h"
-
-extern int         odbtests_ast;
-extern const char* odbtests_ast_filename;
 }
 
 using namespace testing;
 
-DBParserHelper::DBParserHelper()
+DBMultiParserHelper::DBMultiParserHelper()
 {
     plugin_list_init(&plugins);
-    udt_storage_init(&udts);
     cmd_list_init(&cmds);
     globals_init(&globals);
     db_parser_init(&p);
     ospath_list_init(&filenames);
 
-    src = empty_utf8();
-    ast_init(&ast);
-    ast_mutex = mutex_create();
-    cmd_list_mutex = mutex_create();
-
     struct plugin_info* plugin = plugin_list_emplace(&plugins);
     plugin_info_init(plugin);
     utf8_set_cstr(&plugin->name, "test");
     ospath_set_cstr(&plugin->filepath, "test");
-    ospath_list_add_cstr(&filenames, "test");
 }
 
-DBParserHelper::~DBParserHelper()
+DBMultiParserHelper::~DBMultiParserHelper()
 {
-    writeAST();
-
-    mutex_destroy(cmd_list_mutex);
-    mutex_destroy(ast_mutex);
-    ast_deinit(ast);
-
+    for (auto ast : asts)
+        ast_deinit(ast);
+    for (auto source : sources)
+        utf8_deinit(source);
+    ospath_list_deinit(filenames);
+    db_parser_deinit(&p);
     struct plugin_info* plugin;
     vec_for_each(plugins, plugin)
     {
@@ -54,17 +44,13 @@ DBParserHelper::~DBParserHelper()
         utf8_deinit(plugin->name);
     }
 
-    db_parser_deinit(&p);
-    utf8_deinit(src);
-    ospath_list_deinit(filenames);
     globals_deinit(globals);
     cmd_list_deinit(&cmds);
-    udt_storage_deinit(&udts);
     plugin_list_deinit(plugins);
 }
 
 int
-DBParserHelper::parse(const char* code)
+DBMultiParserHelper::parse(const char* code)
 {
     utf8_deinit(src);
     src = empty_utf8();
@@ -79,23 +65,13 @@ DBParserHelper::parse(const char* code)
     int result = db_parse(
         &p, &ast, ospath_list_get(filenames, 0), &src, &plugins, &cmds, &udts);
     if (result != 0)
-        return result;
 
-#if defined(ODBCOMPILER_AST_DUMP)
-    const testing::TestInfo* info
-        = testing::UnitTest::GetInstance()->current_test_info();
-    std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
-                          + info->name() + ".ast";
-    std::filesystem::create_directory("ast");
-    ast_export(ast, cstr_ospathc(astfile.c_str()), utf8_view(src), &cmds);
-#endif
-
-    return globals_add_declarations_from_ast(
-        &globals, &ast, 0, ospath_list_ospathc(filenames), &src);
+        return globals_add_declarations_from_ast(
+            &globals, &ast, 0, ospath_list_ospathc(filenames), &src);
 }
 
 int
-DBParserHelper::semantic(const struct semantic_check* check)
+DBMultiParserHelper::semantic(const struct semantic_check* check)
 {
     int result = semantic_check_run(
         check,
@@ -121,22 +97,23 @@ DBParserHelper::semantic(const struct semantic_check* check)
 }
 
 int
-DBParserHelper::addCommand(const char* name)
+DBMultiParserHelper::addCommand(const char* name)
 {
     return addCommand(TYPE_VOID, name);
 }
 int
-DBParserHelper::addCommand(enum primitive_type return_type, const char* name)
+DBMultiParserHelper::addCommand(
+    enum primitive_type return_type, const char* name)
 {
     return addCommand(return_type, name, {});
 }
 int
-DBParserHelper::addCommand(union type return_type, const char* name)
+DBMultiParserHelper::addCommand(union type return_type, const char* name)
 {
     return addCommand(return_type, name, {});
 }
 int
-DBParserHelper::addCommand(
+DBMultiParserHelper::addCommand(
     union type                        return_type,
     const char*                       name,
     std::initializer_list<union type> param_types)
@@ -162,7 +139,7 @@ DBParserHelper::addCommand(
     return cmd;
 }
 int
-DBParserHelper::addCommand(
+DBMultiParserHelper::addCommand(
     enum primitive_type                        return_type,
     const char*                                name,
     std::initializer_list<enum primitive_type> param_types)
@@ -193,7 +170,7 @@ DBParserHelper::addCommand(
 }
 
 void
-DBParserHelper::writeAST()
+DBMultiParserHelper::writeAST()
 {
     if (ast == nullptr || !odbtests_ast)
         return;

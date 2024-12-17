@@ -7,7 +7,6 @@
 #include "odb-util/vec.h"
 
 struct plugin_list;
-struct udt_storage;
 typedef int32_t cmd_id;
 
 /* Command parameters can also have out parameters */
@@ -135,7 +134,6 @@ cmd_add_param(
 ODBCOMPILER_PUBLIC_API int
 cmd_list_load_from_plugins(
     struct cmd_list*          cmds,
-    struct udt_storage*       udts,
     const struct plugin_list* plugins,
     enum sdk_type             sdk_type,
     enum target_arch          arch,

@@ -51,8 +51,7 @@ check_loop_names(
     struct utf8*               sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct udt_storage*  udts,
-    const struct global_symbols*      globals)
+    const struct globals*      globals)
 {
     ast_id         n;
     struct ast*    ast = tus[tu_id];

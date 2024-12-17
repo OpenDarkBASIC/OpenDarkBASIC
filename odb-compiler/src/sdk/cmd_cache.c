@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/sdk/cmd_cache.h"
-#include "odb-compiler/semantic/udt.h"
+#include "odb-compiler/semantic/globals.h"
 #include "odb-util/fs.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
@@ -15,7 +15,7 @@ cmd_cache_load(
     struct plugin_ids**       cached_plugins,
     const struct plugin_list* plugins,
     struct cmd_list*          cmds,
-    struct udt_storage*       udts,
+    struct globals*           globals,
     enum sdk_type             sdk_type,
     enum target_arch          arch,
     enum target_platform      platform)
@@ -144,19 +144,20 @@ cmd_cache_load(
         }
     }
 
-    /* User-Defined Type AST */
+    /* Global symbol table -- Required for e.g. UDTs being passed as arguments
+     * to commands */
     node_count = mstream_read_li32(&ms);
     if (node_count > 0)
     {
-        mem_size    node_bytes = sizeof(udts->ast->nodes[0]) * node_count;
-        struct ast* new_ast = ast_realloc(udts->ast, node_count);
+        mem_size    node_bytes = sizeof(globals->ast->nodes[0]) * node_count;
+        struct ast* new_ast = ast_realloc(globals->ast, node_count);
         if (new_ast == NULL)
             goto parse_failed;
-        udts->ast = new_ast;
-        udts->ast->count = node_count;
-        memcpy(udts->ast->nodes, mstream_read(&ms, node_bytes), node_bytes);
+        globals->ast = new_ast;
+        globals->ast->count = node_count;
+        memcpy(globals->ast->nodes, mstream_read(&ms, node_bytes), node_bytes);
 
-        if (utf8_set(&udts->source, mstream_read_utf8(&ms)) != 0)
+        if (utf8_set(&globals->source, mstream_read_utf8(&ms)) != 0)
             goto parse_failed;
     }
 
@@ -179,7 +180,7 @@ int
 cmd_cache_save(
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
-    const struct udt_storage* udts,
+    const struct globals*     globals,
     enum sdk_type             sdk_type,
     enum target_arch          arch,
     enum target_platform      platform)
@@ -255,15 +256,15 @@ cmd_cache_save(
     }
 
     /* User-Defined Type AST */
-    if (udts->ast == NULL)
+    if (globals->ast == NULL)
         mstream_write_li32(&ms, 0);
     else
     {
-        ast_id   node_count = ast_count_unsafe(udts->ast);
-        mem_size node_bytes = sizeof(udts->ast->nodes[0]) * node_count;
+        ast_id   node_count = ast_count_unsafe(globals->ast);
+        mem_size node_bytes = sizeof(globals->ast->nodes[0]) * node_count;
         mstream_write_li32(&ms, node_count);
-        mstream_write(&ms, udts->ast->nodes, node_bytes);
-        mstream_write_utf8(&ms, utf8_view(udts->source));
+        mstream_write(&ms, globals->ast->nodes, node_bytes);
+        mstream_write_utf8(&ms, utf8_view(globals->source));
     }
 
     /* If at any point a write failed, the error flag is set */

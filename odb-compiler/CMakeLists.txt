@@ -187,10 +187,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/ast_integrity.c"
    
     "include/odb-compiler/semantic/semantic.h"
-    "include/odb-compiler/semantic/global_symbols.h"
+    "include/odb-compiler/semantic/globals.h"
     "include/odb-compiler/semantic/type.h"
     "src/semantic/calculate_scope_ids.c"
-    "src/semantic/global_symbols.c"
+    "src/semantic/globals.c"
     "src/semantic/loop_cont.c"
     "src/semantic/loop_exit.c"
     "src/semantic/loop_for.c"
@@ -202,7 +202,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/select.c"
     "src/semantic/type.c"
     "src/semantic/type_check.c"
-    "src/semantic/udt.c"
     "src/semantic/unary_literal.c"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
@@ -455,7 +454,9 @@ if (ODBCOMPILER_TESTS)
         #"tests/src/test_SourceLocation.cpp"
 
         "tests/include/odb-compiler/tests/DBParserHelper.hpp"
+        "tests/include/odb-compiler/tests/DBMultiParserHelper.hpp"
         "tests/src/DBParserHelper.cpp"
+        "tests/src/DBMultiParserHelper.cpp"
 
         "tests/src/util/test_odbcompiler_cmd_list.cpp"
 
@@ -470,6 +471,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_dim.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_func.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_load_command.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_loop_for.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_loop_for_errors.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_remarks.cpp"
@@ -479,6 +481,7 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/semantic/test_odbcompiler_semantic_calculate_scope_ids.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_conditionals_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_global_redeclarations.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_cont_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_cont_for_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_cont_do_errors.cpp"

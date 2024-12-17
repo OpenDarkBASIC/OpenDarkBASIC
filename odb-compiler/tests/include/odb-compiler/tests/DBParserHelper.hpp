@@ -6,11 +6,10 @@ extern "C" {
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/semantic/type.h"
-#include "odb-compiler/semantic/udt.h"
 
 struct ast;
 struct mutex;
-struct global_symbols;
+struct globals;
 struct plugin_list;
 }
 
@@ -36,8 +35,7 @@ struct DBParserHelper
 
     struct plugin_list* plugins;
     struct cmd_list     cmds;
-    struct udt_storage  udts;
-    struct global_symbols*     globals;
+    struct globals*     globals;
     struct db_parser    p;
     struct ospath_list* filenames;
     struct utf8         src;

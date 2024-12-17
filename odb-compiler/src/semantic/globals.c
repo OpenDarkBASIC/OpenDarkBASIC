@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
-#include "odb-compiler/semantic/global_symbols.h"
+#include "odb-compiler/semantic/globals.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
@@ -145,21 +145,25 @@ HM_DEFINE_API_FULL(
     128,
     70)
 
-struct global_symbols
+void
+globals_init(struct globals* globals)
 {
-    struct hm hm;
-};
+    globals->source = empty_utf8();
+    ast_init(&globals->ast);
+    hm_init(&globals->name_map);
+}
 
 void
-global_symbols_deinit(struct global_symbols* global_symbols)
+globals_deinit(struct globals* globals)
 {
-    hm_deinit(&global_symbols->hm);
+    hm_deinit(globals->name_map);
+    ast_deinit(globals->ast);
+    utf8_deinit(globals->source);
 }
 
 static int
 add_function(
-    struct global_symbols**    global_symbols,
-    struct ast**               globals,
+    struct globals*            globals,
     struct ast**               tus,
     int                        tu_id,
     ast_id                     f1,
@@ -181,7 +185,7 @@ add_function(
     func_span = ast->nodes[identifier].identifier.name;
     func_name = utf8_span_view(source, func_span);
 
-    switch (hm_emplace_or_get((struct hm**)global_symbols, func_name, &entry))
+    switch (hm_emplace_or_get((struct hm**)globals, func_name, &entry))
     {
         case HM_OOM: return -1;
         case HM_NEW: {
@@ -228,8 +232,7 @@ add_function(
 
 static int
 add_udt_decl(
-    struct global_symbols**    global_symbols,
-    struct ast**               globals,
+    struct globals*            globals,
     struct ast**               tus,
     int                        tu_id,
     ast_id                     udt_decl,
@@ -250,7 +253,7 @@ add_udt_decl(
     udt_ident = ast->nodes[udt_decl].udt_decl.type_identifier;
     udt_span = ast->nodes[udt_ident].identifier.name;
     udt_name = utf8_span_view(source, udt_span);
-    switch (hm_emplace_or_get((struct hm**)global_symbols, udt_name, &entry))
+    switch (hm_emplace_or_get((struct hm**)globals, udt_name, &entry))
     {
         case HM_OOM: return -1;
         case HM_NEW: {
@@ -283,9 +286,8 @@ add_udt_decl(
 }
 
 int
-globals_add_declarations_from_ast(
-    struct global_symbols**    global_symbols,
-    struct ast**               globals,
+globals_add_from_ast(
+    struct globals*            globals,
     struct ast**               tus,
     int                        tu_id,
     const struct ospathc_list* filenames,
@@ -295,17 +297,13 @@ globals_add_declarations_from_ast(
     for (n = 0; n != ast_count(tus[tu_id]); ++n)
     {
         if (ast_node_type(tus[tu_id], n) == AST_FUNC1)
-            if (add_function(
-                    global_symbols, globals, tus, tu_id, n, filenames, sources)
-                != 0)
+            if (add_function(globals, tus, tu_id, n, filenames, sources) != 0)
             {
                 return -1;
             }
 
         if (ast_node_type(tus[tu_id], n) == AST_UDT_DECL)
-            if (add_udt_decl(
-                    global_symbols, globals, tus, tu_id, n, filenames, sources)
-                != 0)
+            if (add_udt_decl(globals, tus, tu_id, n, filenames, sources) != 0)
             {
                 return -1;
             }
@@ -315,50 +313,64 @@ globals_add_declarations_from_ast(
 }
 
 const struct global*
-global_symbols_find(
-    const struct global_symbols* global_symbols, struct utf8_view name)
+globals_find(const struct globals* globals, struct utf8_view name)
 {
-    return hm_find(&global_symbols->hm, name);
+    return hm_find(globals->name_map, name);
 }
 
 #if defined(ODBUTIL_MEM_DEBUGGING)
-void
-mem_acquire_globals(struct global_symbols* global_symbols)
+
+static void
+mem_acquire_name_map(struct hm* name_map)
 {
-    if (global_symbols == NULL)
+    if (name_map == NULL)
         return;
 
-    ODBUTIL_DEBUG_ASSERT(global_symbols->hm.kvs.key_data != NULL, (void)0);
-    ODBUTIL_DEBUG_ASSERT(global_symbols->hm.kvs.key_spans != NULL, (void)0);
-    ODBUTIL_DEBUG_ASSERT(global_symbols->hm.kvs.values != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(name_map->kvs.key_data != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(name_map->kvs.key_spans != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(name_map->kvs.values != NULL, (void)0);
 
     mem_acquire(
-        global_symbols,
+        name_map,
         offsetof(struct hm, hashes)
-            + global_symbols->hm.capacity
-                  * sizeof(global_symbols->hm.hashes[0]));
+            + name_map->capacity * sizeof(name_map->hashes[0]));
     mem_acquire(
-        global_symbols->hm.kvs.key_data,
+        name_map->kvs.key_data,
         offsetof(struct kvs_key_data, data)
-            + sizeof(global_symbols->hm.kvs.key_data->data[0])
-                  * global_symbols->hm.kvs.key_data->capacity);
+            + sizeof(name_map->kvs.key_data->data[0])
+                  * name_map->kvs.key_data->capacity);
     mem_acquire(
-        global_symbols->hm.kvs.key_spans,
-        sizeof(global_symbols->hm.kvs.key_spans[0])
-            * global_symbols->hm.capacity);
+        name_map->kvs.key_spans,
+        sizeof(name_map->kvs.key_spans[0]) * name_map->capacity);
     mem_acquire(
-        global_symbols->hm.kvs.values,
-        sizeof(global_symbols->hm.kvs.values[0]) * global_symbols->hm.capacity);
+        name_map->kvs.values,
+        sizeof(name_map->kvs.values[0]) * name_map->capacity);
 }
+
 void
-mem_release_globals(struct global_symbols* global_symbols)
+mem_release_name_map(struct hm* name_map)
 {
-    if (global_symbols == NULL)
+    if (name_map == NULL)
         return;
 
-    mem_release(global_symbols->hm.kvs.values);
-    mem_release(global_symbols->hm.kvs.key_spans);
-    mem_release(global_symbols->hm.kvs.key_data);
-    mem_release(global_symbols);
+    mem_release(name_map->kvs.values);
+    mem_release(name_map->kvs.key_spans);
+    mem_release(name_map->kvs.key_data);
+}
+
+void
+mem_acquire_globals(struct globals* globals)
+{
+    mem_acquire_name_map(globals->name_map);
+    mem_acquire_ast(globals->ast);
+    mem_acquire(globals->source.data, globals->source.len);
+}
+
+void
+mem_release_globals(struct globals* globals)
+{
+    mem_release(globals->source.data);
+    mem_release_ast(globals->ast);
+    mem_release_name_map(globals->name_map);
 }
 #endif

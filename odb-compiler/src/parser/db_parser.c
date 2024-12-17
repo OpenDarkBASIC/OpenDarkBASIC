@@ -7,7 +7,7 @@
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/parser/db_scanner.lex.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-compiler/semantic/udt.h"
+#include "odb-compiler/semantic/globals.h"
 #include "odb-util/config.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
@@ -193,6 +193,39 @@ get_next_assembled_token(
     return token_queue_take(*tokens);
 }
 
+static ast_id
+find_udt_decl(
+    struct utf8_span  type_name,
+    const struct ast* ast,
+    struct ospathc    filename,
+    const char*       source)
+{
+    ast_id n;
+    for (n = 0; n != ast_count(ast); ++n)
+    {
+        ast_id           ident;
+        struct utf8_span span;
+        struct utf8_view view;
+
+        if (ast_node_type(ast, n) != AST_UDT_DECL)
+            continue;
+
+        ident = ast->nodes[n].udt_decl.type_identifier;
+        span = ast->nodes[ident].identifier.name;
+        view = utf8_span_view(source, span);
+        if (utf8_equal(view, utf8_span_view(source, type_name)))
+            return n;
+    }
+
+    log_flc(filename, source, type_name);
+    log_err(
+        "User-Defined Type '%.*s' not found\n",
+        type_name.len,
+        source + type_name.off);
+    log_excerpt_1(source, type_name, empty_utf8_view(), 0);
+    return -1;
+}
+
 int
 db_parser_load_command(
     const struct ast*    ast,
@@ -201,7 +234,7 @@ db_parser_load_command(
     struct utf8*         source,
     struct plugin_list** plugins,
     struct cmd_list*     cmds,
-    struct udt_storage*  udts)
+    struct globals*      globals)
 {
     union type       type;
     plugin_id        plugin;
@@ -244,7 +277,10 @@ db_parser_load_command(
     if (ast_node_type(ast, rettype) == AST_AS_UDT)
     {
         struct utf8_span name = ast->nodes[rettype].as_udt.type_name;
-        type = udt_storage_add_type(udts, name, ast, filename, source->data);
+        ast_id udt_decl = find_udt_decl(name, ast, filename, source->data);
+        if (udt_decl < 0)
+            goto error;
+        type = globals_add_type(globals, udt_decl, ast, filename, source->data);
         if (type_is_invalid(type))
             goto error;
     }
@@ -279,9 +315,12 @@ db_parser_load_command(
 
         if (ast_node_type(ast, as) == AST_AS_UDT)
         {
-            struct utf8_span name = ast->nodes[as].as_udt.type_name;
-            type
-                = udt_storage_add_type(udts, name, ast, filename, source->data);
+            struct utf8_span span = ast->nodes[as].as_udt.type_name;
+            ast_id udt_decl = find_udt_decl(span, ast, filename, source->data);
+            if (udt_decl < 0)
+                goto error;
+            type = globals_add_type(
+                globals, udt_decl, ast, filename, source->data);
             if (type_is_invalid(type))
                 goto error;
         }
@@ -350,7 +389,7 @@ db_parse(
     struct utf8*         source,
     struct plugin_list** plugins,
     struct cmd_list*     cmds,
-    struct udt_storage*  udts)
+    struct globals*      globals)
 {
     struct token_queue* tokens;
     YY_BUFFER_STATE     buffer_state;
@@ -358,7 +397,7 @@ db_parse(
     struct utf8_span    scanner_location = empty_utf8_span();
     struct utf8         cmd_buf = empty_utf8();
     struct parse_param  parse_param
-        = {astp, filename, source, plugins, cmds, udts};
+        = {astp, filename, source, plugins, cmds, globals};
 
     if (source->len == 0)
     {
