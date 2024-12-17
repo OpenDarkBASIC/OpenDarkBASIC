@@ -38,7 +38,8 @@ globals_add_declarations_from_ast(
     const struct utf8*         sources);
 
 ODBCOMPILER_PUBLIC_API const struct global*
-global_symbols_find(const struct global_symbols* global_symbols, struct utf8_view key);
+global_symbols_find(
+    const struct global_symbols* global_symbols, struct utf8_view name);
 
 #if defined(ODBUTIL_MEM_DEBUGGING)
 ODBCOMPILER_PUBLIC_API void

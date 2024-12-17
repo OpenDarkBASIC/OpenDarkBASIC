@@ -26,6 +26,7 @@ node_to_type(int ast_node)
 int
 type_to_node(union type type)
 {
+    ODBUTIL_DEBUG_ASSERT(type.ast_node >= last_enum_idx() - 1, (void)0);
     return type.ast_node - last_enum_idx() - 1;
 }
 

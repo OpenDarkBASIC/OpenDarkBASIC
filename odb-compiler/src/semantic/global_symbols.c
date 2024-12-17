@@ -315,9 +315,10 @@ globals_add_declarations_from_ast(
 }
 
 const struct global*
-global_symbols_find(const struct global_symbols* global_symbols, struct utf8_view key)
+global_symbols_find(
+    const struct global_symbols* global_symbols, struct utf8_view name)
 {
-    return hm_find(&global_symbols->hm, key);
+    return hm_find(&global_symbols->hm, name);
 }
 
 #if defined(ODBUTIL_MEM_DEBUGGING)

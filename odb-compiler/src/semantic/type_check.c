@@ -994,40 +994,42 @@ create_default_initializer_udt(
     struct ast**                 astp,
     struct utf8_span             udt_name,
     struct ospathc               filename,
-    const char*                  source,
+    struct utf8*                 source,
+    const struct ast*            globals,
+    const char*                  globals_source,
     const struct global_symbols* global_symbols)
 {
     struct utf8_view     key;
     const struct global* entry;
     ast_id               udt_decl, udt_ident, members, arglist;
 
-    key = utf8_span_view(source, udt_name);
+    key = utf8_span_view(source->data, udt_name);
     entry = global_symbols_find(global_symbols, key);
     if (entry == NULL)
     {
-        log_flc(filename, source, udt_name);
+        log_flc(filename, source->data, udt_name);
         log_err("User-Defined Type not found.\n");
-        log_excerpt_1(source, udt_name, empty_utf8_view(), 0);
+        log_excerpt_1(source->data, udt_name, empty_utf8_view(), 0);
         return -1;
     }
-    udt_decl = entry->ast_node;
+    udt_decl = type_to_node(entry->type);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, udt_decl) == AST_UDT_DECL,
-        log_err("type: %d\n", ast_node_type(*astp, udt_decl)));
+        ast_node_type(globals, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(globals, udt_decl)));
 
     arglist = -1;
-    for (members = (*astp)->nodes[udt_decl].udt_decl.members; members > -1;
-         members = (*astp)->nodes[members].block.next)
+    for (members = globals->nodes[udt_decl].udt_decl.members; members > -1;
+         members = globals->nodes[members].block.next)
     {
-        ast_id member = (*astp)->nodes[members].block.stmt;
-
-        if (ast_node_type(*astp, member) == AST_VAR_DECL1)
+        ast_id member = globals->nodes[members].block.stmt;
+        if (ast_node_type(globals, member) == AST_VAR_DECL1)
         {
             ast_id expr, arglist_entry;
-            ast_id init_expr = (*astp)->nodes[member].var_decl1.init_expr;
+            ast_id init_expr = globals->nodes[member].var_decl1.init_expr;
             ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
 
-            expr = ast_dup_subtree(astp, init_expr);
+            expr = ast_dup_subtree_into(
+                astp, source, globals, init_expr, globals_source);
             if (expr < 0)
                 return -1;
 
@@ -1070,8 +1072,10 @@ process_var_decl(
     struct mutex**               tu_mutexes,
     ast_id                       var_decl,
     const struct ospathc_list*   filenames,
-    const struct utf8*           sources,
+    struct utf8*                 sources,
     struct locals**              locals,
+    const struct ast*            globals,
+    const char*                  globals_source,
     const struct global_symbols* global_symbols)
 {
     ast_id           decl1, decl2, identifier, as, init_expr;
@@ -1081,7 +1085,7 @@ process_var_decl(
 
     struct ast**   astp = &tus[tu_id];
     struct ospathc filename = ospathc_list_get(filenames, tu_id);
-    const char*    source = sources[tu_id].data;
+    struct utf8*   source = &sources[tu_id];
     int32_t        top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1103,7 +1107,7 @@ process_var_decl(
      * later */
     name = (*astp)->nodes[identifier].identifier.name;
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (declare_local(locals, source, name, scope_id, &local))
+    switch (declare_local(locals, source->data, name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
@@ -1118,11 +1122,11 @@ process_var_decl(
                     *astp,
                     name,
                     filename,
-                    source,
+                    source->data,
                     *astp,
                     local->first_occurrence,
                     filename,
-                    source);
+                    source->data);
                 return DEP_ERROR;
             }
             break;
@@ -1186,7 +1190,13 @@ process_var_decl(
             log_err("type: %d\n", ast_node_type(*astp, as)));
         udt_name = (*astp)->nodes[as].as_udt.type_name;
         init_expr = create_default_initializer_udt(
-            astp, udt_name, filename, source, global_symbols);
+            astp,
+            udt_name,
+            filename,
+            source,
+            globals,
+            globals_source,
+            global_symbols);
         if (init_expr < 0)
             return DEP_ERROR;
 
@@ -1209,7 +1219,7 @@ process_var_decl(
             case TC_ALLOW: break;
             case TC_DISALLOW:
                 err_var_decl_init_incompatible_types(
-                    *astp, var_decl, filename, source);
+                    *astp, var_decl, filename, source->data);
                 return DEP_ERROR;
 
             case TC_SIGN_CHANGE:
@@ -1217,11 +1227,12 @@ process_var_decl(
             case TC_INT_TO_FLOAT:
             case TC_BOOL_PROMOTION:
                 warn_var_decl_implicit_conversion(
-                    *astp, var_decl, filename, source);
+                    *astp, var_decl, filename, source->data);
                 break;
 
             case TC_TRUNCATE:
-                warn_var_decl_truncation(*astp, var_decl, filename, source);
+                warn_var_decl_truncation(
+                    *astp, var_decl, filename, source->data);
                 break;
         }
 
@@ -1307,6 +1318,8 @@ process_udt_decl(
     const struct ospathc_list*   filenames,
     const struct utf8*           sources,
     struct locals**              locals,
+    const struct ast*            globals,
+    const char*                  globals_source,
     const struct global_symbols* global_symbols)
 {
     ast_id               members, type_identifier;
@@ -1349,22 +1362,16 @@ process_udt_decl(
         const struct ast* first_ast = tus[global->tu_id];
         struct ospathc    first_filename
             = ospathc_list_get(filenames, global->tu_id);
-        const char*   first_source = sources[global->tu_id].data;
-        struct mutex* their_mutex = tu_mutexes[global->tu_id];
 
-        mutex_lock(their_mutex);
         err_udt_decl_redeclaration(
             ast,
             type_name,
             filename,
             source,
-            first_ast,
-            global->ast_node,
+            globals,
+            global,
             first_filename,
             first_source);
-        mutex_unlock(their_mutex);
-
-        return DEP_ERROR;
     }
 
     /* Treat the User-Defined Type name as a local identifier. This is to detect
@@ -3281,7 +3288,8 @@ process_as_udt(
             struct mutex*        their_mutex;
             const char*          their_source;
             struct utf8_view     key = utf8_span_view(source->data, type_name);
-            const struct global* global = global_symbols_find(global_symbols, key);
+            const struct global* global
+                = global_symbols_find(global_symbols, key);
             if (global == NULL)
                 return err_udt_not_found(
                     *astp, type_name, filename, source->data);
@@ -3431,7 +3439,14 @@ process_node(
             return process_func_call(stack, *astp, n, filename, source);
         case AST_CALL_LIKE:
             return process_call_like(
-                stack, tus, tu_id, tu_mutexes, n, filenames, sources, global_symbols);
+                stack,
+                tus,
+                tu_id,
+                tu_mutexes,
+                n,
+                filenames,
+                sources,
+                global_symbols);
 
         case AST_BOOLEAN_LITERAL:
             (*astp)->nodes[n].info.type_info = primitive_type(TYPE_BOOL);
