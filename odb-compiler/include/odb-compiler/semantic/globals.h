@@ -23,7 +23,7 @@ struct global
      * symbol originated from + reference to original node. This is used for
      * message reporting */
     int tu_id;
-    ast_id original_node;
+    ast_id ast_node;
 
     /* References a node in the "global AST". */
     union type type;

@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_convert.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
@@ -31,7 +32,6 @@ resolve_command_names(
     {
         cmd_id           cmd;
         struct utf8_view cmd_view;
-        union ast_node   node;
 
         if (ast_node_type(ast, n) != AST_COMMAND_NAME)
             continue;
@@ -46,13 +46,7 @@ resolve_command_names(
 
         cmd = cmd_list_find(cmds, utf8_view(cmd_name));
         ODBUTIL_DEBUG_ASSERT(cmd > -1, (void)0);
-
-        node = ast->nodes[n];
-        ast->nodes[n].info.node_type = AST_COMMAND;
-        ast->nodes[n].command._pad = -1;
-        ast->nodes[n].command.arglist = node.command_name.arglist;
-        ast->nodes[n].command.is_expr = node.command_name.is_expr;
-        ast->nodes[n].command.id = cmd;
+        ast_convert_to_command(ast, n, cmd);
     }
 
     for (n = 0; n != ast_count_unsafe(ast); ++n)

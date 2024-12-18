@@ -752,9 +752,11 @@ err_udt_decl_redeclaration(
 {
     struct utf8_span first_name;
 
-    /* Fallback to just using the location as the "name" */
-    first_name = first_ast->nodes[first_occurrence].identifier.name;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(first_ast, first_occurrence) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(first_ast, first_occurrence)));
 
+    first_name = first_ast->nodes[first_occurrence].identifier.name;
     log_flc(filename, source, name);
     log_err(
         "User-Defined Type {quote:%.*s} already exists.\n",

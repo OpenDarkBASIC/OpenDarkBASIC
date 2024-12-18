@@ -325,7 +325,8 @@ process_dim_decl(
 {
     ast_id           decl2, arglist, ident, as;
     int32_t          scope_id;
-    struct utf8_span name;
+    struct utf8_span span;
+    struct utf8_view name;
     struct local*    local;
     int32_t          top = stack_count(*stack);
 
@@ -350,9 +351,10 @@ process_dim_decl(
 
     /* "Touch" the variable so others can depend on it. The type info is set
      * later */
-    name = ast->nodes[ident].identifier.name;
+    span = ast->nodes[ident].identifier.name;
+    name = utf8_span_view(source, span);
     scope_id = ast->nodes[ident].info.scope_id;
-    switch (locals_declare(locals, name, scope_id, source, &local))
+    switch (locals_declare(locals, name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
@@ -416,7 +418,8 @@ process_param(
 {
     ast_id           identifier, as;
     struct local*    local;
-    struct utf8_span name;
+    struct utf8_span span;
+    struct utf8_view name;
     int32_t          scope_id;
     int32_t          top = stack_count(*stack);
 
@@ -432,9 +435,10 @@ process_param(
 
     /* "Touch" the variable so others can depend on it. The type info is set
      * later */
-    name = (*astp)->nodes[identifier].identifier.name;
+    span = (*astp)->nodes[identifier].identifier.name;
+    name = utf8_span_view(source, span);
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (locals_declare(locals, name, scope_id, source, &local))
+    switch (locals_declare(locals, name, scope_id, &local))
     {
         case HM_NEW:
             local_init(local, identifier, param, primitive_type(TYPE_INVALID));
@@ -444,7 +448,7 @@ process_param(
             if (type_is_valid(local->type))
             {
                 err_param_redeclaration(
-                    *astp, name, local->first_occurrence, filename, source);
+                    *astp, span, local->first_occurrence, filename, source);
                 return DEP_ERROR;
             }
             break;
@@ -532,7 +536,8 @@ find_lvalue_first_occurrence(
     const struct locals* locals)
 {
     ast_id           identifier;
-    struct utf8_span name;
+    struct utf8_span span;
+    struct utf8_view name;
     int32_t          scope_id;
     struct local*    local;
 
@@ -555,9 +560,10 @@ find_lvalue_first_occurrence(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
 
-    name = ast->nodes[identifier].identifier.name;
+    span = ast->nodes[identifier].identifier.name;
+    name = utf8_span_view(source, span);
     scope_id = ast->nodes[identifier].info.scope_id;
-    local = locals_find(locals, name, scope_id, source);
+    local = locals_find(locals, name, scope_id);
     if (local == NULL)
         return -1;
 
@@ -681,9 +687,10 @@ process_assignment(
     if (ast_node_type(*astp, lvalue) == AST_VAR_WRITE)
     {
         ast_id identifier = (*astp)->nodes[lvalue].var_write.identifier;
-        struct utf8_span name = (*astp)->nodes[identifier].identifier.name;
+        struct utf8_span span = (*astp)->nodes[identifier].identifier.name;
+        struct utf8_view name = utf8_span_view(source, span);
         int32_t          scope_id = (*astp)->nodes[identifier].info.scope_id;
-        struct local*    local = locals_find(*locals, name, scope_id, source);
+        struct local*    local = locals_find(*locals, name, scope_id);
         if (local != NULL && local->first_occurrence == identifier)
         {
             if (convert_to_var_decl_with_cast(astp, ass, filename, source) != 0)
@@ -864,7 +871,8 @@ process_var_decl(
 {
     ast_id           decl1, decl2, identifier, as, init_expr;
     struct local*    local;
-    struct utf8_span name;
+    struct utf8_span span;
+    struct utf8_view name;
     int32_t          scope_id;
 
     struct ast**   astp = &tus[tu_id];
@@ -889,9 +897,10 @@ process_var_decl(
 
     /* "Touch" the variable so others can depend on it. The type info is set
      * later */
-    name = (*astp)->nodes[identifier].identifier.name;
+    span = (*astp)->nodes[identifier].identifier.name;
+    name = utf8_span_view(source->data, span);
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (locals_declare(locals, name, scope_id, source->data, &local))
+    switch (locals_declare(locals, name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
@@ -904,7 +913,7 @@ process_var_decl(
             {
                 err_var_decl_redeclaration(
                     *astp,
-                    name,
+                    span,
                     filename,
                     source->data,
                     *astp,
@@ -1034,7 +1043,8 @@ process_var_write(
     struct locals* locals)
 {
     struct local*    local;
-    struct utf8_span name;
+    struct utf8_span span;
+    struct utf8_view name;
     int32_t          scope_id;
     ast_id           identifier;
 
@@ -1048,9 +1058,10 @@ process_var_write(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
-    name = (*astp)->nodes[identifier].identifier.name;
+    span = (*astp)->nodes[identifier].identifier.name;
+    name = utf8_span_view(source, span);
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (locals_declare(locals, name, scope_id, source, &local))
+    switch (locals_declare(locals, name, scope_id, &local))
     {
         case HM_NEW: {
             /* Type always defaults to the annotation if a variable is
@@ -1095,12 +1106,12 @@ process_udt_decl(
     ast_id                     udt_decl,
     const struct ospathc_list* filenames,
     const struct utf8*         sources,
-    struct locals**            locals,
+    struct locals*             locals,
     const struct globals*      globals)
 {
     ast_id               members, type_identifier;
-    struct utf8_span     type_name;
-    struct utf8_view     key;
+    struct utf8_span     span;
+    struct utf8_view     name;
     int32_t              scope_id;
     struct local*        local;
     const struct global* global;
@@ -1130,22 +1141,22 @@ process_udt_decl(
     }
 
     /* Check if another module has already declared the type globally */
-    type_name = ast->nodes[type_identifier].identifier.name;
-    key = utf8_span_view(source, type_name);
-    global = globals_find(globals, key);
+    span = ast->nodes[type_identifier].identifier.name;
+    name = utf8_span_view(source, span);
+    global = globals_find(globals, name);
     if (global != NULL && global->tu_id != tu_id)
     {
         const struct ast* first_ast = tus[global->tu_id];
         struct ospathc    first_filename
             = ospathc_list_get(filenames, global->tu_id);
-
-        err_udt_decl_redeclaration(
+        const char* first_source = sources[global->tu_id].data;
+        return err_udt_decl_redeclaration(
             ast,
-            type_name,
+            span,
             filename,
             source,
-            globals,
-            global,
+            first_ast,
+            global->ast_node,
             first_filename,
             first_source);
     }
@@ -1154,13 +1165,13 @@ process_udt_decl(
      * duplicate declarations, and also to make copying the UDT declaration into
      * our local AST easier. */
     scope_id = ast->nodes[udt_decl].info.scope_id;
-    switch (locals_declare(locals, source, type_name, scope_id, &local))
+    switch (locals_declare(locals, name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_EXISTS: {
             return err_udt_decl_redeclaration(
                 ast,
-                type_name,
+                span,
                 filename,
                 source,
                 ast,
@@ -1169,7 +1180,8 @@ process_udt_decl(
                 source);
         }
         case HM_NEW: {
-            local_init(local, type_identifier, udt_decl, type_udt(udt_decl));
+            local_init(
+                local, type_identifier, udt_decl, node_to_type(udt_decl));
             break;
         }
     }
@@ -1192,7 +1204,8 @@ process_udt_init(
 {
     int32_t             scope_id;
     ast_id              arglist, udt_decl, members;
-    struct utf8_span    type_name;
+    struct utf8_span    span;
+    struct utf8_view    name;
     const struct local* local;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1211,14 +1224,15 @@ process_udt_init(
     }
 
     scope_id = (*astp)->nodes[udt_init].info.scope_id;
-    type_name = (*astp)->nodes[udt_init].udt_init.type_name;
-    local = find_local(locals, source, type_name, scope_id);
+    span = (*astp)->nodes[udt_init].udt_init.type_name;
+    name = utf8_span_view(source, span);
+    local = locals_find(locals, name, scope_id);
     if (local == NULL)
     {
-        err_udt_not_found(*astp, type_name, filename, source);
+        err_udt_not_found(*astp, span, filename, source);
         return DEP_ERROR;
     }
-    udt_decl = type_udt_decl(local->type);
+    udt_decl = type_to_node(local->type);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(*astp, udt_decl)));
@@ -1296,7 +1310,7 @@ find_udt_read_type(
     struct utf8_span left_name;
     union type       udt_member_type;
 
-    udt_decl = type_udt_decl(container_type);
+    udt_decl = type_to_node(container_type);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
@@ -1370,17 +1384,18 @@ find_udt_read_type(
 
 static enum process_result
 process_udt_read(
-    struct stack**  stack,
-    struct ast*     ast,
-    ast_id          udt_read,
-    struct ospathc  filename,
-    const char*     source,
-    struct locals** locals)
+    struct stack** stack,
+    struct ast*    ast,
+    ast_id         udt_read,
+    struct ospathc filename,
+    const char*    source,
+    struct locals* locals)
 {
     union type       type;
     ast_id           left, right, left_identifier;
     int32_t          scope_id;
-    struct utf8_span left_name;
+    struct utf8_span left_span;
+    struct utf8_view left_name;
     struct local*    local;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1399,17 +1414,18 @@ process_udt_read(
         return DEP_ERROR;
     }
 
-    left_name = ast->nodes[left_identifier].identifier.name;
+    left_span = ast->nodes[left_identifier].identifier.name;
+    left_name = utf8_span_view(source, left_span);
     scope_id = ast->nodes[left_identifier].info.scope_id;
-    switch (locals_declare(locals, source, left_name, scope_id, &local))
+    switch (locals_declare(locals, left_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
-            return err_udt_not_found(ast, left_name, filename, source);
+            return err_udt_not_found(ast, left_span, filename, source);
         }
         case HM_EXISTS: {
             if (type_is_primitive(local->type))
-                return err_udt_is_not_udt(ast, left_name, filename, source);
+                return err_udt_is_not_udt(ast, left_span, filename, source);
             break;
         }
     }
@@ -1441,7 +1457,7 @@ find_udt_write_type(
     struct utf8_span left_name;
     union type       udt_member_type;
 
-    udt_decl = type_udt_decl(container_type);
+    udt_decl = type_to_node(container_type);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
@@ -1515,17 +1531,18 @@ find_udt_write_type(
 
 static enum process_result
 process_udt_write(
-    struct stack**  stack,
-    struct ast*     ast,
-    ast_id          udt_write,
-    struct ospathc  filename,
-    const char*     source,
-    struct locals** locals)
+    struct stack** stack,
+    struct ast*    ast,
+    ast_id         udt_write,
+    struct ospathc filename,
+    const char*    source,
+    struct locals* locals)
 {
     union type       type;
     ast_id           left, right, left_identifier;
     int32_t          scope_id;
-    struct utf8_span left_name;
+    struct utf8_span left_span;
+    struct utf8_view left_name;
     struct local*    local;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -1544,17 +1561,18 @@ process_udt_write(
         return DEP_ERROR;
     }
 
-    left_name = ast->nodes[left_identifier].identifier.name;
+    left_span = ast->nodes[left_identifier].identifier.name;
+    left_name = utf8_span_view(source, left_span);
     scope_id = ast->nodes[left_identifier].info.scope_id;
-    switch (locals_declare(locals, source, left_name, scope_id, &local))
+    switch (locals_declare(locals, left_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
-            return err_udt_not_found(ast, left_name, filename, source);
+            return err_udt_not_found(ast, left_span, filename, source);
         }
         case HM_EXISTS: {
             if (type_is_primitive(local->type))
-                return err_udt_is_not_udt(ast, left_name, filename, source);
+                return err_udt_is_not_udt(ast, left_span, filename, source);
             break;
         }
     }
@@ -1574,15 +1592,16 @@ process_udt_write(
 
 static enum process_result
 process_var_read(
-    struct stack**  stack,
-    struct ast**    astp,
-    ast_id          var_read,
-    struct ospathc  filename,
-    const char*     source,
-    struct locals** locals)
+    struct stack** stack,
+    struct ast**   astp,
+    ast_id         var_read,
+    struct ospathc filename,
+    const char*    source,
+    struct locals* locals)
 {
     struct local*    local;
-    struct utf8_span name;
+    struct utf8_span span;
+    struct utf8_view name;
     ast_id           identifier;
     int32_t          scope_id;
 
@@ -1596,9 +1615,10 @@ process_var_read(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
-    name = (*astp)->nodes[identifier].identifier.name;
+    span = (*astp)->nodes[identifier].identifier.name;
+    name = utf8_span_view(source, span);
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (locals_declare(locals, source, name, scope_id, &local))
+    switch (locals_declare(locals, name, scope_id, &local))
     {
         case HM_NEW: {
             ast_id           init_ident, init_expr, init_var_decl, init_block;
@@ -2621,7 +2641,7 @@ instantiate_func(
 }
 
 static ast_id
-find_func_instantiation(
+find_func_instantiation_old(
     /* TU in which the polymorphic function exists */
     struct ast* func_ast,
     ast_id      func_block,
@@ -2729,38 +2749,205 @@ find_func_instantiation(
     }
 }
 
+static ast_id
+find_func_instantiation(
+    struct ast* global_ast,
+    ast_id      global_func_poly,
+    /* TU in which the call is being made (contains the arglist) */
+    const struct ast*    ast,
+    ast_id               arglist,
+    const struct locals* locals)
+{
+    ast_id           identifier, paramlist_poly, f1, f2, f3;
+    struct utf8_span func_name;
+
+    ODBUTIL_DEBUG_ASSERT(
+        call_arglist == -1
+            || ast_node_type(call_ast, call_arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(call_ast, call_arglist)));
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(global_ast, global_func_poly) == AST_FUNC_POLY,
+        log_err("type: %d\n", ast_node_type(global_ast, global_func_poly)));
+    f1 = global_ast->nodes[global_func_poly].func_poly.func;
+    f2 = global_ast->nodes[f1].func1.func2;
+    f3 = global_ast->nodes[f2].func2.func3;
+    identifier = global_ast->nodes[f1].func1.identifier;
+    func_name = global_ast->nodes[identifier].identifier.name;
+    paramlist_poly = global_ast->nodes[f3].func3.paramlist;
+
+    /* Functions are all appended to the end of the root block list (starting
+    from ast->root). We can avoid search through a lot of nodes
+
+    while (1)
+    {
+        ast_id al_arg, pl_param, pl_param_poly;
+        func_block = func_ast->nodes[func_block].block.next;
+        if (func_block < 0)
+            return -1;
+
+        f1 = func_ast->nodes[func_block].block.stmt;
+        if (ast_node_type(func_ast, f1) != AST_FUNC1)
+            return -1;
+        f2 = func_ast->nodes[f1].func1.func2;
+        f3 = func_ast->nodes[f2].func2.func3;
+
+        /* Stop checking if the next function doesn't share the same name as
+         * the first function */
+    identifier = global_ast->nodes[f1].func1.identifier;
+    if (func_name.off != global_ast->nodes[identifier].identifier.name.off
+        || func_name.len != global_ast->nodes[identifier].identifier.name.len)
+    {
+        return -1;
+    }
+
+    for (pl_param_poly = paramlist_poly,
+        pl_param = func_ast->nodes[f3].func3.paramlist,
+        al_arg = call_arglist;
+         pl_param_poly > -1;
+         pl_param_poly = func_ast->nodes[pl_param_poly].paramlist.next,
+        pl_param = func_ast->nodes[pl_param].paramlist.next,
+        al_arg = call_ast->nodes[al_arg].arglist.next)
+    {
+        ast_id     param_poly, param, arg;
+        union type param_type, arg_type;
+
+        ODBUTIL_DEBUG_ASSERT(pl_param > -1, (void)0);
+        ODBUTIL_DEBUG_ASSERT(al_arg > -1, (void)0);
+
+        param_poly = global_ast->nodes[pl_param_poly].paramlist.param;
+        param = func_ast->nodes[pl_param].paramlist.param;
+        arg = call_ast->nodes[al_arg].arglist.expr;
+        param_type = ast_type_info(global_ast, param);
+        arg_type = ast_type_info(call_ast, arg);
+
+        if (!types_equal(param_type, arg_type)
+            /* Casts are inserted later. This function only tries to
+               find a matching instantiation on parameters that are
+               polymorphic. */
+            && global_ast->nodes[param_poly].param.as < 0)
+        {
+            goto no_match;
+        }
+    }
+
+    ODBUTIL_DEBUG_ASSERT(
+        al_arg == -1,
+        log_err(
+            "node: %d, type: %d\n", al_arg, ast_node_type(call_ast, al_arg)));
+    ODBUTIL_DEBUG_ASSERT(
+        pl_param == -1,
+        log_err(
+            "node: %d, type: %d\n",
+            pl_param,
+            ast_node_type(func_ast, pl_param)));
+
+    return f1;
+
+no_match:;
+}
+
+static union type
+find_symbol(
+    const struct ast*     ast,
+    ast_id                identifier,
+    const struct globals* globals,
+    const struct locals*  locals)
+{
+    struct utf8_span     span;
+    struct utf8_view     name;
+    const struct global* global;
+    const struct local*  local;
+
+    span = ast->nodes[identifier].identifier.name;
+    name = utf8_span_view(ast->source, span);
+
+    global = globals_find(globals, name);
+    if (global != NULL)
+        return global->type;
+
+    local = locals_find(locals, name);
+    if (local != NULL)
+        return local->type;
+
+    return -1;
+}
+
 static enum process_result
 process_call_like(
     struct stack**             stack,
     struct ast**               tus,
     int                        tu_id,
-    struct mutex**             tu_mutexes,
     ast_id                     n,
     const struct ospathc_list* filenames,
     const struct utf8*         sources,
+    const struct locals*       locals,
     const struct globals*      globals)
 {
-    ast_id ident, arglist;
-
-    struct utf8_view     key;
+    ast_id               ident, arglist, f1;
+    struct utf8_view     name;
     const struct global* global;
+    struct ast**         astp = &tus[tu_id];
 
-    struct ast**   astp = &tus[tu_id];
-    struct ospathc filename = ospathc_list_get(filenames, tu_id);
-    const char*    source = sources[tu_id].data;
+    /* DarkBASIC has ambiguous syntax for
+     *   1) function calls
+     *   2) Indexing into an array
+     *   3) Constructing a UDT.
+     * The parser throws all of these into a single "call like" node. By
+     * looking up the name in the symbol table(s), this function transforms the
+     * call-like into what it actually is. */
 
-    /* NOTE: The function has an identifier, but the type of it is set only
-     * after the return type is known (if it is a function). */
-    arglist = (*astp)->nodes[n].call_like.arglist;
     if (arglist > -1 && type_is_invalid(ast_type_info(*astp, arglist)))
     {
         stack_push_entry(stack, n, arglist);
         return DEP_ADDED_CHILDREN;
     }
 
+    arglist = (*astp)->nodes[n].call_like.arglist;
     ident = (*astp)->nodes[n].call_like.identifier;
-    key = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
-    global = globals_find(globals, key);
+    name = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
+    global = globals_find(globals, name);
+    if (global != NULL && type_is_primitive(global->type))
+    {
+        const struct ast* orig_ast = tus[global->tu_id];
+        struct ospathc orig_fname = ospathc_list_get(filenames, global->tu_id);
+        const char*    orig_source = sources[global->tu_id].data;
+        struct utf8_span orig_loc = ast_loc(orig_ast, global->ast_node);
+        struct utf8_span arglist_loc
+            = (*astp)->nodes[arglist].arglist.combined_location;
+
+        log_flc(filename, source, ast_loc(*astp, n));
+        log_err("A variable cannot be called like a function.\n");
+        log_excerpt_1(source, arglist_loc, empty_utf8_view(), 0, 1);
+
+        log_flc(orig_fname, orig_source, ast_loc(orig_ast, global->ast_node));
+        log_note("Variable was previously defined here:\n");
+        log_excerpt_1(orig_source, orig_loc, empty_utf8_view(), 0);
+
+        return DEP_ERROR;
+    }
+    else if (global != NULL)
+    {
+        ast_id decl = type_to_node(global->type);
+        if (ast_node_type(globals->ast, decl) == AST_UDT_DECL)
+        {
+            struct utf8_span tname = (*astp)->nodes[ident].identifier.name;
+            ast_convert_to_udt_init(*astp, n, tname);
+            ast_delete_node(*astp, ident);
+
+            return DEP_ADDED_CHILDREN;
+        }
+        else if (ast_node_type(globals->ast, decl) == AST_FUNC_POLY)
+        {
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("type: %d\n", ast_node_type(globals->ast, decl)));
+            f1 = decl;
+        }
+    }
+
+    ident = (*astp)->nodes[n].call_like.identifier;
+    name = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
+    global = globals_find(globals, name);
     if (global == NULL)
     {
         log_flc(filename, source, ast_loc(*astp, ident));
@@ -2770,181 +2957,152 @@ process_call_like(
         return -1;
     }
 
-    if (global->tu_id == tu_id)
+    if (ast_node_type(globals->ast, type_to_node(global->type))
+        == AST_FUNC_POLY)
     {
-        /* The definition exists in our own AST. */
-
-        ast_id f1;
-        if (ast_node_type((*astp), global->ast_node) == AST_FUNC_POLY)
+        f1 = find_func_instantiation(*astp, poly_block, *astp, arglist);
+        if (f1 < 0)
         {
-            ast_id poly_block = ast_find_parent(*astp, global->ast_node);
-            f1 = find_func_instantiation(*astp, poly_block, *astp, arglist);
+            f1 = instantiate_func(
+                astp,
+                global->ast_node,
+                filename,
+                source,
+                astp,
+                (*astp)->nodes[n].call_like.arglist,
+                ast_loc(*astp, n),
+                filename,
+                source);
             if (f1 < 0)
-            {
-                f1 = instantiate_func(
-                    astp,
-                    global->ast_node,
-                    filename,
-                    source,
-                    astp,
-                    (*astp)->nodes[n].call_like.arglist,
-                    ast_loc(*astp, n),
-                    filename,
-                    source);
-                if (f1 < 0)
-                    return DEP_ERROR;
-
-                stack_push_entry(stack, n, f1);
-                return DEP_ADDED_CHILDREN;
-            }
-        }
-        else if (ast_node_type(*astp, global->ast_node) == AST_UDT_DECL)
-        {
-            /* Convert node into a udt_init and return */
-            union ast_node node = (*astp)->nodes[n];
-            node.info.node_type = AST_UDT_INIT;
-            node.udt_init.arglist = (*astp)->nodes[n].call_like.arglist;
-            node.udt_init._pad = -1;
-            node.udt_init.type_name = (*astp)->nodes[ident].identifier.name;
-            (*astp)->nodes[n] = node;
-
-            ast_delete_node(*astp, ident);
-
-            return DEP_ADDED_CHILDREN;
-        }
-        else
-        {
-            ODBUTIL_DEBUG_ASSERT(
-                ast_node_type(*astp, global->ast_node) == AST_FUNC1,
-                log_err("type: %d\n", ast_node_type(*astp, global->ast_node)));
-            f1 = global->ast_node;
-        }
-
-        if (type_is_valid(ast_type_info(*astp, f1)))
-        {
-            ast_id f2, f3, paramlist, pl_node, al_node, cast;
-            int    arg_num;
-
-            (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
-            (*astp)->nodes[n].info.type_info = ast_type_info(*astp, f1);
-            (*astp)->nodes[ident].info.type_info = ast_type_info(*astp, f1);
-
-            /* May need to insert casts for the arguments */
-            f2 = (*astp)->nodes[f1].func1.func2;
-            f3 = (*astp)->nodes[f2].func2.func3;
-            paramlist = (*astp)->nodes[f3].func3.paramlist;
-            arglist = (*astp)->nodes[n].call_like.arglist;
-            for (arg_num = 1, pl_node = paramlist, al_node = arglist;
-                 pl_node > -1 && al_node > -1;
-                 arg_num++,
-                pl_node = (*astp)->nodes[pl_node].paramlist.next,
-                al_node = (*astp)->nodes[al_node].arglist.next)
-            {
-                ast_id     param = (*astp)->nodes[pl_node].paramlist.param;
-                ast_id     arg = (*astp)->nodes[al_node].arglist.expr;
-                union type param_type = ast_type_info(*astp, param);
-                union type arg_type = ast_type_info(*astp, arg);
-                ODBUTIL_DEBUG_ASSERT(type_is_valid(param_type), (void)0);
-                ODBUTIL_DEBUG_ASSERT(type_is_valid(arg_type), (void)0);
-
-                if (types_equal(param_type, arg_type))
-                    continue;
-
-                switch (type_convert(arg_type, param_type))
-                {
-                    case TC_ALLOW: break;
-                    case TC_DISALLOW:
-                        err_func_call_incompatible_types(
-                            *astp, arg, param, arg_num, filename, source);
-                        return DEP_ERROR;
-
-                    case TC_SIGN_CHANGE:
-                    case TC_TRUENESS:
-                    case TC_INT_TO_FLOAT:
-                    case TC_BOOL_PROMOTION:
-                        warn_func_call_implicit_conversion(
-                            *astp, arg, param, arg_num, filename, source);
-                        break;
-
-                    case TC_TRUNCATE:
-                        warn_func_call_truncation(
-                            *astp, arg, param, arg_num, filename, source);
-                        break;
-                }
-
-                cast = cast_to_type(astp, arg, param_type);
-                if (cast < -1)
-                    return DEP_ERROR;
-                (*astp)->nodes[al_node].arglist.expr = cast;
-            }
-            stack_pop(*stack);
-
-            /* Check if the function has a return value that is being ignored */
-            if (ast_type_info(*astp, n).primitive != TYPE_VOID
-                && !(*astp)->nodes[n].func_call.is_expr)
-            {
-                ast_id parent = ast_find_parent(*astp, n);
-                ODBUTIL_DEBUG_ASSERT(parent > -1, (void)0);
-                if (ast_node_type(*astp, parent) == AST_BLOCK)
-                    warn_func_call_return_value_ignored(
-                        *astp, n, filename, source);
-            }
-
-            /* Make sure we are re-exploring the function being called,
-             * because it may have been popped off the stack previously */
-            struct stack_entry* entry;
-            vec_for_each(*stack, entry)
-            {
-                if (entry->node == f1)
-                    return DEP_SOLVED;
-            }
+                return DEP_ERROR;
 
             stack_push_entry(stack, n, f1);
             return DEP_ADDED_CHILDREN;
         }
+    }
+    else if (ast_node_type(*astp, global->ast_node) == AST_UDT_DECL)
+    {
+        struct utf8_span tname = (*astp)->nodes[ident].identifier.name;
+        ast_convert_to_udt_init(*astp, n, tname);
+        ast_delete_node(*astp, ident);
 
-        /* If the function is recursive, it will already be on the stack. We
-         * want to pop all direct nodes from the stack up until this
-         * function. Sibling nodes are preserved, because we want to explore
-         * the breadth of the tree more in this situation to see if there
-         * are any other exitfunction/return statements that might help
-         * define the return type of the function.
-         *
-         * ast_find_parent() does not work in this situation, because the
-         * parent node is not guaranteed to be the next node we have to pop,
-         * since we jump around between AST_FUNC_CALL and AST_FUNC. This is
-         * the reason why the stack stores the parent node. */
-        struct stack_entry* entry;
-        vec_for_each(*stack, entry)
-        {
-            if (entry->node == f1)
-            {
-                while (n > -1 && n != f1)
-                    n = stack_erase_node_and_get_parent(*stack, n);
-                return DEP_REQUIRE_ADJACENT;
-            }
-        }
-
-        /* Otherwise add it to be processed now */
-        stack_push_entry(stack, n, f1);
         return DEP_ADDED_CHILDREN;
     }
     else
     {
-        /* The function definition exists in another AST. Since semantic
-         * checks are run in parallel, the ASTs are protected by a mutex
-         */
-        struct mutex* their_mutex = tu_mutexes[global->tu_id];
-        struct mutex* our_mutex = tu_mutexes[tu_id];
-
-        mutex_unlock(our_mutex);
-        mutex_lock(their_mutex);
-
-        /* TODO */
-
-        mutex_unlock(their_mutex);
-        mutex_lock(our_mutex);
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(*astp, global->ast_node) == AST_FUNC1,
+            log_err("type: %d\n", ast_node_type(*astp, global->ast_node)));
+        f1 = global->ast_node;
     }
+
+    if (type_is_valid(ast_type_info(*astp, f1)))
+    {
+        ast_id f2, f3, paramlist, pl_node, al_node, cast;
+        int    arg_num;
+
+        (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
+        (*astp)->nodes[n].info.type_info = ast_type_info(*astp, f1);
+        (*astp)->nodes[ident].info.type_info = ast_type_info(*astp, f1);
+
+        /* May need to insert casts for the arguments */
+        f2 = (*astp)->nodes[f1].func1.func2;
+        f3 = (*astp)->nodes[f2].func2.func3;
+        paramlist = (*astp)->nodes[f3].func3.paramlist;
+        arglist = (*astp)->nodes[n].call_like.arglist;
+        for (arg_num = 1, pl_node = paramlist, al_node = arglist;
+             pl_node > -1 && al_node > -1;
+             arg_num++,
+            pl_node = (*astp)->nodes[pl_node].paramlist.next,
+            al_node = (*astp)->nodes[al_node].arglist.next)
+        {
+            ast_id     param = (*astp)->nodes[pl_node].paramlist.param;
+            ast_id     arg = (*astp)->nodes[al_node].arglist.expr;
+            union type param_type = ast_type_info(*astp, param);
+            union type arg_type = ast_type_info(*astp, arg);
+            ODBUTIL_DEBUG_ASSERT(type_is_valid(param_type), (void)0);
+            ODBUTIL_DEBUG_ASSERT(type_is_valid(arg_type), (void)0);
+
+            if (types_equal(param_type, arg_type))
+                continue;
+
+            switch (type_convert(arg_type, param_type))
+            {
+                case TC_ALLOW: break;
+                case TC_DISALLOW:
+                    err_func_call_incompatible_types(
+                        *astp, arg, param, arg_num, filename, source);
+                    return DEP_ERROR;
+
+                case TC_SIGN_CHANGE:
+                case TC_TRUENESS:
+                case TC_INT_TO_FLOAT:
+                case TC_BOOL_PROMOTION:
+                    warn_func_call_implicit_conversion(
+                        *astp, arg, param, arg_num, filename, source);
+                    break;
+
+                case TC_TRUNCATE:
+                    warn_func_call_truncation(
+                        *astp, arg, param, arg_num, filename, source);
+                    break;
+            }
+
+            cast = cast_to_type(astp, arg, param_type);
+            if (cast < -1)
+                return DEP_ERROR;
+            (*astp)->nodes[al_node].arglist.expr = cast;
+        }
+        stack_pop(*stack);
+
+        /* Check if the function has a return value that is being ignored */
+        if (ast_type_info(*astp, n).primitive != TYPE_VOID
+            && !(*astp)->nodes[n].func_call.is_expr)
+        {
+            ast_id parent = ast_find_parent(*astp, n);
+            ODBUTIL_DEBUG_ASSERT(parent > -1, (void)0);
+            if (ast_node_type(*astp, parent) == AST_BLOCK)
+                warn_func_call_return_value_ignored(*astp, n, filename, source);
+        }
+
+        /* Make sure we are re-exploring the function being called,
+         * because it may have been popped off the stack previously */
+        struct stack_entry* entry;
+        vec_for_each(*stack, entry)
+        {
+            if (entry->node == f1)
+                return DEP_SOLVED;
+        }
+
+        stack_push_entry(stack, n, f1);
+        return DEP_ADDED_CHILDREN;
+    }
+
+    /* If the function is recursive, it will already be on the stack. We
+     * want to pop all direct nodes from the stack up until this
+     * function. Sibling nodes are preserved, because we want to explore
+     * the breadth of the tree more in this situation to see if there
+     * are any other exitfunction/return statements that might help
+     * define the return type of the function.
+     *
+     * ast_find_parent() does not work in this situation, because the
+     * parent node is not guaranteed to be the next node we have to pop,
+     * since we jump around between AST_FUNC_CALL and AST_FUNC. This is
+     * the reason why the stack stores the parent node. */
+    struct stack_entry* entry;
+    vec_for_each(*stack, entry)
+    {
+        if (entry->node == f1)
+        {
+            while (n > -1 && n != f1)
+                n = stack_erase_node_and_get_parent(*stack, n);
+            return DEP_REQUIRE_ADJACENT;
+        }
+    }
+
+    /* Otherwise add it to be processed now */
+    stack_push_entry(stack, n, f1);
+    return DEP_ADDED_CHILDREN;
 
     return DEP_ERROR;
 }

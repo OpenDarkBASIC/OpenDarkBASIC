@@ -178,10 +178,12 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${FLEX_db-scanner_OUTPUTS}"
    
     "include/odb-compiler/ast/ast.h"
+    "include/odb-compiler/ast/ast_convert.h"
     "include/odb-compiler/ast/ast_ops.h"
     "include/odb-compiler/ast/ast_export.h"
     "include/odb-compiler/ast/ast_integrity.h"
     "src/ast/ast.c"
+    "src/ast/ast_convert.c"
     "src/ast/ast_ops.c"
     "src/ast/ast_export.c"
     "src/ast/ast_integrity.c"

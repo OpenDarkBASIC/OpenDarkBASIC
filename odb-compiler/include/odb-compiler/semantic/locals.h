@@ -59,25 +59,22 @@ local_init(
 ODBCOMPILER_PUBLIC_API enum hm_status
 locals_declare(
     struct locals*   locals,
-    struct utf8_span identifier_name,
+    struct utf8_view identifier_name,
     int32_t          scope_id,
-    const char*      source,
     struct local**   value);
 
 ODBCOMPILER_PUBLIC_API enum hm_status
 locals_find_or_declare(
     struct locals*   locals,
-    struct utf8_span identifier_name,
+    struct utf8_view identifier_name,
     int32_t          scope_id,
-    const char*      source,
     struct local**   value);
 
 ODBCOMPILER_PUBLIC_API struct local*
 locals_find(
     const struct locals* locals,
-    struct utf8_span     identifier_name,
-    int32_t              scope_id,
-    const char*          source);
+    struct utf8_view     identifier_name,
+    int32_t              scope_id);
 
 #if defined(ODBUTIL_MEM_DEBUGGING)
 ODBCOMPILER_PUBLIC_API void

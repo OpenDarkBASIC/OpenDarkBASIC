@@ -123,24 +123,22 @@ HM_DEFINE_API_FULL(
 enum hm_status
 locals_declare(
     struct locals*   locals,
-    struct utf8_span identifier_name,
+    struct utf8_view identifier_name,
     int32_t          scope_id,
-    const char*      source,
     struct local**   value)
 {
-    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
+    struct view_scope key = {identifier_name, scope_id};
     return hm_emplace_or_get(&locals->name_map, key, value);
 }
 
 enum hm_status
 locals_find_or_declare(
     struct locals*   locals,
-    struct utf8_span identifier_name,
+    struct utf8_view identifier_name,
     int32_t          scope_id,
-    const char*      source,
     struct local**   value)
 {
-    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
+    struct view_scope key = {identifier_name, scope_id};
     /* TODO: scope_id needs to also contain the parent scope so we can access
      * global variables and outer scopes */
     *value = hm_find(locals->name_map, key);
@@ -155,11 +153,10 @@ locals_find_or_declare(
 struct local*
 locals_find(
     const struct locals* locals,
-    struct utf8_span     identifier_name,
-    int32_t              scope_id,
-    const char*          source)
+    struct utf8_view     identifier_name,
+    int32_t              scope_id)
 {
-    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
+    struct view_scope key = {identifier_name, scope_id};
     struct local*     value = hm_find(locals->name_map, key);
     if (value == NULL)
     {

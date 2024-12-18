@@ -9,7 +9,7 @@ struct ospath_list
 };
 struct ospathc_list
 {
-    struct utf8_list strlist;
+    const struct utf8_list strlist;
 };
 
 static inline void

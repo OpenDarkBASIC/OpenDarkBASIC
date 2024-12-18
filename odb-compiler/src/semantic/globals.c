@@ -197,7 +197,7 @@ add_function(
                 f1 = parent;
 
             entry->tu_id = tu_id;
-            entry->original_node = f1;
+            entry->ast_node = f1;
             /* TODO: Copy into "globals" AST and translate offset */
             entry->type = node_to_type(f1);
             break;
@@ -208,9 +208,9 @@ add_function(
              * UDT or array */
             const struct ast* prev_ast = tus[entry->tu_id];
             ast_id            prev_f1
-                = ast_node_type(prev_ast, entry->original_node) == AST_FUNC_POLY
-                      ? prev_ast->nodes[entry->original_node].func_poly.func
-                      : entry->original_node;
+                = ast_node_type(prev_ast, entry->ast_node) == AST_FUNC_POLY
+                      ? prev_ast->nodes[entry->ast_node].func_poly.func
+                      : entry->ast_node;
             struct ospathc prev_filename
                 = ospathc_list_get(filenames, entry->tu_id);
             const char*    prev_source = sources[entry->tu_id].data;
@@ -258,7 +258,7 @@ add_udt_decl(
         case HM_OOM: return -1;
         case HM_NEW: {
             entry->tu_id = tu_id;
-            entry->original_node = udt_decl;
+            entry->ast_node = udt_decl;
             break;
         }
 
@@ -276,7 +276,7 @@ add_udt_decl(
                 filename,
                 source,
                 prev_ast,
-                entry->original_node,
+                entry->ast_node,
                 prev_filename,
                 prev_source);
         }
