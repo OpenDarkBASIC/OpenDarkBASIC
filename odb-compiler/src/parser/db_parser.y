@@ -456,10 +456,10 @@ var_write
   : identifier                              { $$ = ast_var_write(ctx->astp, $1, @$); }
   ;
 udt_decl
-  : TYPE IDENTIFIER
+  : maybe_scope TYPE IDENTIFIER
         seps udt_members seps
-    ENDTYPE                                 { ast_id identifier = ast_identifier(ctx->astp, $2, TA_NONE, @$);
-                                              $$ = ast_udt_decl(ctx->astp, identifier, $4, @$); }
+    ENDTYPE                                 { ast_id identifier = ast_identifier(ctx->astp, $3, TA_NONE, @$);
+                                              $$ = ast_udt_decl(ctx->astp, $1, identifier, $5, @$); }
   ;
 udt_members
   : udt_members seps udt_member_decl        { $$ = $1; ast_block_append_stmt(ctx->astp, $$, $3, @$); }

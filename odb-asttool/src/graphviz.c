@@ -307,14 +307,21 @@ write_node(
             fprintf(
                 fp,
                 "<font color=\"%s\">%s</font> var_decl1",
-                style->keyword.color,
+                style->scope.color,
                 ast->nodes[n].var_decl1.scope == SCOPE_GLOBAL ? "GLOBAL"
                                                               : "LOCAL");
             break;
         case AST_VAR_DECL2: fprintf(fp, "var_decl2"); break;
         case AST_VAR_READ: fprintf(fp, "var_read"); break;
         case AST_VAR_WRITE: fprintf(fp, "var_write"); break;
-        case AST_UDT_DECL: fprintf(fp, "udt_decl"); break;
+        case AST_UDT_DECL:
+            fprintf(
+                fp,
+                "<font color=\"%s\">%s</font> udt_decl",
+                style->scope.color,
+                ast->nodes[n].udt_decl.scope == SCOPE_GLOBAL ? "GLOBAL"
+                                                             : "LOCAL");
+            break;
         case AST_UDT_INIT:
             fprintf(
                 fp,

@@ -191,6 +191,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "include/odb-compiler/semantic/type.h"
     "src/semantic/calculate_scope_ids.c"
     "src/semantic/globals.c"
+    "src/semantic/locals.c"
     "src/semantic/loop_cont.c"
     "src/semantic/loop_exit.c"
     "src/semantic/loop_for.c"

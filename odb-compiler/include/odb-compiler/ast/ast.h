@@ -253,6 +253,7 @@ union ast_node
         struct info info;
         ast_id members;
         ast_id type_identifier;
+        enum scope scope;
     } udt_decl;
 
     struct {
@@ -624,10 +625,10 @@ ast_id ast_load_plugin(struct ast** astp, struct utf8_span filepath, struct utf8
 ast_id ast_load_command(struct ast** astp, ast_id typelist, ast_id rettype, struct utf8_span cmd_name, struct utf8_span filepath, struct utf8_span c_symbol, struct utf8_span location);
 ast_id ast_command_name(struct ast** astp, struct utf8_span command_name, ast_id arglist, char is_expr, struct utf8_span location);
 ast_id ast_assign(struct ast** astp, ast_id lvalue, ast_id expr, struct utf8_span op_location, struct utf8_span location);
-ast_id ast_var_decl(struct ast** astp, ast_id identifier, ast_id as, ast_id init_expr, enum scope scope, struct utf8_span scope_location, struct utf8_span op_location,struct utf8_span location);
+ast_id ast_var_decl(struct ast** astp, enum scope scope, ast_id identifier, ast_id as, ast_id init_expr, struct utf8_span scope_location, struct utf8_span op_location,struct utf8_span location);
 ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
-ast_id ast_udt_decl(struct ast** astp, ast_id type_identifier, ast_id members_block, struct utf8_span location);
+ast_id ast_udt_decl(struct ast** astp, enum scope scope, ast_id type_identifier, ast_id members_block, struct utf8_span location);
 ast_id ast_udt_init(struct ast** astp, struct utf8_span type_name, ast_id arglist, struct utf8_span location);
 ast_id ast_udt_read(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
 ast_id ast_udt_write(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);

@@ -3,46 +3,17 @@
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
 #include "odb-compiler/semantic/globals.h"
+#include "odb-compiler/semantic/locals.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/bm.h"
 #include "odb-util/config.h"
-#include "odb-util/hash.h"
 #include "odb-util/hm.h"
 #include "odb-util/log.h"
 #include "odb-util/mutex.h"
 #include "odb-util/utf8.h"
 #include "odb-util/vec.h"
 #include <assert.h>
-
-struct span_scope
-{
-    struct utf8_span span;
-    int16_t          scope;
-};
-struct view_scope
-{
-    struct utf8_view view;
-    int16_t          scope;
-};
-
-struct local
-{
-    /* Points to the identifier that first created the entry. It needs to be a
-     * ast_id rather than a utf8_span, because some checks rely on checking if
-     * they created the entry or not and the same names can have different
-     * spans. */
-    ast_id first_occurrence;
-
-    /* The parent node that created the entry. When a type is not resolvable,
-     * the stack is popped up until this node. */
-    ast_id dependent;
-
-    union type type;
-};
-
-VEC_DECLARE_API(static, span_scopes, struct span_scope, 32)
-VEC_DEFINE_API(span_scopes, struct span_scope, 32)
 
 struct stack_entry
 {
@@ -100,123 +71,6 @@ stack_erase_node_and_get_parent(struct stack* stack, ast_id node)
     return -1;
 }
 
-/* The "locals" is used to track the types of variables. When a variable first
- * appears, it is inserted into the locals and its type is determined based on
- * the context surrounding it. If the variable is later referenced, then the
- * type is extracted from the locals.
- *
- * The "text" field references the source text. The span_scopes contains
- * utf8_span's that index into the source code. Because it's possible to have
- * the same variable name in a different scope, the key also contains the
- * current scope (0=global, 1, 2, 3, ... = nesting) such that the same variable
- * name hashes to a different value if it is in a different scope.
- */
-struct locals_kvs
-{
-    const char*         text;
-    struct span_scopes* keys;
-    struct local*       values;
-};
-
-static hash32
-locals_kvs_hash(struct view_scope key)
-{
-    return hash32_jenkins_oaat(key.view.data + key.view.off, key.view.len)
-           + key.scope;
-}
-static int
-locals_kvs_alloc(
-    struct locals_kvs* kvs, struct locals_kvs* old_kvs, int32_t capacity)
-{
-    kvs->text = NULL;
-    span_scopes_init(&kvs->keys);
-    if (span_scopes_resize(&kvs->keys, capacity) != 0)
-        return -1;
-
-    if ((kvs->values = mem_alloc(sizeof(*kvs->values) * capacity)) == NULL)
-    {
-        span_scopes_deinit(kvs->keys);
-        return log_oom(sizeof(*kvs->values) * capacity, "locals_kvs_alloc()");
-    }
-
-    return 0;
-}
-static void
-locals_kvs_free_old(struct locals_kvs* kvs)
-{
-    mem_free(kvs->values);
-    span_scopes_deinit(kvs->keys);
-}
-static void
-locals_kvs_free(struct locals_kvs* kvs)
-{
-    mem_free(kvs->values);
-    span_scopes_deinit(kvs->keys);
-}
-static struct view_scope
-locals_kvs_get_key(const struct locals_kvs* kvs, int32_t slot)
-{
-    ODBUTIL_DEBUG_ASSERT(kvs->text != NULL, (void)0);
-    struct span_scope span_scope = kvs->keys->data[slot];
-    struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
-    struct view_scope view_scope = {view, span_scope.scope};
-    return view_scope;
-}
-static int
-locals_kvs_set_key(struct locals_kvs* kvs, int32_t slot, struct view_scope key)
-{
-    ODBUTIL_DEBUG_ASSERT(
-        kvs->text == NULL || kvs->text == key.view.data, (void)0);
-
-    kvs->text = key.view.data;
-    struct utf8_span  span = utf8_view_span(kvs->text, key.view);
-    struct span_scope span_scope = {span, key.scope};
-    kvs->keys->data[slot] = span_scope;
-
-    return 0;
-}
-static int
-locals_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
-{
-    return k1.scope == k2.scope && utf8_equal(k1.view, k2.view);
-}
-static struct local*
-locals_kvs_get_value(const struct locals_kvs* kvs, int32_t slot)
-{
-    return &kvs->values[slot];
-}
-static void
-locals_kvs_set_value(struct locals_kvs* kvs, int32_t slot, struct local* value)
-{
-    kvs->values[slot] = *value;
-}
-
-HM_DECLARE_API_FULL(
-    static,
-    locals,
-    hash32,
-    struct view_scope,
-    struct local,
-    32,
-    struct locals_kvs)
-HM_DEFINE_API_FULL(
-    locals,
-    hash32,
-    struct view_scope,
-    struct local,
-    32,
-    locals_kvs_hash,
-    locals_kvs_alloc,
-    locals_kvs_free_old,
-    locals_kvs_free,
-    locals_kvs_get_key,
-    locals_kvs_set_key,
-    locals_kvs_keys_equal,
-    locals_kvs_get_value,
-    locals_kvs_set_value,
-    32,
-    70)
-
 /* This is the main function used for tracking when and where variables are
  * declared.
  *
@@ -227,69 +81,6 @@ HM_DEFINE_API_FULL(
  * the locals and see if it can find one with the same name and compatible
  * scope.
  */
-static enum hm_status
-declare_local(
-    struct locals**  locals,
-    const char*      source,
-    struct utf8_span identifier_name,
-    int32_t          scope_id,
-    struct local**   value)
-{
-    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
-    return locals_emplace_or_get(locals, key, value);
-}
-
-static enum hm_status
-find_or_declare_local(
-    struct locals**  locals,
-    const char*      source,
-    struct utf8_span identifier_name,
-    int32_t          scope_id,
-    struct local**   value)
-{
-    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
-    /* TODO: scope_id needs to also contain the parent scope so we can access
-     * global variables and outer scopes */
-    *value = locals_find(*locals, key);
-    if (*value == NULL)
-    {
-        key.scope = 0; /* XXX: Global scope */
-        return locals_emplace_or_get(locals, key, value);
-    }
-    return HM_EXISTS;
-}
-
-static struct local*
-find_local(
-    const struct locals* locals,
-    const char*          source,
-    struct utf8_span     identifier_name,
-    int32_t              scope_id)
-{
-    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
-    struct local*     value = locals_find(locals, key);
-    if (value == NULL)
-    {
-        /* TODO: scope_id needs to also contain the parent scope so we can
-         * access global variables and outer scopes */
-        key.scope = 0; /* XXX: Global scope */
-        value = locals_find(locals, key);
-    }
-    return value;
-}
-
-static void
-init_local(
-    struct local* local,
-    ast_id        first_occurrence,
-    ast_id        dependent,
-    union type    type)
-{
-    local->first_occurrence = first_occurrence;
-    local->dependent = dependent;
-    local->type = type;
-}
-
 static ast_id
 cast_to_type(struct ast** astp, ast_id expr, union type target_type)
 {
@@ -526,11 +317,11 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
 
 static enum process_result
 process_dim_decl(
-    struct stack**  stack,
-    struct ast*     ast,
-    ast_id          dim_decl,
-    const char*     source,
-    struct locals** locals)
+    struct stack** stack,
+    struct ast*    ast,
+    ast_id         dim_decl,
+    const char*    source,
+    struct locals* locals)
 {
     ast_id           decl2, arglist, ident, as;
     int32_t          scope_id;
@@ -561,11 +352,11 @@ process_dim_decl(
      * later */
     name = ast->nodes[ident].identifier.name;
     scope_id = ast->nodes[ident].info.scope_id;
-    switch (declare_local(locals, source, name, scope_id, &local))
+    switch (locals_declare(locals, name, scope_id, source, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
-            init_local(local, ident, dim_decl, primitive_type(TYPE_INVALID));
+            local_init(local, ident, dim_decl, primitive_type(TYPE_INVALID));
             break;
         }
         case HM_EXISTS: {
@@ -616,12 +407,12 @@ process_dim_decl(
 
 static enum process_result
 process_param(
-    struct stack**  stack,
-    struct ast**    astp,
-    ast_id          param,
-    struct ospathc  filename,
-    const char*     source,
-    struct locals** locals)
+    struct stack** stack,
+    struct ast**   astp,
+    ast_id         param,
+    struct ospathc filename,
+    const char*    source,
+    struct locals* locals)
 {
     ast_id           identifier, as;
     struct local*    local;
@@ -643,10 +434,10 @@ process_param(
      * later */
     name = (*astp)->nodes[identifier].identifier.name;
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (declare_local(locals, source, name, scope_id, &local))
+    switch (locals_declare(locals, name, scope_id, source, &local))
     {
         case HM_NEW:
-            init_local(local, identifier, param, primitive_type(TYPE_INVALID));
+            local_init(local, identifier, param, primitive_type(TYPE_INVALID));
             break;
 
         case HM_EXISTS:
@@ -740,10 +531,10 @@ find_lvalue_first_occurrence(
     const char*          source,
     const struct locals* locals)
 {
-    ast_id            identifier;
-    struct utf8_span  name;
-    struct view_scope view_scope;
-    struct local*     local;
+    ast_id           identifier;
+    struct utf8_span name;
+    int32_t          scope_id;
+    struct local*    local;
 
     if (ast_node_type(ast, lvalue) == AST_UDT_READ)
         lvalue = ast->nodes[lvalue].udt_read.left;
@@ -763,15 +554,14 @@ find_lvalue_first_occurrence(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
+
     name = ast->nodes[identifier].identifier.name;
+    scope_id = ast->nodes[identifier].info.scope_id;
+    local = locals_find(locals, name, scope_id, source);
+    if (local == NULL)
+        return -1;
 
-    view_scope.view = utf8_span_view(source, name);
-    view_scope.scope = ast->nodes[identifier].info.scope_id;
-
-    local = locals_find(locals, view_scope);
-    if (local != NULL)
-        return local->first_occurrence;
-    return -1;
+    return local->first_occurrence;
 }
 
 static int
@@ -891,11 +681,9 @@ process_assignment(
     if (ast_node_type(*astp, lvalue) == AST_VAR_WRITE)
     {
         ast_id identifier = (*astp)->nodes[lvalue].var_write.identifier;
-        struct utf8_span  span = (*astp)->nodes[identifier].identifier.name;
-        struct utf8_view  name = utf8_span_view(source, span);
-        struct view_scope name_scope
-            = {name, (*astp)->nodes[identifier].info.scope_id};
-        struct local* local = locals_find(*locals, name_scope);
+        struct utf8_span name = (*astp)->nodes[identifier].identifier.name;
+        int32_t          scope_id = (*astp)->nodes[identifier].info.scope_id;
+        struct local*    local = locals_find(*locals, name, scope_id, source);
         if (local != NULL && local->first_occurrence == identifier)
         {
             if (convert_to_var_decl_with_cast(astp, ass, filename, source) != 0)
@@ -1071,7 +859,7 @@ process_var_decl(
     ast_id                     var_decl,
     const struct ospathc_list* filenames,
     struct utf8*               sources,
-    struct locals**            locals,
+    struct locals*             locals,
     const struct globals*      globals)
 {
     ast_id           decl1, decl2, identifier, as, init_expr;
@@ -1103,11 +891,11 @@ process_var_decl(
      * later */
     name = (*astp)->nodes[identifier].identifier.name;
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (declare_local(locals, source->data, name, scope_id, &local))
+    switch (locals_declare(locals, name, scope_id, source->data, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
-            init_local(
+            local_init(
                 local, identifier, var_decl, primitive_type(TYPE_INVALID));
             break;
         }
@@ -1238,12 +1026,12 @@ process_var_decl(
 
 static enum process_result
 process_var_write(
-    struct stack**  stack,
-    struct ast**    astp,
-    ast_id          var_write,
-    struct ospathc  filename,
-    const char*     source,
-    struct locals** locals)
+    struct stack** stack,
+    struct ast**   astp,
+    ast_id         var_write,
+    struct ospathc filename,
+    const char*    source,
+    struct locals* locals)
 {
     struct local*    local;
     struct utf8_span name;
@@ -1262,14 +1050,14 @@ process_var_write(
 
     name = (*astp)->nodes[identifier].identifier.name;
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (declare_local(locals, source, name, scope_id, &local))
+    switch (locals_declare(locals, name, scope_id, source, &local))
     {
         case HM_NEW: {
             /* Type always defaults to the annotation if a variable is
              * created by referencing it */
             union type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
-            init_local(local, identifier, var_write, ann_type);
+            local_init(local, identifier, var_write, ann_type);
 
             /* TODO: Global variables are not yet supported */
 
@@ -1366,7 +1154,7 @@ process_udt_decl(
      * duplicate declarations, and also to make copying the UDT declaration into
      * our local AST easier. */
     scope_id = ast->nodes[udt_decl].info.scope_id;
-    switch (declare_local(locals, source, type_name, scope_id, &local))
+    switch (locals_declare(locals, source, type_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_EXISTS: {
@@ -1381,7 +1169,7 @@ process_udt_decl(
                 source);
         }
         case HM_NEW: {
-            init_local(local, type_identifier, udt_decl, type_udt(udt_decl));
+            local_init(local, type_identifier, udt_decl, type_udt(udt_decl));
             break;
         }
     }
@@ -1613,7 +1401,7 @@ process_udt_read(
 
     left_name = ast->nodes[left_identifier].identifier.name;
     scope_id = ast->nodes[left_identifier].info.scope_id;
-    switch (declare_local(locals, source, left_name, scope_id, &local))
+    switch (locals_declare(locals, source, left_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
@@ -1758,7 +1546,7 @@ process_udt_write(
 
     left_name = ast->nodes[left_identifier].identifier.name;
     scope_id = ast->nodes[left_identifier].info.scope_id;
-    switch (declare_local(locals, source, left_name, scope_id, &local))
+    switch (locals_declare(locals, source, left_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
@@ -1810,7 +1598,7 @@ process_var_read(
 
     name = (*astp)->nodes[identifier].identifier.name;
     scope_id = (*astp)->nodes[identifier].info.scope_id;
-    switch (declare_local(locals, source, name, scope_id, &local))
+    switch (locals_declare(locals, source, name, scope_id, &local))
     {
         case HM_NEW: {
             ast_id           init_ident, init_expr, init_var_decl, init_block;
@@ -1821,7 +1609,7 @@ process_var_read(
              * created by referencing it */
             union type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
-            init_local(local, identifier, var_read, ann_type);
+            local_init(local, identifier, var_read, ann_type);
 
             /* TODO: Global variables are not yet supported */
 
@@ -3265,7 +3053,7 @@ process_as_udt(
 
     type_name = (*astp)->nodes[as_udt].as_udt.type_name;
     scope_id = (*astp)->nodes[as_udt].info.scope_id;
-    switch (find_or_declare_local(
+    switch (locals_find_or_declare(
         locals, source->data, type_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
@@ -3292,7 +3080,7 @@ process_as_udt(
                 return DEP_ERROR;
             mutex_unlock(their_mutex);
 
-            init_local(
+            local_init(
                 local,
                 (*astp)->nodes[udt_decl].udt_decl.type_identifier,
                 as_udt,

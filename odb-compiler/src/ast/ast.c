@@ -553,10 +553,10 @@ ast_assign(
 ast_id
 ast_var_decl(
     struct ast**     astp,
+    enum scope       scope,
     ast_id           identifier,
     ast_id           as,
     ast_id           init_expr,
-    enum scope       scope,
     struct utf8_span scope_location,
     struct utf8_span op_location,
     struct utf8_span location)
@@ -627,6 +627,7 @@ ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location)
 ast_id
 ast_udt_decl(
     struct ast**     astp,
+    enum scope       scope,
     ast_id           type_identifier,
     ast_id           members_block,
     struct utf8_span location)
@@ -644,6 +645,7 @@ ast_udt_decl(
 
     (*astp)->nodes[n].udt_decl.type_identifier = type_identifier;
     (*astp)->nodes[n].udt_decl.members = members_block;
+    (*astp)->nodes[n].udt_decl.scope = scope;
 
     return n;
 }

@@ -325,7 +325,10 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         case AST_VAR_DECL2: break;
         case AST_VAR_READ: break;
         case AST_VAR_WRITE: break;
-        case AST_UDT_DECL: break;
+        case AST_UDT_DECL:
+            if (ast->nodes[n1].udt_decl.scope != ast->nodes[n2].udt_decl.scope)
+                return 0;
+            break;
         case AST_UDT_INIT:
             if (!utf8_equal(
                     utf8_span_view(source, ast->nodes[n1].udt_init.type_name),

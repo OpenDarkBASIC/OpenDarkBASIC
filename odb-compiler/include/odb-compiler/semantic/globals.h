@@ -21,9 +21,9 @@ struct global
 {
     /* Index into the list of TUs (translation units) of the AST in which this
      * symbol originated from + reference to original node. This is used for
-     * error reporting duplicate definitions. */
+     * message reporting */
     int tu_id;
-    int original_node;
+    ast_id original_node;
 
     /* References a node in the "global AST". */
     union type type;
