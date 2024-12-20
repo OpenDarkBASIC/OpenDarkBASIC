@@ -548,11 +548,12 @@ union ast_node
         ast_id _pad1, _pad2;
     } as_auto;
 };
+/* clang-format on */
 
 struct ast
 {
-    ast_id count, capacity;
-    ast_id root;
+    ast_id         count, capacity;
+    ast_id         root;
     union ast_node nodes[1];
 };
 
@@ -562,7 +563,7 @@ ast_init(struct ast** astp)
     *astp = NULL;
 }
 
-ODBCOMPILER_PUBLIC_API void 
+ODBCOMPILER_PUBLIC_API void
 ast_deinit(struct ast* ast);
 
 ODBCOMPILER_PUBLIC_API struct ast*
@@ -587,26 +588,41 @@ ast_set_root(struct ast* ast, ast_id n)
 
 static inline ast_id
 ast_count(const struct ast* ast)
-    { return ast ? ast->count : 0; }
+{
+    return ast ? ast->count : 0;
+}
 static inline ast_id
 ast_count_unsafe(const struct ast* ast)
-    { return ast->count; }
+{
+    return ast->count;
+}
 static inline enum ast_type
 ast_node_type(const struct ast* ast, ast_id n)
-    { return ast->nodes[n].info.node_type; }
+{
+    return ast->nodes[n].info.node_type;
+}
 static inline union type
 ast_type_info(const struct ast* ast, ast_id n)
-    { return ast->nodes[n].info.type_info; }
+{
+    return ast->nodes[n].info.type_info;
+}
 static inline int
 ast_type_is_invalid(const struct ast* ast, ast_id n)
-    { return ast->nodes[n].info.type_info.primitive == TYPE_INVALID; }
+{
+    return ast->nodes[n].info.type_info.primitive == TYPE_INVALID;
+}
 static inline struct utf8_span
 ast_loc(const struct ast* ast, ast_id n)
-    { return ast->nodes[n].info.location; }
+{
+    return ast->nodes[n].info.location;
+}
 static inline int32_t
 ast_scope(const struct ast* ast, ast_id n)
-    { return ast->nodes[n].info.scope_id; }
+{
+    return ast->nodes[n].info.scope_id;
+}
 
+/* clang-format off */
 ast_id ast_dup_node(struct ast** astp, ast_id n);
 ast_id ast_dup_node_into(struct ast** dst_astp, struct utf8* dst_source, const struct ast* src_ast, ast_id n, const char* src_source);
 

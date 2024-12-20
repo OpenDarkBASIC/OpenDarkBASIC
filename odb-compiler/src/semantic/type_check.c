@@ -2907,41 +2907,49 @@ process_call_like(
     ident = (*astp)->nodes[n].call_like.identifier;
     name = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
     global = globals_find(globals, name);
-    if (global != NULL && type_is_primitive(global->type))
+    if (global != NULL)
     {
-        const struct ast* orig_ast = tus[global->tu_id];
-        struct ospathc orig_fname = ospathc_list_get(filenames, global->tu_id);
-        const char*    orig_source = sources[global->tu_id].data;
-        struct utf8_span orig_loc = ast_loc(orig_ast, global->ast_node);
-        struct utf8_span arglist_loc
-            = (*astp)->nodes[arglist].arglist.combined_location;
-
-        log_flc(filename, source, ast_loc(*astp, n));
-        log_err("A variable cannot be called like a function.\n");
-        log_excerpt_1(source, arglist_loc, empty_utf8_view(), 0, 1);
-
-        log_flc(orig_fname, orig_source, ast_loc(orig_ast, global->ast_node));
-        log_note("Variable was previously defined here:\n");
-        log_excerpt_1(orig_source, orig_loc, empty_utf8_view(), 0);
-
-        return DEP_ERROR;
-    }
-    else if (global != NULL)
-    {
-        ast_id decl = type_to_node(global->type);
-        if (ast_node_type(globals->ast, decl) == AST_UDT_DECL)
+        if (type_is_primitive(global->type))
         {
-            struct utf8_span tname = (*astp)->nodes[ident].identifier.name;
-            ast_convert_to_udt_init(*astp, n, tname);
-            ast_delete_node(*astp, ident);
+            const struct ast* orig_ast = tus[global->tu_id];
+            struct ospathc    orig_fname
+                = ospathc_list_get(filenames, global->tu_id);
+            const char*      orig_source = sources[global->tu_id].data;
+            struct utf8_span orig_loc = ast_loc(orig_ast, global->ast_node);
+            struct utf8_span arglist_loc
+                = (*astp)->nodes[arglist].arglist.combined_location;
 
-            return DEP_ADDED_CHILDREN;
+            log_flc(filename, source, ast_loc(*astp, n));
+            log_err("A variable cannot be called like a function.\n");
+            log_excerpt_1(source, arglist_loc, empty_utf8_view(), 0, 1);
+
+            log_flc(
+                orig_fname, orig_source, ast_loc(orig_ast, global->ast_node));
+            log_note("Variable was previously defined here:\n");
+            log_excerpt_1(orig_source, orig_loc, empty_utf8_view(), 0);
+
+            return DEP_ERROR;
         }
-        else if (ast_node_type(globals->ast, decl) == AST_FUNC_POLY)
+        else
         {
-            ODBUTIL_DEBUG_ASSERT(
-                0, log_err("type: %d\n", ast_node_type(globals->ast, decl)));
-            f1 = decl;
+            ast_id decl = type_to_node(global->type);
+            if (ast_node_type(globals->ast, decl) == AST_UDT_DECL)
+            {
+                struct utf8_span tname = (*astp)->nodes[ident].identifier.name;
+                ast_convert_to_udt_init(*astp, n, tname);
+                ast_delete_node(*astp, ident);
+
+                return DEP_ADDED_CHILDREN;
+            }
+            else if (ast_node_type(globals->ast, decl) == AST_FUNC_POLY)
+            {
+            }
+            else
+            {
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_err("type: %d\n", ast_node_type(globals->ast, decl)));
+            }
         }
     }
 
