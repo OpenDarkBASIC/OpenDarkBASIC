@@ -199,7 +199,7 @@ add_function(
             entry->tu_id = tu_id;
             entry->ast_node = f1;
             /* TODO: Copy into "globals" AST and translate offset */
-            entry->type = node_to_type(f1);
+            entry->decl = f1;
             break;
         }
 

@@ -22,11 +22,11 @@ struct global
     /* Index into the list of TUs (translation units) of the AST in which this
      * symbol originated from + reference to original node. This is used for
      * message reporting */
-    int tu_id;
-    ast_id ast_node;
+    int              tu_id;
+    struct utf8_span tu_loc;
 
     /* References a node in the "global AST". */
-    union type type;
+    ast_id decl;
 };
 
 ODBCOMPILER_PUBLIC_API void

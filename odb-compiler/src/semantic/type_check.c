@@ -784,6 +784,7 @@ create_default_initializer(
     return -1;
 }
 
+#if 0
 static ast_id
 create_default_initializer_udt(
     struct ast**          astp,
@@ -856,6 +857,7 @@ create_default_initializer_udt(
     return ast_udt_init(
         astp, (*astp)->nodes[udt_ident].identifier.name, arglist, udt_name);
 }
+#endif
 
 static enum process_result
 process_var_decl(
@@ -977,15 +979,15 @@ process_var_decl(
     }
     else if (init_expr < 0)
     {
-        struct utf8_span udt_name;
+        //struct utf8_span udt_name;
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(*astp, as) == AST_AS_UDT,
             log_err("type: %d\n", ast_node_type(*astp, as)));
         udt_name = (*astp)->nodes[as].as_udt.type_name;
-        init_expr = create_default_initializer_udt(
+        init_expr = -1; /*create_default_initializer_udt(
             astp, udt_name, filename, source, globals);
         if (init_expr < 0)
-            return DEP_ERROR;
+            return DEP_ERROR;*/
 
         (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
         (*astp)->nodes[init_expr].info.type_info = local->type;
@@ -2749,6 +2751,7 @@ find_func_instantiation_old(
     }
 }
 
+#if 0
 static ast_id
 find_func_instantiation(
     struct ast* global_ast,
@@ -2777,7 +2780,7 @@ find_func_instantiation(
     paramlist_poly = global_ast->nodes[f3].func3.paramlist;
 
     /* Functions are all appended to the end of the root block list (starting
-    from ast->root). We can avoid search through a lot of nodes
+    from ast->root). We can avoid search through a lot of nodes */
 
     while (1)
     {
@@ -2846,33 +2849,9 @@ find_func_instantiation(
 
 no_match:;
 }
+#endif
 
-static union type
-find_symbol(
-    const struct ast*     ast,
-    ast_id                identifier,
-    const struct globals* globals,
-    const struct locals*  locals)
-{
-    struct utf8_span     span;
-    struct utf8_view     name;
-    const struct global* global;
-    const struct local*  local;
-
-    span = ast->nodes[identifier].identifier.name;
-    name = utf8_span_view(ast->source, span);
-
-    global = globals_find(globals, name);
-    if (global != NULL)
-        return global->type;
-
-    local = locals_find(locals, name);
-    if (local != NULL)
-        return local->type;
-
-    return -1;
-}
-
+#if 0
 static enum process_result
 process_call_like(
     struct stack**             stack,
@@ -2884,85 +2863,92 @@ process_call_like(
     const struct locals*       locals,
     const struct globals*      globals)
 {
-    ast_id               ident, arglist, f1;
+    ast_id               ident, decl;
+    enum ast_type        decl_type;
     struct utf8_view     name;
     const struct global* global;
-    struct ast**         astp = &tus[tu_id];
+    const struct local*  local;
+    struct ast*          ast = tus[tu_id];
+    struct ospathc       filename = ospathc_list_get(filenames, tu_id);
+    const char*          source = sources[tu_id].data;
 
     /* DarkBASIC has ambiguous syntax for
      *   1) function calls
      *   2) Indexing into an array
      *   3) Constructing a UDT.
      * The parser throws all of these into a single "call like" node. By
-     * looking up the name in the symbol table(s), this function transforms the
-     * call-like into what it actually is. */
+     * matching the name of the call-like with the definition found in the
+     * symbol table(s), we can determine the correct node type. */
 
+    ident = ast->nodes[n].call_like.identifier;
+    global = globals_find(globals, name);
+    if (global != NULL)
+    {
+        ast_id decl = type_to_node(global->type);
+        decl_type = ast_node_type(globals->ast, decl);
+    }
+
+    if (global == NULL)
+    {
+        int32_t scope = ast->nodes[ident].info.scope_id;
+        local = locals_find(locals, name, scope);
+    }
+    if (local != NULL)
+    {
+        ast_id decl = type_to_node(local->type);
+        decl_type = ast_node_type(ast, decl);
+    }
+
+    if (local == NULL)
+    {
+        log_flc(filename, source, ast_loc(ast, ident));
+        log_err(
+            "Command, function, container or User-Defined Type not found.\n");
+        log_excerpt_1(source, ast_loc(ast, n), empty_utf8_view(), 0);
+        return DEP_ERROR;
+    }
+
+    if (decl_type == AST_VAR_DECL1)
+    {
+        const struct ast* orig_ast = tus[global->tu_id];
+        struct ospathc orig_fname = ospathc_list_get(filenames, global->tu_id);
+        const char*    orig_source = sources[global->tu_id].data;
+        struct utf8_span orig_loc = ast_loc(orig_ast, global->ast_node);
+        struct utf8_span arglist_loc
+            = (*astp)->nodes[arglist].arglist.combined_location;
+
+        log_flc(filename, source, ast_loc(*astp, n));
+        log_err("A variable cannot be called like a function.\n");
+        log_excerpt_1(source, arglist_loc, empty_utf8_view(), 0);
+
+        log_flc(orig_fname, orig_source, ast_loc(orig_ast, global->ast_node));
+        log_note("Variable was previously defined here:\n");
+        log_excerpt_1(orig_source, orig_loc, empty_utf8_view(), 0);
+
+        return DEP_ERROR;
+    }
+    else if (decl_type == AST_UDT_DECL)
+    {
+        struct utf8_span tname = (*astp)->nodes[ident].identifier.name;
+        ast_convert_to_udt_init(*astp, n, tname);
+        ast_delete_node(*astp, ident);
+
+        return DEP_ADDED_CHILDREN;
+    }
+    else if (decl_type == AST_FUNC_POLY)
+    {
+    }
+    else
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            0, log_err("type: %d\n", ast_node_type(globals->ast, decl)));
+    }
+
+#if 0
     if (arglist > -1 && type_is_invalid(ast_type_info(*astp, arglist)))
     {
         stack_push_entry(stack, n, arglist);
         return DEP_ADDED_CHILDREN;
-    }
-
-    arglist = (*astp)->nodes[n].call_like.arglist;
-    ident = (*astp)->nodes[n].call_like.identifier;
-    name = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
-    global = globals_find(globals, name);
-    if (global != NULL)
-    {
-        if (type_is_primitive(global->type))
-        {
-            const struct ast* orig_ast = tus[global->tu_id];
-            struct ospathc    orig_fname
-                = ospathc_list_get(filenames, global->tu_id);
-            const char*      orig_source = sources[global->tu_id].data;
-            struct utf8_span orig_loc = ast_loc(orig_ast, global->ast_node);
-            struct utf8_span arglist_loc
-                = (*astp)->nodes[arglist].arglist.combined_location;
-
-            log_flc(filename, source, ast_loc(*astp, n));
-            log_err("A variable cannot be called like a function.\n");
-            log_excerpt_1(source, arglist_loc, empty_utf8_view(), 0, 1);
-
-            log_flc(
-                orig_fname, orig_source, ast_loc(orig_ast, global->ast_node));
-            log_note("Variable was previously defined here:\n");
-            log_excerpt_1(orig_source, orig_loc, empty_utf8_view(), 0);
-
-            return DEP_ERROR;
-        }
-        else
-        {
-            ast_id decl = type_to_node(global->type);
-            if (ast_node_type(globals->ast, decl) == AST_UDT_DECL)
-            {
-                struct utf8_span tname = (*astp)->nodes[ident].identifier.name;
-                ast_convert_to_udt_init(*astp, n, tname);
-                ast_delete_node(*astp, ident);
-
-                return DEP_ADDED_CHILDREN;
-            }
-            else if (ast_node_type(globals->ast, decl) == AST_FUNC_POLY)
-            {
-            }
-            else
-            {
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("type: %d\n", ast_node_type(globals->ast, decl)));
-            }
-        }
-    }
-
-    ident = (*astp)->nodes[n].call_like.identifier;
-    name = utf8_span_view(source, (*astp)->nodes[ident].identifier.name);
-    global = globals_find(globals, name);
-    if (global == NULL)
-    {
-        log_flc(filename, source, ast_loc(*astp, ident));
-        log_err(
-            "Command, function, container or User-Defined Type not found.\n");
-        log_excerpt_1(source, ast_loc(*astp, n), empty_utf8_view(), 0);
-        return -1;
     }
 
     if (ast_node_type(globals->ast, type_to_node(global->type))
@@ -3112,8 +3098,10 @@ process_call_like(
     stack_push_entry(stack, n, f1);
     return DEP_ADDED_CHILDREN;
 
+#endif
     return DEP_ERROR;
 }
+#endif
 
 static enum process_result
 process_cast(
