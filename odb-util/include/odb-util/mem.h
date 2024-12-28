@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-util/config.h"
+#include "odb-util/log.h"
 #include <stdint.h>
 
 typedef uint32_t mem_size;
@@ -70,6 +71,10 @@ mem_acquire(void* p, mem_size size);
 
 ODBUTIL_PUBLIC_API mem_size
 mem_release(void* p);
+
+static inline int
+log_oom(mem_size bytes, const char* func_name)
+{ log_err("Failed to allocate %u bytes in %s\n", bytes, func_name); return -1; }
 
 #endif
 

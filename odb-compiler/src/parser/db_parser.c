@@ -394,7 +394,7 @@ db_parse(
     struct token_queue* tokens;
     YY_BUFFER_STATE     buffer_state;
     int                 parse_result = -1;
-    struct utf8_span    scanner_location = empty_utf8_span();
+    DBLTYPE             scanner_location = empty_utf8_span();
     struct utf8         cmd_buf = empty_utf8();
     struct parse_param  parse_param
         = {astp, filename, source, plugins, cmds, globals};

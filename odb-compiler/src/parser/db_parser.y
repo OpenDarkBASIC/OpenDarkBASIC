@@ -36,8 +36,11 @@
 
     static void dberror(DBLTYPE* loc, dbscan_t scanner, const char* msg, ...);
 
-    /* Our location structure is a utf8_span, so have to override the default
-     * location handling code */
+    /* Our location structure is a "ast_loc", so have to override the default
+     * location handling code. "ast_loc" contains the AST index (which stays
+     * constant throughout the parsing stage) plus a "utf8_span", which is
+     * simply an offset+length into the source buffer. The offset and length
+     * is updated for every token that is scanned here. */
     #define YYLLOC_DEFAULT(Current, Rhs, N) do { \
         if (N) { \
             (Current).off = YYRHSLOC(Rhs, 1).off; \
@@ -86,7 +89,7 @@
  * later, if required.
  */
 %locations
-%define api.location.type { struct utf8_span }
+%define api.location.type { struct ast_loc }
 
 /* Enable calling yyreport_syntax_error() which gives us much more control over
  * formatting error messages whenever a syntax error occurs. */

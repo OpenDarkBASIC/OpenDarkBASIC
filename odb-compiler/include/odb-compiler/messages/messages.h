@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-compiler/semantic/type.h"
+#include "odb-util/ospath.h"
 #include "odb-util/utf8.h"
 
 struct ast;
@@ -14,6 +15,110 @@ struct msg_cfg
     unsigned warn_int_to_float : 1;
     unsigned warn_bool_promotion : 1;
 };
+
+int
+msg_init(void);
+
+void
+msg_deinit(void);
+
+void
+log_flc(struct ospathc filename, const char* source, struct utf8_span location);
+
+enum log_highlight_type
+{
+    LOG_HIGHLIGHT,
+    LOG_INSERT,
+    LOG_REMOVE,
+};
+
+struct log_highlight
+{
+    /*! Only used in INSERT mode -- The text to insert at offset loc.off
+     * The length of the inserted text must equal loc.len. If unused, set to "".
+     * DON'T set to NULL. */
+    struct utf8_view new_text;
+    /*! Annotate the highlighted section with additional information.
+     * Can be an empty string, but should not be NULL */
+    struct utf8_view annotation;
+    /*! If INSERT, then this is the offset in the original text where to insert
+     * new_text. Len should be the length of the inserted text.
+     * If HIGHLIGHT, then this is the location of the text to highlight. */
+    struct utf8_span        loc;
+    enum log_highlight_type type;
+    /*! The characters to use for underlining the highlighted text. By
+     * convention, marker[0]='^', marker[1]='~', marker[2]='<' */
+    char marker[3];
+    /*! Controls the color of the highlighted text. If multiple locations share
+     * the same highlight group, they will be colored the same. */
+    char group;
+};
+#define LOG_HIGHLIGHT_SENTINAL                                                 \
+    {{NULL, 0, 0},                                                             \
+     {NULL, 0, 0},                                                             \
+     {0, 0},                                                                   \
+     (enum log_highlight_type)0,                                               \
+     {'\0', '\0', '\0'},                                                       \
+     0}
+#define LOG_IS_SENTINAL(hl) ((hl).marker[0] == '\0')
+#define LOG_MARKERS         {'^', '~', '<'}
+
+ODBUTIL_PUBLIC_API int
+log_excerpt(const char* source, const struct log_highlight* highlights);
+
+static inline int
+log_excerpt_1(
+    const char*      source,
+    struct utf8_span location,
+    struct utf8_view annotation,
+    char             group)
+{
+    struct utf8_view     ins = empty_utf8_view();
+    struct log_highlight inst[]
+        = {{ins, annotation, location, LOG_HIGHLIGHT, LOG_MARKERS, group},
+           LOG_HIGHLIGHT_SENTINAL};
+    return log_excerpt(source, inst);
+}
+
+static inline int
+log_excerpt_2(
+    const char*      source,
+    struct utf8_span loc1,
+    struct utf8_span loc2,
+    struct utf8_view annotation1,
+    struct utf8_view annotation2,
+    char             group1,
+    char             group2)
+{
+    struct utf8_view     ins = empty_utf8_view();
+    struct log_highlight hl[]
+        = {{ins, annotation1, loc1, LOG_HIGHLIGHT, LOG_MARKERS, group1},
+           {ins, annotation2, loc2, LOG_HIGHLIGHT, LOG_MARKERS, group2},
+           LOG_HIGHLIGHT_SENTINAL};
+    return log_excerpt(source, hl);
+}
+
+static inline int
+log_excerpt_binop(
+    const char*      source,
+    struct utf8_span lhs,
+    struct utf8_span op,
+    struct utf8_span rhs,
+    struct utf8_view lhs_text,
+    struct utf8_view rhs_text)
+{
+    struct utf8_view     ins = empty_utf8_view();
+    struct log_highlight hl[]
+        = {{ins, lhs_text, lhs, LOG_HIGHLIGHT, {'>', '~', '~'}, 0},
+           {ins, empty_utf8_view(), op, LOG_HIGHLIGHT, {'^', '^', '^'}, 2},
+           {ins, rhs_text, rhs, LOG_HIGHLIGHT, {'~', '~', '<'}, 1},
+           LOG_HIGHLIGHT_SENTINAL};
+    if (lhs.len == 1)
+        hl[0].marker[0] = '^';
+    if (rhs.len == 1)
+        hl[2].marker[0] = '^';
+    return log_excerpt(source, hl);
+}
 
 int
 err_assignment_incompatible_types(

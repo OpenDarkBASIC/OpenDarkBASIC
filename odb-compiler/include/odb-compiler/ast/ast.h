@@ -135,12 +135,17 @@ enum ast_type
     AST_AS_AUTO,
 };
 
-/* clang-format off */
+struct ast_loc
+{
+    struct utf8_span span;
+    int ast_id;
+};
 
+/* clang-format off */
 union ast_node
 {
     struct info {
-        struct utf8_span location;
+        struct ast_loc location;
         union type type_info;
         int32_t scope_id;
         enum ast_type node_type;
@@ -611,7 +616,7 @@ ast_type_is_invalid(const struct ast* ast, ast_id n)
 {
     return ast->nodes[n].info.type_info.primitive == TYPE_INVALID;
 }
-static inline struct utf8_span
+static inline struct ast_loc
 ast_loc(const struct ast* ast, ast_id n)
 {
     return ast->nodes[n].info.location;

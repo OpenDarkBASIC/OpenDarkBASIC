@@ -19,7 +19,7 @@
     } while(0)
 
 static inline struct utf8_span
-token_to_ref(const char* cstr, void* extra)
+token_to_span(const char* cstr, void* extra)
 {
     char* base = extra;
     struct utf8_span ref = {
@@ -29,7 +29,7 @@ token_to_ref(const char* cstr, void* extra)
     return ref;
 }
 static inline struct utf8_span
-token_to_ref_strip_quotes(const char* cstr, void* extra)
+token_to_span_strip_quotes(const char* cstr, void* extra)
 {
     char* base = extra;
     struct utf8_span ref = {
@@ -108,7 +108,7 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
                           RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = 0;
                           RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string_value = token_to_ref_strip_quotes(yytext, yyget_extra(yyg));
+    {STRING_LITERAL}    { yylval->string_value = token_to_span_strip_quotes(yytext, yyget_extra(yyg));
                           RETURN_TOKEN(TOK_STRING_LITERAL); }
     {FLOAT}             { yylval->float_value = (float)atof(yytext);
                           RETURN_TOKEN(TOK_FLOAT_LITERAL); }
@@ -147,19 +147,19 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
     "~~"                { RETURN_TOKEN(TOK_BXOR); }
     ".."                { RETURN_TOKEN(TOK_BNOT); }
 
-    {IDENTIFIER}"?"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg));
+    {IDENTIFIER}"?"     { yylval->string_value = token_to_span(yytext, yyget_extra(yyg));
                           RETURN_TOKEN(TOK_IDENTIFIER_BOOLEAN); }
-    {IDENTIFIER}"%"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg));
+    {IDENTIFIER}"%"     { yylval->string_value = token_to_span(yytext, yyget_extra(yyg));
                           RETURN_TOKEN(TOK_IDENTIFIER_WORD); }
-    {IDENTIFIER}"&"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg));
+    {IDENTIFIER}"&"     { yylval->string_value = token_to_span(yytext, yyget_extra(yyg));
                           RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE_INTEGER); }
-    {IDENTIFIER}"#"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+    {IDENTIFIER}"#"     { yylval->string_value = token_to_span(yytext, yyget_extra(yyg)); 
                           RETURN_TOKEN(TOK_IDENTIFIER_FLOAT); }
-    {IDENTIFIER}"!"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+    {IDENTIFIER}"!"     { yylval->string_value = token_to_span(yytext, yyget_extra(yyg)); 
                           RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE); }
-    {IDENTIFIER}"$"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+    {IDENTIFIER}"$"     { yylval->string_value = token_to_span(yytext, yyget_extra(yyg)); 
                           RETURN_TOKEN(TOK_IDENTIFIER_STRING); }
-    {IDENTIFIER}        { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+    {IDENTIFIER}        { yylval->string_value = token_to_span(yytext, yyget_extra(yyg)); 
                           RETURN_TOKEN(TOK_IDENTIFIER); }
 
     "#"                 { RETURN_TOKEN('#'); }
