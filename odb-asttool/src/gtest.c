@@ -676,7 +676,7 @@ write_type_check(FILE* fp, const struct ast* ast, ast_id n)
         write_primitive_type_enum_name(fp, type.primitive);
     }
     else
-        fprintf(fp, ".id, Eq(%d)", type.id);
+        fprintf(fp, ".id, Eq(%d", type.id);
 
     fprintf(fp, "));\n");
 }

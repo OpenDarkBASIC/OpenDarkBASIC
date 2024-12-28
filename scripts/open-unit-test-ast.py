@@ -71,7 +71,7 @@ asttool_args = find_asttool_args(start_marker) if start_marker else ""
 if ast_type >= 1 and ast_type <= 2:
     source = find_parser_source(test_start)
     subprocess.run([
-        f"./odb-cli -b --dba --ast{ast_type} | \
+        f"./odb-cli --dba --ast{ast_type} | \
         ./odb-asttool {' '.join(asttool_args)} | \
         dot -Tx11"],
         shell=True,

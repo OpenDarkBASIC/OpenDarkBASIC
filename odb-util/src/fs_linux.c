@@ -172,10 +172,10 @@ map_src_failed:
 int
 fs_copy_file_if_newer(struct ospathc src, struct ospathc dst)
 {
-    uint64_t dst_mtime = fs_mtime_ms(dst);
+    uint64_t dst_mtime = fs_mtime_ms(dst, 0);
     if (dst_mtime > 0)
     {
-        uint64_t src_mtime = fs_mtime_ms(src);
+        uint64_t src_mtime = fs_mtime_ms(src, 1);
         if (src_mtime == 0)
             return -1;
         if (src_mtime <= dst_mtime)
@@ -199,16 +199,17 @@ fs_get_appdata_dir(struct ospath* path)
 }
 
 uint64_t
-fs_mtime_ms(struct ospathc path)
+fs_mtime_ms(struct ospathc path, int log_error)
 {
     struct stat st;
     if (stat(ospathc_cstr(path), &st))
     {
-        log_err(
-            "Failed to stat file {quote:%.*s}: %s\n",
-            path.len,
-            path.str.data,
-            strerror(errno));
+        if (log_error)
+            log_err(
+                "Failed to stat file {quote:%.*s}: %s\n",
+                path.len,
+                path.str.data,
+                strerror(errno));
         return 0;
     }
     return ((uint64_t)st.st_mtim.tv_sec * 1000)

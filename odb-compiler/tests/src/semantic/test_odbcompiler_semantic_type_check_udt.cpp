@@ -27,7 +27,7 @@ TEST_F(NAME, decl)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    /* odb-asttool --format gtest --types */
+    /* odb-asttool --format gtest --types --node-properties */
     ASSERT_THAT(ast_count(ast), Eq(15));
 
     ast_id block12 = ast->root;
@@ -61,7 +61,7 @@ TEST_F(NAME, decl)
     ASSERT_THAT(ast->nodes[ident10].identifier.name, Utf8SpanEq(5, 3));
     ASSERT_THAT(ast->nodes[ident10].identifier.annotation, Eq(TA_NONE));
     ASSERT_THAT(ast->nodes[lit13].integer_literal.value, Eq(0));
-    ASSERT_THAT(ast->nodes[lit14].float_literal.value, Eq(0.000000));
+    ASSERT_THAT(ast->nodes[lit14].float_literal.value, Eq(0.000000f));
 
     ASSERT_THAT(ast_type_info(ast, ident0).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, as_type1).primitive, Eq(TYPE_I32));
@@ -73,6 +73,8 @@ TEST_F(NAME, decl)
     ASSERT_THAT(ast_type_info(ast, decl17).primitive, Eq(TYPE_F32));
     ASSERT_THAT(ast_type_info(ast, decl28).primitive, Eq(TYPE_F32));
     ASSERT_THAT(ast_type_info(ast, block9).primitive, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident10).id, Eq(22));
+    ASSERT_THAT(ast_type_info(ast, udt_decl11).id, Eq(22));
     ASSERT_THAT(ast_type_info(ast, block12).primitive, Eq(TYPE_VOID));
     ASSERT_THAT(ast_type_info(ast, lit13).primitive, Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, lit14).primitive, Eq(TYPE_F32));
@@ -314,3 +316,4 @@ TEST_F(NAME, nested_write_udt_field)
     /* odb-asttool --format gtest --types */
     /* odb-asttool end */
 }
+
