@@ -1494,7 +1494,7 @@ link_executable(struct cli_ctx* ctx, int argc, char** argv)
     {
         if (ospath_set(&srcpath, ospathc(ctx->arch_plat_dir)) != 0)
             goto failed;
-        if (ospath_join_cstr(&srcpath, "lib") != 0)
+        if (ospath_join_cstr(&srcpath, ctx->platform == TARGET_WINDOWS ? "bin" : "lib") != 0)
             goto failed;
         filename = get_odbutil_bin_filename(ctx->platform);
         if (ospath_join_cstr(&srcpath, filename) != 0)

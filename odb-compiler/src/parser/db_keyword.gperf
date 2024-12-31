@@ -68,6 +68,7 @@ next,               TOK_NEXT
 continue,           TOK_CONTINUE
 exit,               TOK_EXIT
 /* Operators */
+mod,                TOK_MOD
 or,                 TOK_LOR
 and,                TOK_LAND
 xor,                TOK_LXOR
@@ -90,7 +91,6 @@ endfunction,        TOK_ENDFUNCTION
 //mat4x2,           TOK_MAT4X2
 //mat4x3,           TOK_MAT4X3
 //mat4x4,           TOK_MAT4X4
-//mod,              TOK_MOD
 //quat,             TOK_QUAT
 //return,           TOK_RETURN
 //type,             TOK_TYPE

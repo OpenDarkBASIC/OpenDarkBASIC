@@ -34,6 +34,8 @@ do
    speed# = curvevalue(0, speed#, 20)
    x# = newxvalue(x#, a#, speed#)
    z# = newzvalue(z#, a#, speed#)
+   cx# = newxvalue(cx#, a#, speed#)
+   cz# = newzvalue(cz#, a#, speed#)
 
    y# = y# + g#
    ground# = get ground height(1, x#+50, z#+50) + 0.5
@@ -75,7 +77,16 @@ do
    set camera to follow x#, y#, z#, a#, 5, 3, 5, 0
    xrotate camera 20
 
+   g = RampColor(cx#*2 + 230)
+   b = RampColor(cz#*2 + 255)
+   color backdrop rgb(100, g, b)
+   fog color rgb(100, g, b)
+
    if escapekey() then exit
    sync
 loop
 
+function RampColor(c)
+   c = c mod 512
+   if c > 255 then c = 511 - c
+endfunction c
