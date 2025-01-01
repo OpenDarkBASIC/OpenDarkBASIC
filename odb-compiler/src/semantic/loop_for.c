@@ -187,8 +187,8 @@ create_exit_stmt(
             *astp, begin, end, filename, source);
     }
 
-    struct utf8_span begin_loc = ast_loc(*astp, begin);
-    struct utf8_span end_loc = ast_loc(*astp, end);
+    struct ast_loc begin_loc = ast_loc(*astp, begin);
+    struct ast_loc end_loc = ast_loc(*astp, end);
 
     ast_id exit = ast_loop_exit(astp, empty_utf8_span(), begin_loc);
     ast_id exit_cond_block = ast_block(astp, exit, begin_loc);

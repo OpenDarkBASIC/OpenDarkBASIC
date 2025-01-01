@@ -125,7 +125,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
         /* Print line of code ----------------------------------------------- */
 
         /* Gutter with line number and padding */
-        log_printf("%*d | ", gutter_indent - 1, line);
+        log_raw("%*d | ", gutter_indent - 1, line);
 
         /* Next line may still be within a highlight. Enable style if so */
         for (h = 0; h != num_highlights; h++)

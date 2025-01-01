@@ -59,7 +59,8 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 ast_id
 ast_dup_identifier(struct ast** astp, ast_id identifier)
 {
-    struct utf8_span     name, location;
+    struct utf8_span     name;
+    struct ast_loc       location;
     enum type_annotation annotation;
     struct ast*          ast = *astp;
 

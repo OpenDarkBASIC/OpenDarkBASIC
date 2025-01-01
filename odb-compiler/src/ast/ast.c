@@ -38,7 +38,7 @@ ast_grow(struct ast** astp)
 }
 
 static ast_id
-new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
+new_node(struct ast** astp, enum ast_type type, struct ast_loc location)
 {
     struct ast* ast;
     ast_id      n = ast_grow(astp);
@@ -208,17 +208,6 @@ ast_dup_node_into(
         &(*dst_astp)->nodes[dst],
         &src_ast->nodes[src],
         sizeof(src_ast->nodes[src]));
-
-    /* XXX: TODO: This is pretty horrible, as we make a bunch of source code
-     * copies for every single node when we know it's very likelty that the span
-     * union of all nodes in the subtree is all that needs to be copied. */
-
-    if (dup_node_source_references(
-            *dst_astp, dst, dst_source, src_ast, src, src_source)
-        != 0)
-    {
-        return -1;
-    }
 
     return dst;
 }
