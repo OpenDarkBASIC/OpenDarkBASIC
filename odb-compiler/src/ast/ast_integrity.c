@@ -2,6 +2,7 @@
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-util/log.h"
+#include "odb-compiler/messages/messages.h"
 
 static int
 count_nodes_recurse(const struct ast* ast, ast_id n, int depth)

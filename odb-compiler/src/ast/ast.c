@@ -93,106 +93,6 @@ ast_dup_node(struct ast** astp, ast_id n)
     return dup;
 }
 
-static int
-dup_node_source_references(
-    struct ast*       dst_ast,
-    ast_id            dst,
-    struct utf8*      dst_source,
-    const struct ast* src_ast,
-    ast_id            src,
-    const char*       src_source)
-{
-    struct utf8_view src_view;
-    struct utf8_span dst_span;
-
-#define DUP_REF(node, property)                                                \
-    src_view = utf8_span_view(src_source, src_ast->nodes[src].node.property);  \
-    dst_span.off = dst_source->len;                                            \
-    dst_span.len = src_view.len;                                               \
-    if (dst_span.len > 0 && utf8_append(dst_source, src_view) != 0)            \
-        return -1;                                                             \
-    dst_ast->nodes[dst].node.property = dst_span
-
-    /* Location info */
-    DUP_REF(info, location);
-
-    switch (ast_node_type(src_ast, src))
-    {
-        case AST_GC: break;
-        case AST_BLOCK: return 0;
-        case AST_END: return 0;
-        case AST_ARGLIST:
-        case AST_PARAMLIST: DUP_REF(paramlist, combined_location); return 0;
-        case AST_TYPELIST: DUP_REF(typelist, name); return 0;
-        case AST_LOAD_PLUGIN: DUP_REF(load_plugin, filepath); return 0;
-        case AST_LOAD_COMMAND:
-            DUP_REF(load_command, cmd_name);
-            DUP_REF(load_command, filepath);
-            DUP_REF(load_command, c_symbol);
-            return 0;
-        case AST_COMMAND_NAME: DUP_REF(command_name, name); return 0;
-        case AST_COMMAND: return 0;
-        case AST_ASSIGNMENT: DUP_REF(assignment, op_location); return 0;
-        case AST_VAR_DECL1: DUP_REF(var_decl1, scope_location); return 0;
-        case AST_VAR_DECL2: DUP_REF(var_decl2, op_location); return 0;
-        case AST_VAR_READ: return 0;
-        case AST_VAR_WRITE: return 0;
-        case AST_UDT_DECL: return 0;
-        case AST_UDT_INIT: DUP_REF(udt_init, type_name); return 0;
-        case AST_UDT_READ: return 0;
-        case AST_UDT_WRITE: return 0;
-        case AST_DIM_DECL1: return 0;
-        case AST_DIM_DECL2: return 0;
-        case AST_DIM_READ: return 0;
-        case AST_DIM_WRITE: return 0;
-        case AST_PARAM: return 0;
-        case AST_IDENTIFIER: DUP_REF(identifier, name); return 0;
-        case AST_BINOP: DUP_REF(binop, op_location); return 0;
-        case AST_UNOP: return 0;
-        case AST_COND: return 0;
-        case AST_COND_BRANCHES: return 0;
-        case AST_SELECT: return 0;
-        case AST_CASELIST: return 0;
-        case AST_CASE: DUP_REF(case_, case_loc); return 0;
-        case AST_LOOP1:
-            DUP_REF(loop1, name);
-            DUP_REF(loop1, implicit_name);
-            return 0;
-        case AST_LOOP2: return 0;
-        case AST_LOOP_FOR1: return 0;
-        case AST_LOOP_FOR2: return 0;
-        case AST_LOOP_FOR3: return 0;
-        case AST_LOOP_CONT: DUP_REF(cont, name); return 0;
-        case AST_LOOP_EXIT: DUP_REF(loop_exit, name); return 0;
-        case AST_FUNC_POLY: return 0;
-        case AST_FUNC1: DUP_REF(func1, endfunction_location); return 0;
-        case AST_FUNC2: return 0;
-        case AST_FUNC3: return 0;
-        case AST_FUNC4: return 0;
-        case AST_FUNC_EXIT: return 0;
-        case AST_FUNC_CALL: return 0;
-        case AST_CALL_LIKE: return 0;
-        case AST_CONTAINER_WRITE: return 0;
-        case AST_BOOLEAN_LITERAL: return 0;
-        case AST_BYTE_LITERAL: return 0;
-        case AST_WORD_LITERAL: return 0;
-        case AST_DWORD_LITERAL: return 0;
-        case AST_INTEGER_LITERAL: return 0;
-        case AST_DOUBLE_INTEGER_LITERAL: return 0;
-        case AST_FLOAT_LITERAL: return 0;
-        case AST_DOUBLE_LITERAL: return 0;
-        case AST_STRING_LITERAL: DUP_REF(string_literal, str); return 0;
-        case AST_CAST: return 0;
-        case AST_AS_TYPE: return 0;
-        case AST_AS_EXPR: return 0;
-        case AST_AS_UDT: DUP_REF(as_udt, type_name); return 0;
-        case AST_AS_AUTO: return 0;
-    }
-#undef DUP_REF
-
-    return -1;
-}
-
 ast_id
 ast_dup_node_into(
     struct ast**      dst_astp,
@@ -213,7 +113,7 @@ ast_dup_node_into(
 }
 
 ast_id
-ast_block(struct ast** astp, ast_id stmt, struct utf8_span location)
+ast_block(struct ast** astp, ast_id stmt, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_BLOCK, location);
     struct ast* ast = *astp;
@@ -245,7 +145,7 @@ ast_block_append(struct ast* ast, ast_id block, ast_id append_block)
 }
 ast_id
 ast_block_append_stmt(
-    struct ast** astp, ast_id block, ast_id stmt, struct utf8_span location)
+    struct ast** astp, ast_id block, ast_id stmt, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_BLOCK, location);
     struct ast* ast = *astp;
@@ -265,13 +165,13 @@ ast_block_append_stmt(
 }
 
 ast_id
-ast_end(struct ast** astp, struct utf8_span location)
+ast_end(struct ast** astp, struct ast_loc location)
 {
     return new_node(astp, AST_END, location);
 }
 
 ast_id
-ast_arglist(struct ast** astp, ast_id expr, struct utf8_span location)
+ast_arglist(struct ast** astp, ast_id expr, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_ARGLIST, location);
     struct ast* ast = *astp;
@@ -287,7 +187,7 @@ ast_arglist(struct ast** astp, ast_id expr, struct utf8_span location)
 
 ast_id
 ast_arglist_append_expr(
-    struct ast** astp, ast_id arglist, ast_id expr, struct utf8_span location)
+    struct ast** astp, ast_id arglist, ast_id expr, struct ast_loc location)
 {
     struct utf8_span combined_location;
     ast_id           n = new_node(astp, AST_ARGLIST, location);
@@ -318,7 +218,7 @@ ast_arglist_append_expr(
 }
 
 ast_id
-ast_paramlist(struct ast** astp, ast_id param, struct utf8_span location)
+ast_paramlist(struct ast** astp, ast_id param, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_PARAMLIST, location);
     struct ast* ast = *astp;
@@ -338,10 +238,7 @@ ast_paramlist(struct ast** astp, ast_id param, struct utf8_span location)
 
 ast_id
 ast_paramlist_append(
-    struct ast**     astp,
-    ast_id           paramlist,
-    ast_id           param,
-    struct utf8_span location)
+    struct ast** astp, ast_id paramlist, ast_id param, struct ast_loc location)
 {
     struct utf8_span combined_location;
     ast_id           n = new_node(astp, AST_PARAMLIST, location);
@@ -377,7 +274,7 @@ ast_typelist(
     struct ast**     astp,
     struct utf8_span name,
     ast_id           type,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_TYPELIST, location);
     struct ast* ast = *astp;
@@ -399,10 +296,10 @@ ast_typelist(
 
 void
 ast_typelist_append(
-    struct ast*      ast,
-    ast_id           typelist,
-    ast_id           append_typelist,
-    struct utf8_span location)
+    struct ast*    ast,
+    ast_id         typelist,
+    ast_id         append_typelist,
+    struct ast_loc location)
 {
     ODBUTIL_DEBUG_ASSERT(typelist > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -421,7 +318,7 @@ ast_typelist_append(
 
 ast_id
 ast_typelist_append_type(
-    struct ast** astp, ast_id typelist, ast_id type, struct utf8_span location)
+    struct ast** astp, ast_id typelist, ast_id type, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_TYPELIST, location);
     struct ast* ast = *astp;
@@ -442,7 +339,7 @@ ast_typelist_append_type(
 
 ast_id
 ast_load_plugin(
-    struct ast** astp, struct utf8_span filepath, struct utf8_span location)
+    struct ast** astp, struct utf8_span filepath, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_LOAD_PLUGIN, location);
     if (n < 0)
@@ -461,7 +358,7 @@ ast_load_command(
     struct utf8_span cmd_name,
     struct utf8_span filepath,
     struct utf8_span c_symbol,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_LOAD_COMMAND, location);
     struct ast* ast = *astp;
@@ -492,7 +389,7 @@ ast_command_name(
     struct utf8_span command_name,
     ast_id           arglist,
     char             is_expr,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_COMMAND_NAME, location);
     struct ast* ast = *astp;
@@ -516,7 +413,7 @@ ast_assign(
     ast_id           lvalue,
     ast_id           expr,
     struct utf8_span op_location,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_ASSIGNMENT, location);
     struct ast* ast = *astp;
@@ -548,7 +445,7 @@ ast_var_decl(
     ast_id           init_expr,
     struct utf8_span scope_location,
     struct utf8_span op_location,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id decl1 = new_node(astp, AST_VAR_DECL1, location);
     ast_id decl2 = new_node(astp, AST_VAR_DECL2, location);
@@ -580,7 +477,7 @@ ast_var_decl(
 }
 
 ast_id
-ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location)
+ast_var_read(struct ast** astp, ast_id identifier, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_VAR_READ, location);
     if (n < 0)
@@ -597,7 +494,7 @@ ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location)
 }
 
 ast_id
-ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location)
+ast_var_write(struct ast** astp, ast_id identifier, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_VAR_WRITE, location);
     if (n < 0)
@@ -615,11 +512,11 @@ ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location)
 
 ast_id
 ast_udt_decl(
-    struct ast**     astp,
-    enum scope       scope,
-    ast_id           type_identifier,
-    ast_id           members_block,
-    struct utf8_span location)
+    struct ast**   astp,
+    enum scope     scope,
+    ast_id         type_identifier,
+    ast_id         members_block,
+    struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_UDT_DECL, location);
     if (n < 0)
@@ -644,7 +541,7 @@ ast_udt_init(
     struct ast**     astp,
     struct utf8_span type_name,
     ast_id           arglist,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id n = new_node(astp, AST_UDT_INIT, location);
     if (n < 0)
@@ -662,7 +559,7 @@ ast_udt_init(
 
 ast_id
 ast_udt_read(
-    struct ast** astp, ast_id member, ast_id next, struct utf8_span location)
+    struct ast** astp, ast_id member, ast_id next, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_UDT_READ, location);
     if (n < 0)
@@ -689,7 +586,7 @@ ast_udt_read(
 
 ast_id
 ast_param(
-    struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location)
+    struct ast** astp, ast_id identifier, ast_id as, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_PARAM, location);
     struct ast* ast = *astp;
@@ -715,7 +612,7 @@ ast_param(
 
 ast_id
 ast_udt_write(
-    struct ast** astp, ast_id member, ast_id next, struct utf8_span location)
+    struct ast** astp, ast_id member, ast_id next, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_UDT_WRITE, location);
     if (n < 0)
@@ -742,11 +639,11 @@ ast_udt_write(
 
 ast_id
 ast_dim_decl(
-    struct ast**     astp,
-    ast_id           identifier,
-    ast_id           arglist,
-    ast_id           as,
-    struct utf8_span location)
+    struct ast**   astp,
+    ast_id         identifier,
+    ast_id         arglist,
+    ast_id         as,
+    struct ast_loc location)
 {
     ast_id decl1 = new_node(astp, AST_DIM_DECL1, location);
     ast_id decl2 = new_node(astp, AST_DIM_DECL2, location);
@@ -776,10 +673,10 @@ ast_dim_decl(
 
 ast_id
 ast_dim_read(
-    struct ast**     astp,
-    ast_id           identifier,
-    ast_id           arglist,
-    struct utf8_span location)
+    struct ast**   astp,
+    ast_id         identifier,
+    ast_id         arglist,
+    struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_DIM_READ, location);
     if (n < 0)
@@ -800,10 +697,10 @@ ast_dim_read(
 
 ast_id
 ast_dim_write(
-    struct ast**     astp,
-    ast_id           identifier,
-    ast_id           arglist,
-    struct utf8_span location)
+    struct ast**   astp,
+    ast_id         identifier,
+    ast_id         arglist,
+    struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_DIM_WRITE, location);
     if (n < 0)
@@ -847,7 +744,7 @@ ast_binop(
     ast_id           left,
     ast_id           right,
     struct utf8_span op_location,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_BINOP, location);
     struct ast* ast = *astp;
@@ -867,10 +764,7 @@ ast_binop(
 
 ast_id
 ast_unop(
-    struct ast**     astp,
-    enum unop_type   op,
-    ast_id           expr,
-    struct utf8_span location)
+    struct ast** astp, enum unop_type op, ast_id expr, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_UNOP, location);
     struct ast* ast = *astp;
@@ -917,7 +811,7 @@ convert_lvalue_to_rvalue(struct ast* ast, ast_id lvalue)
 
 ast_id
 ast_inc_step(
-    struct ast** astp, ast_id lvalue, ast_id expr, struct utf8_span location)
+    struct ast** astp, ast_id lvalue, ast_id expr, struct ast_loc location)
 {
     ast_id add, rvalue;
 
@@ -940,7 +834,7 @@ ast_inc_step(
 }
 
 ast_id
-ast_inc(struct ast** astp, ast_id lvalue, struct utf8_span location)
+ast_inc(struct ast** astp, ast_id lvalue, struct ast_loc location)
 {
     ast_id expr = ast_byte_literal(astp, 1, location);
     if (expr < 0)
@@ -951,7 +845,7 @@ ast_inc(struct ast** astp, ast_id lvalue, struct utf8_span location)
 
 ast_id
 ast_dec_step(
-    struct ast** astp, ast_id lvalue, ast_id expr, struct utf8_span location)
+    struct ast** astp, ast_id lvalue, ast_id expr, struct ast_loc location)
 {
     ast_id sub, rvalue;
 
@@ -974,7 +868,7 @@ ast_dec_step(
 }
 
 ast_id
-ast_dec(struct ast** astp, ast_id var_write, struct utf8_span location)
+ast_dec(struct ast** astp, ast_id var_write, struct ast_loc location)
 {
     ast_id expr = ast_byte_literal(astp, 1, location);
     if (expr < 0)
@@ -985,10 +879,10 @@ ast_dec(struct ast** astp, ast_id var_write, struct utf8_span location)
 
 ast_id
 ast_cond(
-    struct ast**     astp,
-    ast_id           expr,
-    ast_id           cond_branches,
-    struct utf8_span location)
+    struct ast**   astp,
+    ast_id         expr,
+    ast_id         cond_branches,
+    struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_COND, location);
     struct ast* ast = *astp;
@@ -1008,7 +902,7 @@ ast_cond(
 
 ast_id
 ast_cond_branches(
-    struct ast** astp, ast_id yes, ast_id no, struct utf8_span location)
+    struct ast** astp, ast_id yes, ast_id no, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_COND_BRANCHES, location);
     struct ast* ast = *astp;
@@ -1030,7 +924,7 @@ ast_cond_branches(
 
 ast_id
 ast_select(
-    struct ast** astp, ast_id expr, ast_id caselist, struct utf8_span location)
+    struct ast** astp, ast_id expr, ast_id caselist, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_SELECT, location);
     struct ast* ast = *astp;
@@ -1048,7 +942,7 @@ ast_select(
 }
 
 ast_id
-ast_caselist(struct ast** astp, ast_id case_, struct utf8_span location)
+ast_caselist(struct ast** astp, ast_id case_, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_CASELIST, location);
     if (n < 0)
@@ -1066,10 +960,10 @@ ast_caselist(struct ast** astp, ast_id case_, struct utf8_span location)
 
 void
 ast_caselist_append(
-    struct ast*      ast,
-    ast_id           caselist,
-    ast_id           append_caselist,
-    struct utf8_span location)
+    struct ast*    ast,
+    ast_id         caselist,
+    ast_id         append_caselist,
+    struct ast_loc location)
 {
     ODBUTIL_DEBUG_ASSERT(caselist > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1088,7 +982,7 @@ ast_caselist_append(
 
 ast_id
 ast_caselist_append_case(
-    struct ast** astp, ast_id caselist, ast_id case_, struct utf8_span location)
+    struct ast** astp, ast_id caselist, ast_id case_, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_CASELIST, location);
     struct ast* ast = *astp;
@@ -1116,7 +1010,7 @@ ast_case(
     ast_id           expr,
     ast_id           body,
     struct utf8_span case_loc,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_CASE, location);
     struct ast* ast = *astp;
@@ -1140,7 +1034,7 @@ ast_loop(
     ast_id           body,
     struct utf8_span name,
     struct utf8_span implicit_name,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_LOOP1, location);
     ast_id      loop_body = new_node(astp, AST_LOOP2, location);
@@ -1163,7 +1057,7 @@ ast_loop_while(
     ast_id           body,
     ast_id           expr,
     struct utf8_span name,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id exit = ast_loop_exit(astp, empty_utf8_span(), location);
     ast_id exit_block = ast_block(astp, exit, location);
@@ -1183,7 +1077,7 @@ ast_loop_until(
     ast_id           body,
     ast_id           expr,
     struct utf8_span name,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id exit = ast_loop_exit(astp, empty_utf8_span(), location);
     ast_id exit_block = ast_block(astp, exit, location);
@@ -1207,7 +1101,7 @@ ast_loop_for(
     ast_id           step,
     ast_id           next,
     struct utf8_span name,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id           loop, loop_for1, loop_for2, loop_for3;
     struct utf8_span implicit_name;
@@ -1266,7 +1160,7 @@ ast_loop_cont(
     struct ast**     astp,
     struct utf8_span name,
     ast_id           step,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     ast_id      n = new_node(astp, AST_LOOP_CONT, location);
     struct ast* ast = *astp;
@@ -1280,8 +1174,7 @@ ast_loop_cont(
 }
 
 ast_id
-ast_loop_exit(
-    struct ast** astp, struct utf8_span name, struct utf8_span location)
+ast_loop_exit(struct ast** astp, struct utf8_span name, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_LOOP_EXIT, location);
     struct ast* ast = *astp;
@@ -1320,7 +1213,7 @@ ast_func(
     ast_id           body,
     ast_id           retval,
     struct utf8_span endfunction_location,
-    struct utf8_span location)
+    struct ast_loc   location)
 {
     struct ast* ast;
     ast_id      f1, f2, f3, f4;
@@ -1379,7 +1272,7 @@ ast_func(
 }
 
 ast_id
-ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location)
+ast_func_exit(struct ast** astp, ast_id retval, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_FUNC_EXIT, location);
     struct ast* ast = *astp;
@@ -1393,11 +1286,11 @@ ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location)
 
 ast_id
 ast_call_like(
-    struct ast**     astp,
-    ast_id           identifier,
-    ast_id           arglist,
-    char             is_expr,
-    struct utf8_span location)
+    struct ast**   astp,
+    ast_id         identifier,
+    ast_id         arglist,
+    char           is_expr,
+    struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_CALL_LIKE, location);
     struct ast* ast = *astp;
@@ -1421,10 +1314,10 @@ ast_call_like(
 
 ast_id
 ast_container_write(
-    struct ast**     astp,
-    ast_id           identifier,
-    ast_id           arglist,
-    struct utf8_span location)
+    struct ast**   astp,
+    ast_id         identifier,
+    ast_id         arglist,
+    struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_CONTAINER_WRITE, location);
     struct ast* ast = *astp;
@@ -1446,7 +1339,7 @@ ast_container_write(
 }
 
 ast_id
-ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location)
+ast_boolean_literal(struct ast** astp, char is_true, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_BOOLEAN_LITERAL, location);
     struct ast* ast = *astp;
@@ -1459,7 +1352,7 @@ ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location)
 }
 
 ast_id
-ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location)
+ast_byte_literal(struct ast** astp, uint8_t value, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_BYTE_LITERAL, location);
     struct ast* ast = *astp;
@@ -1471,7 +1364,7 @@ ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location)
     return n;
 }
 ast_id
-ast_word_literal(struct ast** astp, uint16_t value, struct utf8_span location)
+ast_word_literal(struct ast** astp, uint16_t value, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_WORD_LITERAL, location);
     struct ast* ast = *astp;
@@ -1483,7 +1376,7 @@ ast_word_literal(struct ast** astp, uint16_t value, struct utf8_span location)
     return n;
 }
 ast_id
-ast_integer_literal(struct ast** astp, int32_t value, struct utf8_span location)
+ast_integer_literal(struct ast** astp, int32_t value, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_INTEGER_LITERAL, location);
     struct ast* ast = *astp;
@@ -1495,7 +1388,7 @@ ast_integer_literal(struct ast** astp, int32_t value, struct utf8_span location)
     return n;
 }
 ast_id
-ast_dword_literal(struct ast** astp, uint32_t value, struct utf8_span location)
+ast_dword_literal(struct ast** astp, uint32_t value, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_DWORD_LITERAL, location);
     struct ast* ast = *astp;
@@ -1508,7 +1401,7 @@ ast_dword_literal(struct ast** astp, uint32_t value, struct utf8_span location)
 }
 ast_id
 ast_double_integer_literal(
-    struct ast** astp, int64_t value, struct utf8_span location)
+    struct ast** astp, int64_t value, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_DOUBLE_INTEGER_LITERAL, location);
     struct ast* ast = *astp;
@@ -1521,7 +1414,7 @@ ast_double_integer_literal(
 }
 ast_id
 ast_integer_like_literal(
-    struct ast** astp, int64_t value, struct utf8_span location)
+    struct ast** astp, int64_t value, struct ast_loc location)
 {
     if (value >= 0)
     {
@@ -1542,7 +1435,7 @@ ast_integer_like_literal(
 }
 
 ast_id
-ast_float_literal(struct ast** astp, float value, struct utf8_span location)
+ast_float_literal(struct ast** astp, float value, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_FLOAT_LITERAL, location);
     struct ast* ast = *astp;
@@ -1554,7 +1447,7 @@ ast_float_literal(struct ast** astp, float value, struct utf8_span location)
     return n;
 }
 ast_id
-ast_double_literal(struct ast** astp, double value, struct utf8_span location)
+ast_double_literal(struct ast** astp, double value, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_DOUBLE_LITERAL, location);
     struct ast* ast = *astp;
@@ -1568,7 +1461,7 @@ ast_double_literal(struct ast** astp, double value, struct utf8_span location)
 
 ast_id
 ast_string_literal(
-    struct ast** astp, struct utf8_span str, struct utf8_span location)
+    struct ast** astp, struct utf8_span str, struct ast_loc location)
 {
     ast_id      n = new_node(astp, AST_STRING_LITERAL, location);
     struct ast* ast = *astp;
@@ -1581,7 +1474,7 @@ ast_string_literal(
 }
 
 ast_id
-ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span location)
+ast_cast(struct ast** astp, ast_id expr, ast_id as, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_CAST, location);
     if (n < 0)
@@ -1617,8 +1510,7 @@ ast_cast_to_primitive_type(
 }
 
 ast_id
-ast_as_type(
-    struct ast** astp, union type target_type, struct utf8_span location)
+ast_as_type(struct ast** astp, union type target_type, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_AS_TYPE, location);
     if (n < 0)
@@ -1630,7 +1522,7 @@ ast_as_type(
 }
 
 ast_id
-ast_as_expr(struct ast** astp, ast_id expr, struct utf8_span location)
+ast_as_expr(struct ast** astp, ast_id expr, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_AS_EXPR, location);
     if (n < 0)
@@ -1642,14 +1534,14 @@ ast_as_expr(struct ast** astp, ast_id expr, struct utf8_span location)
 }
 
 ast_id
-ast_as_auto(struct ast** astp, struct utf8_span location)
+ast_as_auto(struct ast** astp, struct ast_loc location)
 {
     return new_node(astp, AST_AS_AUTO, location);
 }
 
 ast_id
 ast_as_udt(
-    struct ast** astp, struct utf8_span type_name, struct utf8_span location)
+    struct ast** astp, struct utf8_span type_name, struct ast_loc location)
 {
     ast_id n = new_node(astp, AST_AS_UDT, location);
     if (n < 0)
