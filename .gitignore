@@ -1,6 +1,7 @@
 # Build directories
 /build*
 /cmake-build*
+/result
 
 # Thirdparty
 /thirdparty/llvm-project

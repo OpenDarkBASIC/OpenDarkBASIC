@@ -58,32 +58,31 @@ endif ()
 # Try to create the following directory structure in both build and install
 # trees (see issue #11)
 #
-#    build-<debug/release>/bin/
-#    ├ include/
-#    │   └ odb-compiler/
-#    ├ lib/
-#    │   └ odb-compiler.lib
-#    ├ target/
-#    │ └ <arch>/
-#    │   └ <platform>/
-#    │     ├ dbp-sdk/
-#    │     │ ├ plugins/
-#    │     │ ├ thirdparty-plugins/
-#    │     │ └ runtime/
-#    │     ├ odb-sdk/
-#    │     │ ├ plugins/
-#    │     │ │ └ core-commands.dll
-#    │     │ │ thirdparty-plugins/
-#    │     │ └ runtime/
-#    │     └ odb-util/
-#    │       ├ include/
-#    │       │ └ odb-sdk/
-#    │       └ lib/
-#    │         └ odb-sdk.lib
-#    ├ odb-cli
-#    ├ odb-tests
-#    ├ odb-util.dll
-#    └ odb-compiler.dll
+#    build-<Debug/Release>/bin/
+#    └ <arch>/<platform>/
+#      ├ bin/
+#      │ ├ odb-asttool
+#      │ ├ odb-cli
+#      │ ├ odb-cligen
+#      │ ├ odb-resgen
+#      │ ├ odb-tests
+#      │ ├ libodb-compiler.dll
+#      │ └ libodb-util.dll
+#      ├ include/
+#      │ ├ odb-compiler/
+#      │ └ odb-util/
+#      ├ lib/
+#      │ ├ libodb-compiler.lib
+#      │ └ libodb-util.lib
+#      ├ dbp-sdk/
+#      │ ├ plugins/
+#      │ ├ thirdparty-plugins/
+#      │ └ runtime/
+#      ├ odb-sdk/
+#      │ ├ plugins/
+#      │ ├ thirdparty-plugins/
+#      │ └ runtime/
+#      └ share/cmake/
 #
 set (ODB_BUILD_PREFIX "${PROJECT_BINARY_DIR}/bin" CACHE STRING "Where to output all build artifacts")
 set (ODB_BUILD_BINDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/bin")
@@ -91,32 +90,17 @@ set (ODB_BUILD_LIBDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/lib")
 set (ODB_BUILD_SDKDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/odb-sdk")
 set (DBP_BUILD_SDKDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/dbp-sdk")
 
-set (ODB_BUILD_HOST_BINDIR "${ODB_BUILD_PREFIX}/hosttools/bin")
-
 set (ODB_INSTALL_BINDIR "${ODB_ARCH}/${ODB_PLATFORM}/bin")
 set (ODB_INSTALL_LIBDIR "${ODB_ARCH}/${ODB_PLATFORM}/lib")
 set (ODB_INSTALL_INCLUDEDIR "${ODB_ARCH}/${ODB_PLATFORM}/include")
 
-set (ODB_INSTALL_HOST_BINDIR "hosttools/bin")
-
 if (ODB_TESTS)
-    set (INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-    include (FetchContent)
-    FetchContent_Declare (
-        googletest
-        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
-        URL_HASH SHA256=8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7)
-    FetchContent_MakeAvailable (googletest)
-    include (ODBTargetProperties)
-    odb_target_properties (gmock
-        PROPERTIES
-            MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
     add_subdirectory ("odb-tests")
 endif ()
 
 if (ODB_UTIL)
     add_subdirectory ("odb-util")
-    # Also compile a 32-bit version of the utility library
+    # Also compile a 32-bit version of the utility library on Windows
     if (ODB_UTIL_i386 AND ODB_ARCH MATCHES "x86_64" AND ODB_PLATFORM MATCHES "windows")
         if (NOT EXISTS "${PROJECT_BINARY_DIR}/build_odb-util-i386")
             execute_process (COMMAND ${CMAKE_COMMAND}
@@ -169,3 +153,7 @@ if (DBP_SDK AND ODB_PLATFORM MATCHES "windows")
         add_subdirectory ("dbp-sdk")
     endif ()
 endif ()
+
+install (
+    EXPORT OpenDarkBASICConfig
+    DESTINATION "share/OpenDarkBASIC/cmake")

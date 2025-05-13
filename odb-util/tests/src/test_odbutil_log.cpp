@@ -128,6 +128,21 @@ TEST_F(NAME, excerpt_1_multiple_lines)
               "   | {emph0}~~~~~~~~~<{reset}\n"));
 }
 
+TEST_F(NAME, excerpt_1_newline_marker)
+{
+    const char* source
+        = "print a\n"
+          "print b\n";
+
+    struct utf8_span loc = {7, 1}; /* newline */
+    log_excerpt_1(source, loc, cstr_utf8_view("test"), 0);
+
+    EXPECT_THAT(
+        log(),
+        LogEq(" 1 | print a\n"
+              "   |        {emph0}^{reset} {emph0}test{reset}\n"));
+}
+
 TEST_F(NAME, excerpt_3_one_sized_locations_on_same_line)
 {
     const char* source

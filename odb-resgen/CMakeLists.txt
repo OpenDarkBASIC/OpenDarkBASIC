@@ -14,14 +14,15 @@ if (NOT CMAKE_CROSSCOMPILING)
     odb_target_properties (odb-resgen
         PROPERTIES
             MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
-            RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_HOST_BINDIR})
+            RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
 
     install (
         TARGETS odb-resgen
-        RUNTIME DESTINATION ${ODB_INSTALL_HOST_BINDIR})
+        RUNTIME DESTINATION ${ODB_INSTALL_BINDIR})
 else ()
     add_executable (odb-resgen IMPORTED)
-    set_target_properties (odb-resgen PROPERTIES IMPORTED_LOCATION "${ODB_BUILD_PREFIX}/${ODB_INSTALL_HOST_BINDIR}/odb-resgen")
+    set_target_properties (odb-resgen PROPERTIES
+        IMPORTED_LOCATION "${ODB_BUILD_PREFIX}/${ODB_INSTALL_BINDIR}/odb-resgen")
 endif ()
 
 macro (odb_resgen_target name)

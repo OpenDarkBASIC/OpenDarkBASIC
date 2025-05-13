@@ -805,7 +805,7 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
 struct parser
 {
     const char* filename;
-    const char* data;
+    const char* source;
     int         tail;
     int         head;
     int         end;
@@ -820,7 +820,7 @@ static void
 parser_init(struct parser* p, struct mfile* mf, const char* filename)
 {
     p->filename = filename;
-    p->data = (char*)mf->address;
+    p->source = (char*)mf->address;
     p->head = 0;
     p->tail = 0;
     p->end = mf->size;
@@ -833,9 +833,9 @@ print_loc_error(struct parser* p, const char* fmt, ...)
     struct str_view loc = {p->tail, p->head - p->tail};
 
     va_start(ap, fmt);
-    log_vflc(p->filename, p->data, loc, fmt, ap);
+    log_vflc(p->filename, p->source, loc, fmt, ap);
     va_end(ap);
-    print_excerpt(p->filename, p->data, loc);
+    print_excerpt(p->filename, p->source, loc);
 
     return -1;
 }
@@ -858,21 +858,21 @@ enum token
     TOK_COMMAND_EXAMPLE,
     TOK_COMMAND_SEE_ALSO,
     TOK_ELLIPSIS,
-    TOK_IDENTIFIER,
+    TOK_KEY,
     TOK_STRING,
 };
 
-enum token
+static enum token
 scan_next_token(struct parser* p)
 {
     p->tail = p->head;
     while (p->head != p->end)
     {
         /* Skip comments */
-        if (p->data[p->head] == '/' && p->data[p->head + 1] == '*')
+        if (p->source[p->head] == '/' && p->source[p->head + 1] == '*')
         {
             for (p->head += 2; p->head != p->end; p->head++)
-                if (p->data[p->head] == '*' && p->data[p->head + 1] == '/')
+                if (p->source[p->head] == '*' && p->source[p->head + 1] == '/')
                 {
                     p->head += 2;
                     break;
@@ -880,10 +880,10 @@ scan_next_token(struct parser* p)
             p->tail = p->head;
             continue;
         }
-        if (p->data[p->head] == '/' && p->data[p->head + 1] == '/')
+        if (p->source[p->head] == '/' && p->source[p->head + 1] == '/')
         {
             for (p->head += 2; p->head != p->end; p->head++)
-                if (p->data[p->head] == '\n')
+                if (p->source[p->head] == '\n')
                 {
                     p->head++;
                     break;
@@ -892,97 +892,97 @@ scan_next_token(struct parser* p)
             continue;
         }
         /* String literals. Regex: ".*?" (spans over newlines)*/
-        if (p->data[p->head] == '"'
-            && (p->head == 0 || p->data[p->head - 1] != '\\'))
+        if (p->source[p->head] == '"'
+            && (p->head == 0 || p->source[p->head - 1] != '\\'))
         {
             p->value.str.off = ++p->head;
             for (; p->head != p->end; ++p->head)
-                if (p->data[p->head] == '"' && p->data[p->head - 1] != '\\')
+                if (p->source[p->head] == '"' && p->source[p->head - 1] != '\\')
                     break;
             if (p->head == p->end)
                 return print_loc_error(p, "Missing closing quote on string\n");
             p->value.str.len = p->head++ - p->value.str.off;
             return TOK_STRING;
         }
-        if (p->data[p->head] == '(')
-            return p->data[p->head++];
-        if (p->data[p->head] == ')')
-            return p->data[p->head++];
-        if (p->data[p->head] == ',')
-            return p->data[p->head++];
-        if (p->data[p->head] == '*')
-            return p->data[p->head++];
-        if (memcmp(p->data + p->head, "ODB_COMMAND", sizeof("ODB_COMMAND") - 1)
+        if (p->source[p->head] == '(')
+            return p->source[p->head++];
+        if (p->source[p->head] == ')')
+            return p->source[p->head++];
+        if (p->source[p->head] == ',')
+            return p->source[p->head++];
+        if (p->source[p->head] == '*')
+            return p->source[p->head++];
+        if (memcmp(p->source + p->head, "ODB_COMMAND", sizeof("ODB_COMMAND") - 1)
             == 0)
         {
             p->head += sizeof("ODB_COMMAND") - 1;
-            while (p->head != p->end && isdigit(p->data[p->head]))
+            while (p->head != p->end && isdigit(p->source[p->head]))
                 p->head++;
             return TOK_ODB_COMMAND;
         }
         if (memcmp(
-                p->data + p->head, "ODB_OVERLOAD", sizeof("ODB_OVERLOAD") - 1)
+                p->source + p->head, "ODB_OVERLOAD", sizeof("ODB_OVERLOAD") - 1)
             == 0)
         {
             p->head += sizeof("ODB_OVERLOAD") - 1;
-            while (p->head != p->end && isdigit(p->data[p->head]))
+            while (p->head != p->end && isdigit(p->source[p->head]))
                 p->head++;
             return TOK_ODB_OVERLOAD;
         }
-        if (memcmp(p->data + p->head, "NAME", sizeof("NAME") - 1) == 0)
+        if (memcmp(p->source + p->head, "NAME", sizeof("NAME") - 1) == 0)
         {
             p->head += sizeof("NAME") - 1;
             return TOK_COMMAND_NAME;
         }
-        if (memcmp(p->data + p->head, "BRIEF", sizeof("BRIEF") - 1) == 0)
+        if (memcmp(p->source + p->head, "BRIEF", sizeof("BRIEF") - 1) == 0)
         {
             p->head += sizeof("BRIEF") - 1;
             return TOK_COMMAND_BRIEF;
         }
-        if (memcmp(p->data + p->head, "DESCRIPTION", sizeof("DESCRIPTION") - 1)
+        if (memcmp(p->source + p->head, "DESCRIPTION", sizeof("DESCRIPTION") - 1)
             == 0)
         {
             p->head += sizeof("DESCRIPTION") - 1;
             return TOK_COMMAND_DESCRIPTION;
         }
-        if (memcmp(p->data + p->head, "PARAMETER", sizeof("PARAMETER") - 1)
+        if (memcmp(p->source + p->head, "PARAMETER", sizeof("PARAMETER") - 1)
             == 0)
         {
             p->head += sizeof("PARAMETER") - 1;
-            while (p->head != p->end && isdigit(p->data[p->head]))
+            while (p->head != p->end && isdigit(p->source[p->head]))
                 p->head++;
             return TOK_COMMAND_PARAM;
         }
-        if (memcmp(p->data + p->head, "RETURNS", sizeof("RETURNS") - 1) == 0)
+        if (memcmp(p->source + p->head, "RETURNS", sizeof("RETURNS") - 1) == 0)
         {
             p->head += sizeof("RETURNS") - 1;
             return TOK_COMMAND_RETURNS;
         }
-        if (memcmp(p->data + p->head, "EXAMPLE", sizeof("EXAMPLE") - 1) == 0)
+        if (memcmp(p->source + p->head, "EXAMPLE", sizeof("EXAMPLE") - 1) == 0)
         {
             p->head += sizeof("EXAMPLE") - 1;
             return TOK_COMMAND_EXAMPLE;
         }
-        if (memcmp(p->data + p->head, "SEE_ALSO", sizeof("SEE_ALSO") - 1) == 0)
+        if (memcmp(p->source + p->head, "SEE_ALSO", sizeof("SEE_ALSO") - 1) == 0)
         {
             p->head += sizeof("SEE_ALSO") - 1;
             return TOK_COMMAND_SEE_ALSO;
         }
-        if (memcmp(p->data + p->head, "...", 3) == 0)
+        if (memcmp(p->source + p->head, "...", 3) == 0)
         {
             p->head += 3;
             return TOK_ELLIPSIS;
         }
-        if (isalpha(p->data[p->head]) || p->data[p->head] == '_')
+        if (isalpha(p->source[p->head]) || p->source[p->head] == '_')
         {
             p->value.str.off = p->head++;
             while (p->head != p->end
-                   && (isalnum(p->data[p->head]) || p->data[p->head] == '_'))
+                   && (isalnum(p->source[p->head]) || p->source[p->head] == '_'))
             {
                 p->head++;
             }
             p->value.str.len = p->head - p->value.str.off;
-            return TOK_IDENTIFIER;
+            return TOK_KEY;
         }
 
         p->tail = ++p->head;
@@ -1139,7 +1139,7 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
             /* Alloc if not yet done */
             case '*':
             case TOK_ELLIPSIS:
-            case TOK_IDENTIFIER:
+            case TOK_KEY:
                 if (param == NULL)
                     param = is_ret ? &command->ret : new_param(command);
                 break;
@@ -1149,51 +1149,51 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
         {
             case '*': param->is_ptr = 1; break;
             case TOK_ELLIPSIS: param->type = PARAM_USER_DEFINED_VAR_PTR; break;
-            case TOK_IDENTIFIER:
+            case TOK_KEY:
                 /* C qualifiers */
-                if (memcmp(p->data + p->value.str.off, "const", 5) == 0)
+                if (memcmp(p->source + p->value.str.off, "const", 5) == 0)
                     param->is_const = 1;
-                else if (memcmp(p->data + p->value.str.off, "signed", 6) == 0)
+                else if (memcmp(p->source + p->value.str.off, "signed", 6) == 0)
                     param->is_signed = 1;
-                else if (memcmp(p->data + p->value.str.off, "unsigned", 8) == 0)
+                else if (memcmp(p->source + p->value.str.off, "unsigned", 8) == 0)
                     param->is_unsigned = 1;
-                else if (memcmp(p->data + p->value.str.off, "struct", 6) == 0)
+                else if (memcmp(p->source + p->value.str.off, "struct", 6) == 0)
                     param->is_struct = 1;
                 /* C types */
-                else if (memcmp(p->data + p->value.str.off, "void", 4) == 0)
+                else if (memcmp(p->source + p->value.str.off, "void", 4) == 0)
                     param->type = PARAM_VOID;
-                else if (memcmp(p->data + p->value.str.off, "float", 5) == 0)
+                else if (memcmp(p->source + p->value.str.off, "float", 5) == 0)
                     param->type = PARAM_FLOAT;
-                else if (memcmp(p->data + p->value.str.off, "double", 6) == 0)
+                else if (memcmp(p->source + p->value.str.off, "double", 6) == 0)
                     param->type = PARAM_DOUBLE;
-                else if (memcmp(p->data + p->value.str.off, "int64_t", 7) == 0)
+                else if (memcmp(p->source + p->value.str.off, "int64_t", 7) == 0)
                     param->type = PARAM_LONG;
-                else if (memcmp(p->data + p->value.str.off, "uint64_t", 8) == 0)
+                else if (memcmp(p->source + p->value.str.off, "uint64_t", 8) == 0)
                     param->type = PARAM_LONG;
-                else if (memcmp(p->data + p->value.str.off, "int", 3) == 0)
+                else if (memcmp(p->source + p->value.str.off, "int", 3) == 0)
                     param->type
                         = param->is_unsigned ? PARAM_DWORD : PARAM_INTEGER;
-                else if (memcmp(p->data + p->value.str.off, "int32_t", 7) == 0)
+                else if (memcmp(p->source + p->value.str.off, "int32_t", 7) == 0)
                     param->type
                         = param->is_unsigned ? PARAM_DWORD : PARAM_INTEGER;
-                else if (memcmp(p->data + p->value.str.off, "uint32_t", 8) == 0)
+                else if (memcmp(p->source + p->value.str.off, "uint32_t", 8) == 0)
                     param->type = PARAM_DWORD;
-                else if (memcmp(p->data + p->value.str.off, "int16_t", 7) == 0)
+                else if (memcmp(p->source + p->value.str.off, "int16_t", 7) == 0)
                     param->type = PARAM_WORD;
-                else if (memcmp(p->data + p->value.str.off, "uint16_t", 8) == 0)
+                else if (memcmp(p->source + p->value.str.off, "uint16_t", 8) == 0)
                     param->type = PARAM_WORD;
-                else if (memcmp(p->data + p->value.str.off, "char", 4) == 0)
+                else if (memcmp(p->source + p->value.str.off, "char", 4) == 0)
                 {
                     param->type = PARAM_BYTE;
                     param->is_char = 1;
                 }
-                else if (memcmp(p->data + p->value.str.off, "uint8_t", 7) == 0)
+                else if (memcmp(p->source + p->value.str.off, "uint8_t", 7) == 0)
                     param->type = PARAM_BYTE;
-                else if (memcmp(p->data + p->value.str.off, "int8_t", 6) == 0)
+                else if (memcmp(p->source + p->value.str.off, "int8_t", 6) == 0)
                     param->type = PARAM_BYTE;
-                else if (memcmp(p->data + p->value.str.off, "bool", 4) == 0)
+                else if (memcmp(p->source + p->value.str.off, "bool", 4) == 0)
                     param->type = PARAM_BOOLEAN;
-                else if (memcmp(p->data + p->value.str.off, "_Bool", 5) == 0)
+                else if (memcmp(p->source + p->value.str.off, "_Bool", 5) == 0)
                     param->type = PARAM_BOOLEAN;
                 else
                 {
@@ -1204,7 +1204,7 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
                             "to map to DB type. This is an issue with "
                             "odb-resgen. Please report a bug!\n",
                             p->value.str.len,
-                            p->data + p->value.str.off);
+                            p->source + p->value.str.off);
                 }
                 break;
 
@@ -1298,7 +1298,7 @@ parse_doc_parameters(struct parser* p, struct cmd* cmd)
 static enum token
 parse_command(struct parser* p, struct cmd* command, char is_overload)
 {
-    command->source = p->data;
+    command->source = p->source;
 
     if (scan_next_token(p) != '(')
         return print_loc_error(p, "Expected argument list\n");
@@ -1319,7 +1319,7 @@ parse_command(struct parser* p, struct cmd* command, char is_overload)
                 "ODB_COMMAND()\n");
     }
 
-    if (scan_next_token(p) != TOK_IDENTIFIER)
+    if (scan_next_token(p) != TOK_KEY)
         return print_loc_error(
             p,
             "Expected function name as second argument to ODB_COMMAND() "
@@ -1372,7 +1372,7 @@ find_command_by_name(
     struct cmd* cmd;
     for (cmd = root->commands; cmd; cmd = cmd->next)
         if (name.len == cmd->name.len
-            && memcmp(p->data + name.off, p->data + cmd->name.off, name.len)
+            && memcmp(p->source + name.off, p->source + cmd->name.off, name.len)
                    == 0)
             return cmd;
     return NULL;
@@ -1412,7 +1412,7 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
                         p,
                         "Command overload not found for \"%.*s\"\n",
                         ol->name.len,
-                        p->data + ol->name.off);
+                        p->source + ol->name.off);
 
                 /* Copy parameter names from base command, since they are shared
                  */
